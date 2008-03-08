@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="VGLib"
-	ProjectGUID="{FABA98A1-F15C-4018-B2C6-FEE8861113EE}"
-	RootNamespace="VGLib"
+	Name="VGDemo"
+	ProjectGUID="{A963901F-2AD2-44BD-88E0-8C0B8BE22CDE}"
+	RootNamespace="VGDemo"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -19,7 +19,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
+			ConfigurationType="1"
 			InheritedPropertySheets="$(SolutionDir)common.vsprops"
 			UseOfMFC="2"
 			CharacterSet="1"
@@ -42,7 +42,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -60,10 +60,17 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
+				Name="VCLinkerTool"
+				LinkIncremental="2"
+				GenerateDebugInformation="true"
+				SubSystem="1"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -75,13 +82,16 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
+			ConfigurationType="1"
 			InheritedPropertySheets="$(SolutionDir)common.vsprops"
 			UseOfMFC="2"
 			CharacterSet="1"
@@ -106,7 +116,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="2"
@@ -123,10 +133,19 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
+				Name="VCLinkerTool"
+				LinkIncremental="1"
+				GenerateDebugInformation="true"
+				SubSystem="1"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -138,14 +157,17 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
 	</Configurations>
 	<References>
 		<ProjectReference
-			ReferencedProjectIdentifier="{3F3BE34D-F16E-4F26-82AF-7219A1F7F583}"
-			RelativePathToProject=".\Common\Detours\Detours.vcproj"
+			ReferencedProjectIdentifier="{FABA98A1-F15C-4018-B2C6-FEE8861113EE}"
+			RelativePathToProject=".\VGLib\VGLib.vcproj"
 		/>
 	</References>
 	<Files>
@@ -175,7 +197,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\VirtualRegDB.cpp"
+				RelativePath=".\VGDemo.cpp"
 				>
 			</File>
 		</Filter>
@@ -185,6 +207,14 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath="..\Common\AriaDebug.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Resource.h"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.h"
 				>
 			</File>
@@ -193,7 +223,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\VirtualRegDB.h"
+				RelativePath=".\VGDemo.h"
 				>
 			</File>
 		</Filter>
@@ -202,11 +232,11 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+			<File
+				RelativePath=".\VGDemo.rc"
+				>
+			</File>
 		</Filter>
-		<File
-			RelativePath="..\common.vsprops"
-			>
-		</File>
 		<File
 			RelativePath=".\ReadMe.txt"
 			>
