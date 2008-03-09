@@ -2,6 +2,8 @@
 #include "VirtualRegDB.h"
 #include "../Common/AriaDebug.h"
 
+//static CVirtualRegDB gVrRegDB;
+
 #define FAKE_HKEY 0xC0000000
 
 static LONG (WINAPI *g_TrueRegCloseKey)( __in HKEY hKey ) = RegCloseKey;

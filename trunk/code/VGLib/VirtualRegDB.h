@@ -9,3 +9,5 @@ public:
 	CVirtualRegDB(void);
 	~CVirtualRegDB(void);
 };
+
+//extern CVirtualRegDB gVrRegDB;
