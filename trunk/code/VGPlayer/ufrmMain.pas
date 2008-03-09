@@ -8,6 +8,7 @@ uses
 
 type
   TfrmMain = class(TForm)
+    procedure FormDblClick(Sender: TObject);
   private
     { Private declarations }
   public
@@ -19,6 +20,24 @@ var
 
 implementation
 
+uses uVGFakeReg;
+
 {$R *.dfm}
+
+procedure TfrmMain.FormDblClick(Sender: TObject);
+var
+  fr: TVGFakeRegister;
+  hDLL: THandle;
+  pRegSvr: function: HRESULT; stdcall;
+begin
+  fr := TVGFakeRegister.Create;
+  try
+    hDLL := fr.LoadLibrary('D:\Software\Kmplayer Plus\RealMediaSplitter.ax');
+    pRegSvr := GetProcAddress(hDLL, 'DllRegisterServer');
+    pRegSvr;
+  finally
+    fr.Free;
+  end;
+end;
 
 end.
