@@ -32,7 +32,7 @@ var
 begin
   fr := TVGFakeRegister.Create;
   try
-    hDLL := fr.LoadLibrary('D:\Software\Kmplayer Plus\RealMediaSplitter.ax');
+    hDLL := fr.LoadLibrary('c:\MPlayer_Windows\codecs\divxdec.ax');
     pRegSvr := GetProcAddress(hDLL, 'DllRegisterServer');
     pRegSvr;
   finally

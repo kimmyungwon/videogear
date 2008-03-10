@@ -28,6 +28,52 @@ begin
   Result := CoCreateInstance(clsid, unkOuter, dwClsContext, iid, pv);
 end;
 
+function MyLoadLibraryA(lpLibFileName: PAnsiChar): HMODULE; stdcall;
+begin
+  TraceMsg('LoadLibraryA');
+  Result := LoadLibraryA(lpLibFileName);
+end;
+
+function MyLoadLibraryW(lpLibFileName: PWideChar): HMODULE; stdcall;
+begin
+  TraceMsg('LoadLibraryW');
+  Result := LoadLibraryW(lpLibFileName);
+end;
+
+function MyRegCreateKeyA(hKey: HKEY; lpSubKey: PAnsiChar;
+  var phkResult: HKEY): Longint; stdcall;
+begin
+  TraceMsg('RegCreateKeyA');
+  Result := RegCreateKeyA(hKey, lpSubKey, phkResult);
+end;
+
+function MyRegCreateKeyW(hKey: HKEY; lpSubKey: PWideChar;
+  var phkResult: HKEY): Longint; stdcall;
+begin
+  TraceMsg('RegCreateKeyW');
+  Result := RegCreateKeyW(hKey, lpSubKey, phkResult);
+end;
+
+function MyRegCreateKeyExA(hKey: HKEY; lpSubKey: PAnsiChar;
+  Reserved: DWORD; lpClass: PAnsiChar; dwOptions: DWORD; samDesired: REGSAM;
+  lpSecurityAttributes: PSecurityAttributes; var phkResult: HKEY;
+  lpdwDisposition: PDWORD): Longint; stdcall;
+begin
+  TraceMsg('RegCreateKeyExA');
+  Result := RegCreateKeyExA(hKey, lpSubKey, Reserved, lpClass, dwOptions,
+    samDesired, lpSecurityAttributes, phkResult, lpdwDisposition);
+end;
+
+function MyRegCreateKeyExW(hKey: HKEY; lpSubKey: PWideChar;
+  Reserved: DWORD; lpClass: PWideChar; dwOptions: DWORD; samDesired: REGSAM;
+  lpSecurityAttributes: PSecurityAttributes; var phkResult: HKEY;
+  lpdwDisposition: PDWORD): Longint; stdcall;
+begin
+  TraceMsg('RegCreateKeyExW');
+  Result := RegCreateKeyExW(hKey, lpSubKey, Reserved, lpClass, dwOptions,
+    samDesired, lpSecurityAttributes, phkResult, lpdwDisposition);
+end;
+
 function MyRegOpenKeyA(hKey: HKEY; lpSubKey: PAnsiChar; var phkResult: HKEY): Longint; stdcall;
 begin
   TraceMsg('RegOpenKeyA');
@@ -96,7 +142,14 @@ begin
   Result := LoadLibraryW(PWideChar(ALibFile));
   if Result = 0 then
     RaiseLastOSError;
-  FHooks.HookImport(Pointer(Result), 'ole32.dll', 'CoCreateInstance', @MyCoCreateInstance, pDummy);
+
+  //FHooks.HookImport(Pointer(Result), 'ole32.dll', 'CoCreateInstance', @MyCoCreateInstance, pDummy);
+  FHooks.HookImport(Pointer(Result), kernel32, 'LoadLibraryA', @MyLoadLibraryA, pDummy);
+  FHooks.HookImport(Pointer(Result), kernel32, 'LoadLibraryW', @MyLoadLibraryW, pDummy);
+  FHooks.HookImport(Pointer(Result), advapi32, 'RegCreateKeyA', @MyRegCreateKeyA, pDummy);
+  FHooks.HookImport(Pointer(Result), advapi32, 'RegCreateKeyW', @MyRegCreateKeyW, pDummy);
+  FHooks.HookImport(Pointer(Result), advapi32, 'RegCreateKeyExA', @MyRegCreateKeyExA, pDummy);
+  FHooks.HookImport(Pointer(Result), advapi32, 'RegCreateKeyExW', @MyRegCreateKeyExW, pDummy);
   FHooks.HookImport(Pointer(Result), advapi32, 'RegOpenKeyA', @MyRegOpenKeyA, pDummy);
   FHooks.HookImport(Pointer(Result), advapi32, 'RegOpenKeyW', @MyRegOpenKeyW, pDummy);
   FHooks.HookImport(Pointer(Result), advapi32, 'RegOpenKeyExA', @MyRegOpenKeyExA, pDummy);
