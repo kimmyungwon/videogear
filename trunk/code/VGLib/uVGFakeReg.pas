@@ -9,13 +9,17 @@ type
   TVGFakeRegister = class
   private
     FHooks: TJclPeMapImgHooks;
-  public
+
     constructor Create;
+  public
     destructor Destroy; override;
 
     function LoadLibrary(const ALibFile: WideString): THandle;
     procedure FreeLibrary(AModule: THandle);
   end;
+
+var
+  gFakeReg: TVGFakeRegister;
 
 implementation
 
@@ -156,5 +160,11 @@ begin
   FHooks.HookImport(Pointer(Result), advapi32, 'RegOpenKeyExW', @MyRegOpenKeyExW, pDummy);
   FHooks.HookImport(Pointer(Result), advapi32, 'RegQueryValueExA', @MyRegQueryValueExA, pDummy);
 end;
+
+initialization
+  gFakeReg := TVGFakeRegister.Create;
+
+finalization
+  FreeAndNil(gFakeReg);
 
 end.
