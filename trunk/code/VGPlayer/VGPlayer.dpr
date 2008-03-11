@@ -3,7 +3,8 @@ program VGPlayer;
 uses
   Forms,
   ufrmMain in 'ufrmMain.pas' {frmMain},
-  uVGFakeReg in '..\VGLib\uVGFakeReg.pas';
+  uVGFakeReg in '..\VGLib\uVGFakeReg.pas',
+  uAriaTree in '..\Common\uAriaTree.pas';
 
 {$R *.res}
 

@@ -9,9 +9,8 @@ type
   TVGFakeRegister = class
   private
     FHooks: TJclPeMapImgHooks;
-
-    constructor Create;
   public
+    constructor Create;
     destructor Destroy; override;
 
     function LoadLibrary(const ALibFile: WideString): THandle;
