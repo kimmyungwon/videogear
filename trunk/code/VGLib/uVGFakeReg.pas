@@ -80,6 +80,18 @@ begin
   Result := LoadLibraryW(lpLibFileName);
 end;
 
+function MyLoadLibraryExA(lpLibFileName: PAnsiChar; hFile: THandle; dwFlags: DWORD): HMODULE; stdcall;
+begin
+  TraceMsg('LoadLibraryExA');
+  Result := LoadLibraryExA(lpLibFileName, hFile, dwFlags);
+end;
+
+function MyLoadLibraryExW(lpLibFileName: PWideChar; hFile: THandle; dwFlags: DWORD): HMODULE; stdcall;
+begin
+  TraceMsg('LoadLibraryExW');
+  Result := LoadLibraryExW(lpLibFileName, hFile, dwFlags);
+end;
+
 function MyRegCloseKey(hKey: HKEY): Longint; stdcall;
 begin
   TraceMsg('RegCloseKey');
@@ -378,9 +390,11 @@ begin
   if Result = 0 then
     RaiseLastOSError;
 
-  //FHooks.HookImport(Pointer(Result), 'ole32.dll', 'CoCreateInstance', @MyCoCreateInstance, pDummy);
-  FHooks.HookImport(Pointer(Result), kernel32, 'LoadLibraryA', @MyLoadLibraryA, pDummy);
-  FHooks.HookImport(Pointer(Result), kernel32, 'LoadLibraryW', @MyLoadLibraryW, pDummy);
+//  FHooks.HookImport(Pointer(Result), 'ole32.dll', 'CoCreateInstance', @MyCoCreateInstance, pDummy);
+//  FHooks.HookImport(Pointer(Result), kernel32, 'LoadLibraryA', @MyLoadLibraryA, pDummy);
+//  FHooks.HookImport(Pointer(Result), kernel32, 'LoadLibraryW', @MyLoadLibraryW, pDummy);
+//  FHooks.HookImport(Pointer(Result), kernel32, 'LoadLibraryExA', @MyLoadLibraryExA, pDummy);
+//  FHooks.HookImport(Pointer(Result), kernel32, 'LoadLibraryExW', @MyLoadLibraryExW, pDummy);
   FHooks.HookImport(Pointer(Result), advapi32, 'RegCloseKey', @MyRegCloseKey, pDummy);
   FHooks.HookImport(Pointer(Result), advapi32, 'RegCreateKeyA', @MyRegCreateKeyA, pDummy);
   FHooks.HookImport(Pointer(Result), advapi32, 'RegCreateKeyW', @MyRegCreateKeyW, pDummy);

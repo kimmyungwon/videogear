@@ -32,7 +32,7 @@ var
 begin
   fr := TVGFakeRegister.Create;
   try
-    hDLL := fr.LoadLibrary('c:\MPlayer_Windows\codecs\divxdec.ax');
+    hDLL := fr.LoadLibrary('c:\MPlayer_Windows\codecs\l3codecx.ax');
     pRegSvr := GetProcAddress(hDLL, 'DllRegisterServer');
     pRegSvr;
   finally
