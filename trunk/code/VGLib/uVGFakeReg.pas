@@ -6,10 +6,9 @@ uses
   Windows, SysUtils, ActiveX, JclPeImage, uAriaTree;
 
 type
-  TVGFakeRegister = class
+  TVGFakeRegister = class(TAriaTree)
   private
     FHooks: TJclPeMapImgHooks;
-    FRegDB: TAriaTree;
   public
     constructor Create;
     destructor Destroy; override;
@@ -26,7 +25,42 @@ implementation
 uses JclDebug;
 
 const
-  HKEY_FAKEREG    = $C0000000;
+  HKEY_FAKEREG    = Cardinal($C0000000);
+
+function HKEYToStr(hKey: HKEY): WideString; inline;
+begin
+  case hKey of
+    HKEY_CLASSES_ROOT: Result := 'HKEY_CLASSES_ROOT';
+    HKEY_CURRENT_USER: Result := 'HKEY_CURRENT_USER';
+    HKEY_LOCAL_MACHINE: Result := 'HKEY_LOCAL_MACHINE';
+    HKEY_USERS: Result := 'HKEY_USERS';
+    HKEY_PERFORMANCE_DATA: Result := 'HKEY_PERFORMANCE_DATA';
+    HKEY_CURRENT_CONFIG: Result := 'HKEY_CURRENT_CONFIG';
+    HKEY_DYN_DATA: Result := 'HKEY_DYN_DATA';
+  else
+    Result := WideFormat('%.8X', [hKey]);
+  end;
+end;
+
+function IsFakeNode(hKey: HKEY): Boolean; inline;
+begin
+  Result := (hKey and HKEY_FAKEREG) = HKEY_FAKEREG;
+end;
+
+function HKEYToNode(hKey: HKEY): TAriaNode; inline;
+begin
+  if IsFakeNode(hKey) then
+    Result := TAriaNode(hKey and not HKEY_FAKEREG)
+  else
+    Result := nil;
+end;
+
+function NodeToHKEY(ANode: TAriaNode): HKEY; inline;
+begin
+  Result := (Cardinal(ANode) or HKEY_FAKEREG);
+end;
+
+{ HOOKs }
 
 function MyCoCreateInstance(const clsid: TCLSID; unkOuter: IUnknown;
   dwClsContext: Longint; const iid: TIID; out pv): HResult; stdcall;
@@ -53,18 +87,42 @@ begin
   Result := RegCloseKey(hKey);
 end;
 
+function MyRegCreateKeyW(hKey: HKEY; lpSubKey: PWideChar;
+  var phkResult: HKEY): Longint; stdcall;
+var
+  Node: TAriaNode;
+begin
+  TraceMsg('RegCreateKeyW');
+  if (hKey and $80000000) <> 0 then
+  begin
+    if not IsFakeNode(hKey) then  // 打开的是根节点
+    begin
+      Node := gFakeReg.Children.FindSibling(HKEYToStr(hKey));
+      if Node = nil then
+      begin
+        Result := ERROR_INTERNAL_ERROR;
+        Exit;
+      end;
+    end
+    else // 打开的是HOOK过后的子节点
+    begin
+      Node := HKEYToNode(hKey); 
+    end;
+    // 按lpSubKey建立路径
+    Node := Node.CreatePath(lpSubKey);
+    // 返回
+    phkResult := (Cardinal(Node) or HKEY_FAKEREG);
+    Result := S_OK;
+  end
+  else
+    Result := RegCreateKeyW(hKey, lpSubKey, phkResult);
+end;
+
 function MyRegCreateKeyA(hKey: HKEY; lpSubKey: PAnsiChar;
   var phkResult: HKEY): Longint; stdcall;
 begin
   TraceMsg('RegCreateKeyA');
-  Result := RegCreateKeyA(hKey, lpSubKey, phkResult);
-end;
-
-function MyRegCreateKeyW(hKey: HKEY; lpSubKey: PWideChar;
-  var phkResult: HKEY): Longint; stdcall;
-begin
-  TraceMsg('RegCreateKeyW');
-  Result := RegCreateKeyW(hKey, lpSubKey, phkResult);
+  Result := MyRegCreatekeyW(hKey, PWideChar(WideString(lpSubKey)), phkResult);
 end;
 
 function MyRegCreateKeyExA(hKey: HKEY; lpSubKey: PAnsiChar;
@@ -233,18 +291,28 @@ begin
   Result := RegQueryValueExW(hKey, lpValueName, lpReserved, lpType, lpData, lpcbData);
 end;
 
+function MyRegSetValueW(hKey: HKEY; lpSubKey: PWideChar;
+  dwType: DWORD; lpData: PWideChar; cbData: DWORD): Longint; stdcall;
+var
+  Node: TAriaNode;
+begin
+  TraceMsg('RegSetValueW');
+  if IsFakeNode(hKey) then
+  begin
+    Node := HKEYToNode(hKey);
+    Node.Value := WideString(lpData);
+    Result := S_OK;
+  end
+  else
+    Result := RegSetValueW(hKey, lpSubKey, dwType, lpData, cbData);
+end;
+
 function MyRegSetValueA(hKey: HKEY; lpSubKey: PAnsiChar;
   dwType: DWORD; lpData: PAnsiChar; cbData: DWORD): Longint; stdcall;
 begin
   TraceMsg('RegSetValueA');
-  Result := RegSetValueA(hKey, lpSubKey, dwType, lpData, cbData);
-end;
-
-function MyRegSetValueW(hKey: HKEY; lpSubKey: PWideChar;
-  dwType: DWORD; lpData: PWideChar; cbData: DWORD): Longint; stdcall;
-begin
-  TraceMsg('RegSetValueW');
-  Result := RegSetValueW(hKey, lpSubKey, dwType, lpData, cbData);
+  Result := MyRegSetValueW(hKey, PWideChar(WideString(lpSubKey)), dwType,
+    PWideChar(WideString(lpData)), cbData);
 end;
 
 function MyRegSetValueExA(hKey: HKEY; lpValueName: PAnsiChar;
@@ -264,14 +332,19 @@ end;
 { TVGFakeRegister }
 
 constructor TVGFakeRegister.Create;
+var
+  hKey: Windows.HKEY;
 begin
+  inherited Create;
   FHooks := TJclPeMapImgHooks.Create;
-  
+  // 初始化根节点
+  for hKey := HKEY_CLASSES_ROOT to HKEY_DYN_DATA do
+    Children.Add(HKEYToStr(hKey));
 end;
 
 destructor TVGFakeRegister.Destroy;
 begin
-  FHooks.Free;
+  FreeAndNil(FHooks);
   inherited;
 end;
 

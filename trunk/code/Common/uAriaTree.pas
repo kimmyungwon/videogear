@@ -3,7 +3,7 @@ unit uAriaTree;
 interface
 
 uses
-  Classes, SysUtils, Contnrs;
+  Classes, SysUtils, Contnrs, TntSysUtils;
 
 type
   EAriaTreeError = class(Exception);
@@ -17,8 +17,9 @@ type
     FChildren: TAriaNodeList;
     FSiblings: TAriaNodeList;
   public
-    constructor Create(const AName: WideString; ASiblings: TAriaNodeList); virtual;
+    constructor Create(const AName: WideString; ASiblings: TAriaNodeList);
     destructor Destroy; override;
+    function CreatePath(APath: WideString): TAriaNode;
 
     property Name: WideString read FName;
     property Value: Variant read FValue write FValue;
@@ -52,7 +53,8 @@ type
   end;
 
   TAriaTree = class(TAriaNode)
-  
+  public
+    constructor Create;  
   end;
 
 implementation
@@ -70,10 +72,24 @@ begin
   FChildren := TAriaNodeList.Create(Self);
 end;
 
+function TAriaNode.CreatePath(APath: WideString): TAriaNode;
+var
+  strPath, strNode: WideString;
+begin
+  strPath := WideExcludeTrailingPathDelimiter(WideExtractFilePath(APath));
+  if strPath = '' then
+  begin
+    Result := Children.Add(APath);
+  end
+  else
+  begin
+    strNode := WideExtractFileName(APath);
+    Result := CreatePath(strPath).Children.Add(strNode, False);
+  end;
+end;
+
 destructor TAriaNode.Destroy;
 begin
-  if FSiblings <> nil then
-    FSiblings.Extract(Self);
   FreeAndNil(FChildren);
   inherited;
 end;
@@ -86,6 +102,7 @@ begin
   if Result = nil then
   begin
     Result := TAriaNode.Create(AName, Self);
+    FItems.Add(Result);
   end
   else
   begin
@@ -174,6 +191,13 @@ begin
       Exit;
   end;
   Result := -1;
+end;
+
+{ TAriaTree }
+
+constructor TAriaTree.Create;
+begin
+  inherited Create(ClassName, nil);
 end;
 
 end.
