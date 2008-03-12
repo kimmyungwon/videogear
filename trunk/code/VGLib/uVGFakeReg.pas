@@ -3,7 +3,7 @@ unit uVGFakeReg;
 interface
 
 uses
-  Windows, SysUtils, ActiveX, JclPeImage, uAriaTree;
+  Windows, Classes, SysUtils, Contnrs, ActiveX, WideStrUtils, JclPeImage, uAriaTree;
 
 type
   TVGFakeRegister = class(TAriaTree)
@@ -59,6 +59,23 @@ function NodeToHKEY(ANode: TAriaNode): HKEY; inline;
 begin
   Result := (Cardinal(ANode) or HKEY_FAKEREG);
 end;
+
+{ TRegisterValues }
+type
+  TRegisterValue = class(TPersistent)
+  private
+    FData: array of Byte;
+  public
+    constructor CreateFromString(const AStr: WideString);
+  end;
+
+  TRegisterValues = class(TObjectList)
+  protected
+    function GetItem(AIndex: Integer): TRegisterValue;
+  public
+    constructor Create;
+    function Add(AValue: TRegisterValue): Integer;
+  end;
 
 { HOOKs }
 
@@ -300,7 +317,7 @@ begin
   if IsFakeNode(hKey) then
   begin
     Node := HKEYToNode(hKey);
-    Node.Value := WideString(lpData);
+    //Node.Value := WideString(lpData);
     Result := S_OK;
   end
   else
@@ -335,7 +352,7 @@ constructor TVGFakeRegister.Create;
 var
   hKey: Windows.HKEY;
 begin
-  inherited Create;
+  inherited Create(TRegisterValues);
   FHooks := TJclPeMapImgHooks.Create;
   // 初始化根节点
   for hKey := HKEY_CLASSES_ROOT to HKEY_DYN_DATA do
@@ -404,6 +421,31 @@ begin
   FHooks.HookImport(Pointer(Result), advapi32, 'RegSetValueW', @MyRegSetValueW, pDummy);
   FHooks.HookImport(Pointer(Result), advapi32, 'RegSetValueExA', @MyRegSetValueExA, pDummy);
   FHooks.HookImport(Pointer(Result), advapi32, 'RegSetValueExW', @MyRegSetValueExW, pDummy);
+end;
+
+{ TRegisterValues }
+
+function TRegisterValues.Add(AValue: TRegisterValue): Integer;
+begin
+  Result := inherited Add(AValue);
+end;
+
+constructor TRegisterValues.Create;
+begin
+  inherited Create(True);
+end;
+
+function TRegisterValues.GetItem(AIndex: Integer): TRegisterValue;
+begin
+  Result := inherited GetItem(AIndex) as TRegisterValue;
+end;
+
+{ TRegisterValue }
+
+constructor TRegisterValue.CreateFromString(const AStr: WideString);
+begin
+  SetLength(FData, Length(AStr) * SizeOf(WideChar));
+  WStrPCopy(@FData[0], AStr);
 end;
 
 initialization

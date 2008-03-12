@@ -13,16 +13,19 @@ type
   TAriaNode = class
   private
     FName: WideString;
-    FValue: Variant;
+    FValueClass: TClass;
+    FValue: TObject;
     FChildren: TAriaNodeList;
     FSiblings: TAriaNodeList;
   public
-    constructor Create(const AName: WideString; ASiblings: TAriaNodeList);
+    constructor Create(const AName: WideString; AValueClass: TClass;
+      ASiblings: TAriaNodeList);
     destructor Destroy; override;
     function CreatePath(APath: WideString): TAriaNode;
 
     property Name: WideString read FName;
-    property Value: Variant read FValue write FValue;
+    property ValueClass: TClass read FValueClass;
+    property Value: TObject read FValue write FValue;
     property Children: TAriaNodeList read FChildren;
     property Siblings: TAriaNodeList read FSiblings;
   end;
@@ -54,7 +57,7 @@ type
 
   TAriaTree = class(TAriaNode)
   public
-    constructor Create;  
+    constructor Create(AValueClass: TClass);  
   end;
 
 implementation
@@ -65,9 +68,12 @@ resourcestring
 
 { TAriaNode }
 
-constructor TAriaNode.Create(const AName: WideString; ASiblings: TAriaNodeList);
+constructor TAriaNode.Create(const AName: WideString; AValueClass: TClass;
+  ASiblings: TAriaNodeList);
 begin
   FName := AName;
+  FValueClass := AValueClass;
+  FValue := FValueClass.Create;
   FSiblings := ASiblings;
   FChildren := TAriaNodeList.Create(Self);
 end;
@@ -90,6 +96,7 @@ end;
 
 destructor TAriaNode.Destroy;
 begin
+  FreeAndNil(FValue);
   FreeAndNil(FChildren);
   inherited;
 end;
@@ -101,7 +108,7 @@ begin
   Result := FindSibling(AName);
   if Result = nil then
   begin
-    Result := TAriaNode.Create(AName, Self);
+    Result := TAriaNode.Create(AName, FParent.ValueClass, Self);
     FItems.Add(Result);
   end
   else
@@ -195,9 +202,9 @@ end;
 
 { TAriaTree }
 
-constructor TAriaTree.Create;
+constructor TAriaTree.Create(AValueClass: TClass);
 begin
-  inherited Create(ClassName, nil);
+  inherited Create(ClassName, AValueClass, nil);
 end;
 
 end.
