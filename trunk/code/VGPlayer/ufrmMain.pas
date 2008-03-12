@@ -4,10 +4,10 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs;
+  Dialogs, TntSysUtils, TntForms;
 
 type
-  TfrmMain = class(TForm)
+  TfrmMain = class(TTntForm)
     procedure FormDblClick(Sender: TObject);
   private
     { Private declarations }
@@ -29,12 +29,15 @@ var
   fr: TVGFakeRegister;
   hDLL: THandle;
   pRegSvr: function: HRESULT; stdcall;
+  pConfig: procedure(hwnd: HWND; hInst: HINST; lpCmdLine: PAnsiChar; nCmdShow: Integer); stdcall;
 begin
   fr := TVGFakeRegister.Create;
   try
-    hDLL := fr.LoadLibrary('c:\MPlayer_Windows\codecs\l3codecx.ax');
+    hDLL := fr.LoadLibrary('ffdshow\ffdshow.ax');
     pRegSvr := GetProcAddress(hDLL, 'DllRegisterServer');
+    pConfig := GetProcAddress(hDLL, 'configure');
     pRegSvr;
+    pConfig(Handle, HInstance, nil, 0);
   finally
     fr.Free;
   end;
