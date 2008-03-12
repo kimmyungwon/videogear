@@ -4,7 +4,9 @@ uses
   Forms,
   ufrmMain in 'ufrmMain.pas' {frmMain},
   uVGFakeReg in '..\VGLib\uVGFakeReg.pas',
-  uAriaTree in '..\Common\uAriaTree.pas';
+  uAriaTree in '..\Common\uAriaTree.pas',
+  uVGRegDB in '..\VGLib\uVGRegDB.pas',
+  MD5 in '..\Common\MD5.pas';
 
 {$R *.res}
 

@@ -1,4 +1,5 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <ProjectGuid>{b22e3a02-a3ed-4fb1-81d3-1c57ec2daf2f}</ProjectGuid>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -29,8 +30,10 @@
     <DelphiCompile Include="VGPlayer.dpr">
       <MainSource>MainSource</MainSource>
     </DelphiCompile>
+    <DCCReference Include="..\Common\MD5.pas" />
     <DCCReference Include="..\Common\uAriaTree.pas" />
     <DCCReference Include="..\VGLib\uVGFakeReg.pas" />
+    <DCCReference Include="..\VGLib\uVGRegDB.pas" />
     <DCCReference Include="ufrmMain.pas">
       <Form>frmMain</Form>
     </DCCReference>

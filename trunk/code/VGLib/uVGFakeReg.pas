@@ -3,11 +3,12 @@ unit uVGFakeReg;
 interface
 
 uses
-  Windows, Classes, SysUtils, Contnrs, ActiveX, WideStrUtils, JclPeImage, uAriaTree;
+  Windows, Classes, SysUtils, Contnrs, ActiveX, WideStrUtils, JclPeImage,
+  XMLIntf, uVGRegDB;
 
 type
-  TVGFakeRegister = class(TAriaTree)
-  private
+  TVGFakeRegister = class(TVGRegDB)
+  strict private
     FHooks: TJclPeMapImgHooks;
   public
     constructor Create;
@@ -27,55 +28,23 @@ uses JclDebug;
 const
   HKEY_FAKEREG    = Cardinal($C0000000);
 
-function HKEYToStr(hKey: HKEY): WideString; inline;
-begin
-  case hKey of
-    HKEY_CLASSES_ROOT: Result := 'HKEY_CLASSES_ROOT';
-    HKEY_CURRENT_USER: Result := 'HKEY_CURRENT_USER';
-    HKEY_LOCAL_MACHINE: Result := 'HKEY_LOCAL_MACHINE';
-    HKEY_USERS: Result := 'HKEY_USERS';
-    HKEY_PERFORMANCE_DATA: Result := 'HKEY_PERFORMANCE_DATA';
-    HKEY_CURRENT_CONFIG: Result := 'HKEY_CURRENT_CONFIG';
-    HKEY_DYN_DATA: Result := 'HKEY_DYN_DATA';
-  else
-    Result := WideFormat('%.8X', [hKey]);
-  end;
-end;
-
 function IsFakeNode(hKey: HKEY): Boolean; inline;
 begin
   Result := (hKey and HKEY_FAKEREG) = HKEY_FAKEREG;
 end;
 
-function HKEYToNode(hKey: HKEY): TAriaNode; inline;
+function HKEYToNode(hKey: HKEY): IXMLNode; inline;
 begin
   if IsFakeNode(hKey) then
-    Result := TAriaNode(hKey and not HKEY_FAKEREG)
+    Result := IXMLNode(hKey and not HKEY_FAKEREG)
   else
     Result := nil;
 end;
 
-function NodeToHKEY(ANode: TAriaNode): HKEY; inline;
+function NodeToHKEY(ANode: IXMLNode): HKEY; inline;
 begin
   Result := (Cardinal(ANode) or HKEY_FAKEREG);
 end;
-
-{ TRegisterValues }
-type
-  TRegisterValue = class(TPersistent)
-  private
-    FData: array of Byte;
-  public
-    constructor CreateFromString(const AStr: WideString);
-  end;
-
-  TRegisterValues = class(TObjectList)
-  protected
-    function GetItem(AIndex: Integer): TRegisterValue;
-  public
-    constructor Create;
-    function Add(AValue: TRegisterValue): Integer;
-  end;
 
 { HOOKs }
 
@@ -101,20 +70,25 @@ end;
 function MyRegCloseKey(hKey: HKEY): Longint; stdcall;
 begin
   TraceMsg('RegCloseKey');
-  Result := RegCloseKey(hKey);
+  if IsFakeNode(hKey) then
+  begin
+    Result := S_OK;
+  end
+  else
+    Result := RegCloseKey(hKey);
 end;
 
 function MyRegCreateKeyW(hKey: HKEY; lpSubKey: PWideChar;
   var phkResult: HKEY): Longint; stdcall;
 var
-  Node: TAriaNode;
+  Node: IXMLNode;
 begin
   TraceMsg('RegCreateKeyW');
   if (hKey and $80000000) <> 0 then
   begin
     if not IsFakeNode(hKey) then  // 打开的是根节点
     begin
-      Node := gFakeReg.Children.FindSibling(HKEYToStr(hKey));
+      Node := gFakeReg.Roots[hKey];
       if Node = nil then
       begin
         Result := ERROR_INTERNAL_ERROR;
@@ -126,7 +100,7 @@ begin
       Node := HKEYToNode(hKey); 
     end;
     // 按lpSubKey建立路径
-    Node := Node.CreatePath(lpSubKey);
+    Node := gFakeReg.CreatePath(Node, lpSubKey);
     // 返回
     phkResult := (Cardinal(Node) or HKEY_FAKEREG);
     Result := S_OK;
@@ -311,13 +285,13 @@ end;
 function MyRegSetValueW(hKey: HKEY; lpSubKey: PWideChar;
   dwType: DWORD; lpData: PWideChar; cbData: DWORD): Longint; stdcall;
 var
-  Node: TAriaNode;
+  Node: IXMLNode;
 begin
   TraceMsg('RegSetValueW');
   if IsFakeNode(hKey) then
   begin
     Node := HKEYToNode(hKey);
-    //Node.Value := WideString(lpData);
+    gFakeReg.SetValue(Node, '', dwType, lpData, cbData);
     Result := S_OK;
   end
   else
@@ -349,14 +323,9 @@ end;
 { TVGFakeRegister }
 
 constructor TVGFakeRegister.Create;
-var
-  hKey: Windows.HKEY;
 begin
-  inherited Create(TRegisterValues);
+  inherited Create;
   FHooks := TJclPeMapImgHooks.Create;
-  // 初始化根节点
-  for hKey := HKEY_CLASSES_ROOT to HKEY_DYN_DATA do
-    Children.Add(HKEYToStr(hKey));
 end;
 
 destructor TVGFakeRegister.Destroy;
@@ -423,35 +392,12 @@ begin
   FHooks.HookImport(Pointer(Result), advapi32, 'RegSetValueExW', @MyRegSetValueExW, pDummy);
 end;
 
-{ TRegisterValues }
-
-function TRegisterValues.Add(AValue: TRegisterValue): Integer;
-begin
-  Result := inherited Add(AValue);
-end;
-
-constructor TRegisterValues.Create;
-begin
-  inherited Create(True);
-end;
-
-function TRegisterValues.GetItem(AIndex: Integer): TRegisterValue;
-begin
-  Result := inherited GetItem(AIndex) as TRegisterValue;
-end;
-
-{ TRegisterValue }
-
-constructor TRegisterValue.CreateFromString(const AStr: WideString);
-begin
-  SetLength(FData, Length(AStr) * SizeOf(WideChar));
-  WStrPCopy(@FData[0], AStr);
-end;
-
 initialization
+  CoInitialize(nil);
   gFakeReg := TVGFakeRegister.Create;
 
 finalization
+  gFakeReg.SaveToFile('RegDB.xml');
   FreeAndNil(gFakeReg);
 
 end.
