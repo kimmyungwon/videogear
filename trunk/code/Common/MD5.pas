@@ -293,7 +293,7 @@ end;
 
 function MD5DigestToString(const D: TMD5Digest): String;
 const
-  Digits: array[0..15] of Char = '0123456789abcdef';
+  Digits: array[0..15] of Char = '0123456789ABCDEF';
 var
   Buf: array[0..31] of Char;
   P: PChar;

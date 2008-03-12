@@ -28,9 +28,10 @@ type
 
 implementation
 
-function MakeHash(const AStr: WideString): WideString; inline;
+function GetNodeName(const AStr: WideString): WideString; inline;
 begin
-  Result := MD5DigestToString(MD5Buf(PWideChar(AStr)^, Length(AStr) * SizeOf(AStr)));
+  Result := 'N' + MD5DigestToString(MD5Buf(PWideChar(WideUpperCase(AStr))^,
+    Length(AStr) * SizeOf(AStr)));
 end;
 
 function HKEYToStr(hKey: HKEY): WideString; inline;
@@ -48,6 +49,18 @@ begin
   end;
 end;
 
+function EncodeData(AData: PByte; ADataSize: Cardinal): WideString;
+var
+  pPtr: PByte;
+begin
+  pPtr := AData;
+  while Cardinal(pPtr) - Cardinal(AData) >= ADataSize do
+  begin
+    Result := Result + WideFormat('%.2X', [pPtr^]);
+    Inc(pPtr);
+  end; 
+end;
+
 { TVGRegDB }
 
 constructor TVGRegDB.Create;
@@ -56,6 +69,8 @@ var
 begin
   FXMLDoc := TXMLDocument.Create(nil);
   FXMLDoc.Active := True;
+  FXMLDoc.Version := '1.0';
+  FXMLDoc.Encoding := 'UTF-8';
   FXMLDoc.DocumentElement := FXMLDoc.CreateNode('VGRegDB');
   for hKey := Low(FRoots) to High(FRoots) do
   begin
@@ -65,7 +80,7 @@ end;
 
 function TVGRegDB.CreateNode(AParent: IXMLNode; const AName: WideString): IXMLNode;
 begin
-  Result := AParent.AddChild('N' + MakeHash(AName));
+  Result := AParent.AddChild(GetNodeName(AName));
   Result.Attributes['Name'] := AName;
 end;
 
@@ -111,9 +126,19 @@ var
 begin
   if ANode = nil then
     Exit;
-  Node := ANode.ChildNodes['A' + MakeHash(AValName)];
+  Node := ANode.ChildNodes['Attributes'].ChildNodes[GetNodeName(AValName)];
   Node.Attributes['Name'] := AValName;
   Node.Attributes['Type'] := AValType;
+  case AValType of
+    REG_SZ, REG_EXPAND_SZ: begin
+      Node.Attributes['Data'] := WideString(PWideChar(AValData));
+    end;
+    REG_DWORD, REG_DWORD_BIG_ENDIAN: begin
+      Node.Attributes['Data'] := PDWORD(AValData)^;
+    end;
+  else
+    Node.Attributes['Data'] := EncodeData(AValData, AValDataSize);  
+  end;
 end;
 
 end.

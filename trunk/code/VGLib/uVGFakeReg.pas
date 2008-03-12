@@ -46,6 +46,19 @@ begin
   Result := (Cardinal(ANode) or HKEY_FAKEREG);
 end;
 
+function AnsiToUnicode(const AStr: PAnsiChar; ASize: Integer = -1): WideString;
+var
+  nDstLen: Integer;
+begin
+  if ASize < 0 then
+    ASize := Length(AStr)
+  else
+    Dec(ASize);
+  nDstLen := MultiByteToWideChar(CP_ACP, 0, AStr, ASize, nil, 0);
+  SetLength(Result, nDstLen);
+  MultiByteToWideChar(CP_ACP, 0, AStr, ASize, PWideChar(Result), nDstLen);
+end;
+
 { HOOKs }
 
 function MyCoCreateInstance(const clsid: TCLSID; unkOuter: IUnknown;
@@ -113,7 +126,7 @@ function MyRegCreateKeyA(hKey: HKEY; lpSubKey: PAnsiChar;
   var phkResult: HKEY): Longint; stdcall;
 begin
   TraceMsg('RegCreateKeyA');
-  Result := MyRegCreatekeyW(hKey, PWideChar(WideString(lpSubKey)), phkResult);
+  Result := MyRegCreatekeyW(hKey, PWideChar(AnsiToUnicode(lpSubKey)), phkResult);
 end;
 
 function MyRegCreateKeyExA(hKey: HKEY; lpSubKey: PAnsiChar;
@@ -282,42 +295,50 @@ begin
   Result := RegQueryValueExW(hKey, lpValueName, lpReserved, lpType, lpData, lpcbData);
 end;
 
-function MyRegSetValueW(hKey: HKEY; lpSubKey: PWideChar;
-  dwType: DWORD; lpData: PWideChar; cbData: DWORD): Longint; stdcall;
+function MyRegSetValueExW(hKey: HKEY; lpValueName: PWideChar;
+  Reserved: DWORD; dwType: DWORD; lpData: Pointer; cbData: DWORD): Longint; stdcall;
 var
   Node: IXMLNode;
 begin
-  TraceMsg('RegSetValueW');
+  TraceMsg('RegSetValueExW');
   if IsFakeNode(hKey) then
   begin
     Node := HKEYToNode(hKey);
-    gFakeReg.SetValue(Node, '', dwType, lpData, cbData);
+    gFakeReg.SetValue(Node, lpValueName, dwType, lpData, cbData);
     Result := S_OK;
   end
   else
-    Result := RegSetValueW(hKey, lpSubKey, dwType, lpData, cbData);
-end;
-
-function MyRegSetValueA(hKey: HKEY; lpSubKey: PAnsiChar;
-  dwType: DWORD; lpData: PAnsiChar; cbData: DWORD): Longint; stdcall;
-begin
-  TraceMsg('RegSetValueA');
-  Result := MyRegSetValueW(hKey, PWideChar(WideString(lpSubKey)), dwType,
-    PWideChar(WideString(lpData)), cbData);
+    Result := RegSetValueExW(hKey, lpValueName, Reserved, dwType, lpData, cbData);
 end;
 
 function MyRegSetValueExA(hKey: HKEY; lpValueName: PAnsiChar;
   Reserved: DWORD; dwType: DWORD; lpData: Pointer; cbData: DWORD): Longint; stdcall;
 begin
   TraceMsg('RegSetValueExA');
-  Result := RegSetValueExA(hKey, lpValueName, Reserved, dwType, lpData, cbData);
+  case dwType of
+    REG_SZ, REG_EXPAND_SZ, REG_MULTI_SZ: begin
+      Result := MyRegSetValueExW(hKey, PWideChar(WideString(lpValueName)),
+        Reserved, dwType, PWideChar(AnsiToUnicode(lpData, cbData)), cbData);
+    end;
+  else
+    Result := MyRegSetValueExW(hKey, PWideChar(WideString(lpValueName)),
+      Reserved, dwType, lpData, cbData);
+  end;
 end;
 
-function MyRegSetValueExW(hKey: HKEY; lpValueName: PWideChar;
-  Reserved: DWORD; dwType: DWORD; lpData: Pointer; cbData: DWORD): Longint; stdcall;
+function MyRegSetValueW(hKey: HKEY; lpSubKey: PWideChar;
+  dwType: DWORD; lpData: PWideChar; cbData: DWORD): Longint; stdcall;
 begin
-  TraceMsg('RegSetValueExW');
-  Result := RegSetValueExW(hKey, lpValueName, Reserved, dwType, lpData, cbData);
+  TraceMsg('RegSetValueW');
+  Result := MyRegSetValueExW(hKey, nil, 0, dwType, lpData, Length(lpData) + 1);
+end;
+
+function MyRegSetValueA(hKey: HKEY; lpSubKey: PAnsiChar;
+  dwType: DWORD; lpData: PAnsiChar; cbData: DWORD): Longint; stdcall;
+begin
+  TraceMsg('RegSetValueA');
+  Result := MyRegSetValueW(hKey, PWideChar(AnsiToUnicode(lpSubKey)), dwType,
+    PWideChar(AnsiToUnicode(lpData)), cbData);
 end;
 
 { TVGFakeRegister }
@@ -358,8 +379,8 @@ begin
     RaiseLastOSError;
 
   //FHooks.HookImport(Pointer(Result), 'ole32.dll', 'CoCreateInstance', @MyCoCreateInstance, pDummy);
-  //FHooks.HookImport(Pointer(Result), kernel32, 'LoadLibraryA', @MyLoadLibraryA, pDummy);
-  //FHooks.HookImport(Pointer(Result), kernel32, 'LoadLibraryW', @MyLoadLibraryW, pDummy);
+  FHooks.HookImport(Pointer(Result), kernel32, 'LoadLibraryA', @MyLoadLibraryA, pDummy);
+  FHooks.HookImport(Pointer(Result), kernel32, 'LoadLibraryW', @MyLoadLibraryW, pDummy);
   FHooks.HookImport(Pointer(Result), advapi32, 'RegCloseKey', @MyRegCloseKey, pDummy);
   FHooks.HookImport(Pointer(Result), advapi32, 'RegCreateKeyA', @MyRegCreateKeyA, pDummy);
   FHooks.HookImport(Pointer(Result), advapi32, 'RegCreateKeyW', @MyRegCreateKeyW, pDummy);
