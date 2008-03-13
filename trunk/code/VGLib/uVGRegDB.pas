@@ -22,14 +22,22 @@ type
     constructor Create; overload;
     constructor Create(const AFileName: WideString); overload;
     destructor Destroy; override;
+    // 创建节点：如果指定节点存在则创建，否则直接返回
     function CreateNode(AParent: TDomElement; const AName: WideString;
       AEncodeName: Boolean = True): TDomElement;
+    // 创建路径：路径上如果遇到节点不存在则创建
     function CreatePath(ANode: TDomElement; ASubPath: WideString): TDomElement;
+    // 查找节点：不存在返回nil
     function FindNode(AParent: TDomElement; const AName: WideString): TDomElement;
+    // 打开路径：如果路径上有某一节点不存在则返回nil
     function OpenPath(ANode: TDomElement; ASubPath: WideString): TDomElement;
+    // 设置值：
     procedure SetValue(ANode: TDomElement; AValName: WideString; AValType: DWORD;
       AValData: Pointer; AValDataSize: DWORD);
+    // 保存到文件
     procedure SaveToFile(const AFileName: WideString);
+    // 导入.reg文件
+    function ImportReg(const AFileName: WideString): Boolean;
   public
     property Roots: TVGRegRoots read FRoots;
   end;
@@ -98,6 +106,30 @@ begin
     Result := Result + WideFormat('%.2X', [pPtr^]);
     Inc(pPtr);
   end; 
+end;
+
+function WideStartsText(const ASubText, AText: WideString): Boolean;
+var
+{$IFDEF MSWINDOWS}
+  P: PWideChar;
+{$ENDIF}
+  L, L2: Integer;
+begin
+{$IFDEF MSWINDOWS}
+  P := PWideChar(AText);
+{$ENDIF}
+  L := Length(ASubText);
+  L2 := Length(AText);
+  if L > L2 then
+    Result := False
+  else
+{$IFDEF MSWINDOWS}
+    Result := CompareStringW(LOCALE_USER_DEFAULT, NORM_IGNORECASE,
+      P, L, PWideChar(ASubText), L) = CSTR_EQUAL;
+{$ENDIF}
+{$IFDEF LINUX}
+    Result := WideSameText(ASubText, Copy(AText, 1, L));
+{$ENDIF}
 end;
 
 { TVGRegDB }
@@ -179,6 +211,67 @@ function TVGRegDB.FindNode(AParent: TDomElement;
   const AName: WideString): TDomElement;
 begin
   Result := AParent.GetFirstChildElement(GetNodeName(AName));
+end;
+
+function TVGRegDB.ImportReg(const AFileName: WideString): Boolean;
+var
+  sg: ISafeGuard;
+  ini: TTntStringList;
+  I: Integer;
+  strLine, strNode, strHKEY, strSubPath, strVal, strData: WideString;
+  nData: Cardinal;
+  Node: TDomElement;
+begin
+  Result := False;
+
+  ini := TTntStringList(Guard(TTntStringList.Create, sg));
+  try
+    ini.LoadFromFile(AFileName);
+    if (ini.Count < 1) then
+      Exit;
+    if (not WideSameStr(ini[0], 'Windows Registry Editor Version 5.00')) and
+      (not WideSameStr(ini[0], 'REGEDIT4')) then
+      Exit;
+
+    Node := nil;
+    for I := 1 to ini.Count - 1 do
+    begin
+      strLine := Trim(ini[I]);
+      if strLine = '' then
+        Continue;
+      if strLine[1] = '[' then // 该行为节
+      begin
+        strNode := MidStr(strLine, 2, Length(strLine) - 2);
+        strHKEY := LeftStr(strNode, Pos(PathDelim, strNode) - 1);
+        strSubPath := RightStr(strNode, Length(strNode) - Length(strHKEY));
+        Node := CreatePath(FRoots[StrToHKEY(strHKEY)], strSubPath);
+      end
+      else
+      begin
+        if Node = nil then
+          Continue;
+        strVal := ini.Names[I];
+        strVal := MidStr(strVal, 2, Length(strVal) - 2);  // 去掉双引号
+        strData := ini.ValueFromIndex[I];
+        if strData[1] = '"' then  // 值的类型是字符串
+        begin
+          strData := MidStr(strData, 2, Length(strData) - 2);  // 去掉双引号
+          strData := WideReplaceStr(strData, '\\', '\');
+          SetValue(Node, strVal, REG_SZ, PWideChar(strData), 0);
+        end
+        else if WideStartsText('dword:', strData) then
+        begin
+          strData := RightStr(strData, Length(strData) - Length('dword:'));
+          nData := StrToInt64('$' + strData);
+          SetValue(Node, strVal, REG_DWORD, @nData, SizeOf(nData));
+        end;
+      end;
+    end;
+
+    Result := True;
+  except
+    Exit;
+  end;
 end;
 
 procedure TVGRegDB.LoadFromFile(const AFileName: WideString);

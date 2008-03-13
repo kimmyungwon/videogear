@@ -26,18 +26,16 @@ uses uVGFakeReg;
 
 procedure TfrmMain.FormDblClick(Sender: TObject);
 var
-  fr: TVGFakeRegister;
   hDLL: THandle;
   pRegSvr: function: HRESULT; stdcall;
+  //pConfig: procedure(hwnd: HWND; hInst: THandle; lpCmdLine: PChar; nCmdShow: Integer); stdcall;
 begin
-  fr := TVGFakeRegister.Create;
-  try
-    hDLL := fr.LoadLibrary('ffdshow\ffdshow.ax');
-    pRegSvr := GetProcAddress(hDLL, 'DllRegisterServer');
-    pRegSvr;
-  finally
-    fr.Free;
-  end;
+  gFakeReg.ImportReg('..\..\doc\filters.reg');
+  hDLL := gFakeReg.LoadLibrary('ffdshow\ffdshow.ax');
+  pRegSvr := GetProcAddress(hDLL, 'DllRegisterServer');
+  pRegSvr;
+  //pConfig := GetProcAddress(hDLL, 'configure');
+  //pConfig(Handle, hDLL, nil, SW_SHOWNORMAL);
 end;
 
 end.
