@@ -1,0 +1,5 @@
+unit AutoStrCtrls
+=================
+
+TAutoStrNavigator: 
+- The Add, Delete and Edit buttons have no function. This is due to the fact that a TAutoStrNavigator is currently only connectable to an Iterator of type TUtilsCustomIterator which does not contain any edit functionality. It is expected that a future version of AutoStrCtrls.pas implements this functionality.

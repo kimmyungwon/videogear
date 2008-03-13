@@ -4,14 +4,15 @@ interface
 
 uses
   Windows, Classes, SysUtils, Contnrs, ActiveX, WideStrUtils, JclPeImage,
-  XMLIntf, uVGRegDB;
+  XdomCore, uVGRegDB, TntSysUtils;
 
 type
   TVGFakeRegister = class(TVGRegDB)
   strict private
     FHooks: TJclPeMapImgHooks;
   public
-    constructor Create;
+    constructor Create; overload;
+    constructor Create(const AFileName: WideString); overload;
     destructor Destroy; override;
 
     function LoadLibrary(const ALibFile: WideString): THandle;
@@ -33,15 +34,15 @@ begin
   Result := (hKey and HKEY_FAKEREG) = HKEY_FAKEREG;
 end;
 
-function HKEYToNode(hKey: HKEY): IXMLNode; inline;
+function HKEYToNode(hKey: HKEY): TDomElement; inline;
 begin
   if IsFakeNode(hKey) then
-    Result := IXMLNode(hKey and not HKEY_FAKEREG)
+    Result := TDomElement(hKey and not HKEY_FAKEREG)
   else
     Result := nil;
 end;
 
-function NodeToHKEY(ANode: IXMLNode): HKEY; inline;
+function NodeToHKEY(ANode: TDomElement): HKEY; inline;
 begin
   Result := (Cardinal(ANode) or HKEY_FAKEREG);
 end;
@@ -106,7 +107,7 @@ end;
 function MyRegCreateKeyW(hKey: HKEY; lpSubKey: PWideChar;
   var phkResult: HKEY): Longint; stdcall;
 var
-  Node: IXMLNode;
+  Node: TDomElement;
 begin
   TraceMsg('RegCreateKeyW');
   if (hKey and $80000000) <> 0 then
@@ -239,30 +240,59 @@ begin
   Result := RegFlushKey(hKey);
 end;
 
-function MyRegOpenKeyA(hKey: HKEY; lpSubKey: PAnsiChar; var phkResult: HKEY): Longint; stdcall;
+function MyRegOpenKeyExW(hKey: HKEY; lpSubKey: PWideChar;
+  ulOptions: DWORD; samDesired: REGSAM; var phkResult: HKEY): Longint; stdcall;
+var
+  Node: TDomElement;
 begin
-  TraceMsg('RegOpenKeyA');
-  Result := RegOpenKeyA(hKey, lpSubKey, phkResult);
-end;
-
-function MyRegOpenKeyW(hKey: HKEY; lpSubKey: PWideChar; var phkResult: HKEY): Longint; stdcall;
-begin
-  TraceMsg('RegOpenKeyW');
-  Result := RegOpenKeyW(hKey, lpSubKey, phkResult);
+  TraceMsg('RegOpenKeyExW');
+  if (hKey and $80000000) <> 0 then
+  begin
+    if not IsFakeNode(hKey) then  // 打开的是根节点
+    begin
+      Node := gFakeReg.Roots[hKey];
+      if Node = nil then
+      begin
+        Result := ERROR_INTERNAL_ERROR;
+        Exit;
+      end;
+    end
+    else // 打开的是HOOK过后的子节点
+    begin
+      Node := HKEYToNode(hKey); 
+    end;
+    // 按lpSubKey建立路径
+    Node := gFakeReg.OpenPath(Node, lpSubKey);
+    if Node <> nil then
+    begin
+      phkResult := (Cardinal(Node) or HKEY_FAKEREG);
+      Result := S_OK;
+    end
+    else
+      Result := ERROR_FILE_NOT_FOUND;
+  end
+  else
+    Result := RegOpenKeyExW(hKey, lpSubKey, ulOptions, samDesired, phkResult);
 end;
 
 function MyRegOpenKeyExA(hKey: HKEY; lpSubKey: PAnsiChar;
   ulOptions: DWORD; samDesired: REGSAM; var phkResult: HKEY): Longint; stdcall;
 begin
   TraceMsg('RegOpenKeyExA');
-  Result := RegOpenKeyExA(hKey, lpSubKey, ulOptions, samDesired, phkResult);
+  Result := MyRegOpenKeyExW(hKey, PWideChar(AnsiToUnicode(lpSubKey)),
+    ulOptions, samDesired, phkResult);
 end;
 
-function MyRegOpenKeyExW(hKey: HKEY; lpSubKey: PWideChar;
-  ulOptions: DWORD; samDesired: REGSAM; var phkResult: HKEY): Longint; stdcall;
+function MyRegOpenKeyW(hKey: HKEY; lpSubKey: PWideChar; var phkResult: HKEY): Longint; stdcall;
 begin
-  TraceMsg('RegOpenKeyExW');
-  Result := RegOpenKeyExW(hKey, lpSubKey, ulOptions, samDesired, phkResult);
+  TraceMsg('RegOpenKeyW');
+  Result := MyRegOpenKeyExW(hKey, lpSubKey, 0, KEY_ALL_ACCESS, phkResult);
+end;
+
+function MyRegOpenKeyA(hKey: HKEY; lpSubKey: PAnsiChar; var phkResult: HKEY): Longint; stdcall;
+begin
+  TraceMsg('RegOpenKeyA');
+  Result := MyRegOpenKeyW(hKey, PWideChar(AnsiToUnicode(lpSubKey)), phkResult);
 end;
 
 function MyRegQueryValueA(hKey: HKEY; lpSubKey: PAnsiChar;
@@ -310,7 +340,7 @@ end;
 function MyRegSetValueExW(hKey: HKEY; lpValueName: PWideChar;
   Reserved: DWORD; dwType: DWORD; lpData: Pointer; cbData: DWORD): Longint; stdcall;
 var
-  Node: IXMLNode;
+  Node: TDomElement;
 begin
   TraceMsg('RegSetValueExW');
   if IsFakeNode(hKey) then
@@ -358,6 +388,12 @@ end;
 constructor TVGFakeRegister.Create;
 begin
   inherited Create;
+  FHooks := TJclPeMapImgHooks.Create;
+end;
+
+constructor TVGFakeRegister.Create(const AFileName: WideString);
+begin
+  inherited Create(AFileName);
   FHooks := TJclPeMapImgHooks.Create;
 end;
 
@@ -429,7 +465,10 @@ end;
 
 initialization
   CoInitialize(nil);
-  gFakeReg := TVGFakeRegister.Create;
+  if WideFileExists('RegDB.xml') then
+    gFakeReg := TVGFakeRegister.Create('RegDB.xml')
+  else
+    gFakeReg := TVGFakeRegister.Create;
 
 finalization
   gFakeReg.SaveToFile('RegDB.xml');

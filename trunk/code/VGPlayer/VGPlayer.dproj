@@ -18,6 +18,10 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <Version>7.0</Version>
     <DCC_Define>DEBUG</DCC_Define>
+    <DCC_UnitSearchPath>..\Common\XDOM\Utilities\sources;..\Common\XDOM\Xdom_4_1\sources</DCC_UnitSearchPath>
+    <DCC_ResourcePath>..\Common\XDOM\Utilities\sources;..\Common\XDOM\Xdom_4_1\sources</DCC_ResourcePath>
+    <DCC_ObjPath>..\Common\XDOM\Utilities\sources;..\Common\XDOM\Xdom_4_1\sources</DCC_ObjPath>
+    <DCC_IncludePath>..\Common\XDOM\Utilities\sources;..\Common\XDOM\Xdom_4_1\sources</DCC_IncludePath>
   </PropertyGroup>
   <ProjectExtensions>
     <Borland.Personality>Delphi.Personality</Borland.Personality>

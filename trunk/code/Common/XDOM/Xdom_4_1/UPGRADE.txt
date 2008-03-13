@@ -1,0 +1,62 @@
+==================================================
+= HOW TO UPGRADE FROM OLDER VERSIONS TO XDOM 4.1 =
+==================================================
+
+
+How to update your old Delphi code
+----------------------------------
+
+You can use other XDOM major versions (such as 3.1 
+or 3.2) together with version 4.1, but only one of 
+these packages can be an active design package.  In
+other words: you cannot mix visual components from 
+different XDOM versions in the same project.  
+However, you can use multiple XDOM versions in the 
+same unit at runtime.  To do so, add the XDOM units 
+you want to use to the uses clause of your unit.  
+Now, you can use the name of the XDOM units as a 
+prefix to refer to the correct class unambiguously, 
+e.g. Xdom_3_1.TdomDocument vs. Xdom_4_1.TdomDocument.
+
+In case you want to completely update all your 
+Delphi projects to Xdom 4.1 proceed as follows:
+
+1. First you must uninstall the old components as 
+   described below.
+2. Install XDOM 4.1 as described in the README.txt 
+   file.
+3. Reload your projects and remove each reference
+   to an earlier XDOM version in the uses clauses 
+   of a unit and replace it by a reference to 
+   Xdom_4_1, if that is not done automatically by 
+   the Delphi shell.
+4. Adjust your source code. For a detailed 
+   documentation of all classes see the 'manual.xml'
+   file in the 'manual' folder.
+   
+
+Important differences to XDOM 3.2.2
+-----------------------------------
+
+- In the TXmlSimpleInputSource, TXmlInputSource, and
+  TXmlDoctypeDeclTokenizer classes' constructors the 
+  InitialRegularCharsInLine parameter has been 
+  replaced with the InitialCharsInLine parameter. 
+  The old parameter excluded TABs whereas the new 
+  includes them.
+
+For other changes in particular XDOM classes and
+methods see the HISTORY.txt file.
+
+
+How to completely uninstall old XDOM components
+-----------------------------------------------
+
+1. Choose "Component | Install Packages". 
+   A new dialog is launched.
+2. Uninstall the old XDOM package by using the 
+   Remove button.
+3. Close the package window, and next confirm
+   that the modifications should be saved. 
+4. Delete all old XDOM files (make a backup 
+   before, if required). 

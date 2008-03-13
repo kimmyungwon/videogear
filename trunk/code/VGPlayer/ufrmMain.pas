@@ -29,15 +29,12 @@ var
   fr: TVGFakeRegister;
   hDLL: THandle;
   pRegSvr: function: HRESULT; stdcall;
-  pConfig: procedure(hwnd: HWND; hInst: HINST; lpCmdLine: PAnsiChar; nCmdShow: Integer); stdcall;
 begin
   fr := TVGFakeRegister.Create;
   try
     hDLL := fr.LoadLibrary('ffdshow\ffdshow.ax');
     pRegSvr := GetProcAddress(hDLL, 'DllRegisterServer');
-    pConfig := GetProcAddress(hDLL, 'configure');
     pRegSvr;
-    pConfig(Handle, HInstance, nil, 0);
   finally
     fr.Free;
   end;

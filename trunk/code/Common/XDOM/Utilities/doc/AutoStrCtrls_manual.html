@@ -1,0 +1,435 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+	<title>Auto String Controls Library</title>
+<style type="text/css">											body {
+												font-family : Arial, Helvetica, sans-serif;
+												font-size : small;
+												font-style : normal;
+												font-weight : normal;
+											}
+
+											div.legalnotice {
+												font-family : "Courier New", Courier, monospace;
+											}
+
+											h1 {
+												font-weight : bold;
+												font-size : xx-large;
+												font-style : normal;
+											}
+
+											h2 {
+												font-weight : bold;
+												font-size : xx-large;
+												font-style : italic;
+											}
+
+											h3 {
+												font-weight : bold;
+												font-size : x-large;
+												font-style : normal;
+											}
+
+											h4 {
+												font-weight : normal;
+												font-size : x-large;
+												font-style : italic;
+											}
+
+											h5 {
+												font-weight : bold;
+												font-size : large;
+												font-style : italic;
+											}
+
+											h6 {
+												font-weight : bold;
+												font-size : medium;
+												font-style : normal;
+											}
+
+											h7 {
+												font-weight : bold;
+												font-size : small;
+												font-style : normal;
+											}
+</style>
+</head>
+
+<body>
+<h1>Auto String Controls Library 1.0.1</h1>
+<h2>Delphi 6 to 2007 and Kylix 3 Implementationn</h2>
+<h3>by Dieter K&ouml;hler</h3>
+<hr />
+<div class="legalnotice">
+
+<p>LICENSE</p>
+
+<p>The contents of this file are subject to the Mozilla Public License Version
+1.1 (the "License"); you may not use this file except in compliance with
+the License. You may obtain a copy of the License at
+"http://www.mozilla.org/MPL/"</p>
+
+<p>Software distributed under the License is distributed on an "AS IS" basis,
+WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for
+the specific language governing rights and limitations under the License.</p>
+
+<p>The Original Code is "AutoStrCtrls.pas".</p>
+
+<p>The Initial Developer of the Original Code is Dieter Köhler (Heidelberg,
+Germany, "http://www.philo.de/"). Portions created by the Initial Developer
+are Copyright (C) 2003-2007 Dieter Köhler. All Rights Reserved.</p>
+
+<p>Alternatively, the contents of this file may be used under the terms of the
+GNU General Public License Version 2 or later (the "GPL"), in which case the
+provisions of the GPL are applicable instead of those above. If you wish to
+allow use of your version of this file only under the terms of the GPL, and
+not to allow others to use your version of this file under the terms of the
+MPL, indicate your decision by deleting the provisions above and replace them
+with the notice and other provisions required by the GPL. If you do not delete
+the provisions above, a recipient may use your version of this file under the
+terms of any one of the MPL or the GPL.</p>
+</div>
+
+<hr />
+
+<h4>Introduction</h4>
+
+<p>The Auto String Controls Library contains various auto-updating components to navigate and display the contents of automated list components specified in the AutoListUtils unit. The latest version of this software is available at &lt;<a href="http://www.philo.de/xml/">http://www.philo.de/xml/</a>&gt;.</p>
+
+<hr />
+
+<h4>General Classes</h4>
+
+<h5>Typed Constants</h5>
+
+<h6>TAutoStrNavAction = (naOK, naCancel, naRetry);</h6>
+
+<h6>TAutoStrNavBtnType = (nbtFirst, nbtPrior, nbtNext, nbtLast, nbtAdd, nbtDelete, nbtEdit);</h6>
+
+<h6>TAutoStrNavBtnTypes = set of TAutoStrNavBtnType;</h6>
+
+<h5>Auxiliary Components</h5>
+
+<h6>TAutoStrNavBtn = class(TSpeedButton)</h6>
+
+<h5>Event Prototypes</h5>
+
+<h6>TAutoStrUserTextEvent = procedure(Sender: TObject; Iterator: TUtilsStringIterator; var S: string) of object;</h6>
+
+<h6>TAutoStrUserTextFilterEvent = procedure(Sender: TObject; Iterator: TUtilsStringIterator; var S: string; var Accept: Boolean) of object;</h6>
+
+<h6>TAutoStrNavClickEvent = procedure(Sender: TObject;
+                                    BtnType: TAutoStrNavBtnType) of object;</h6>
+
+<h6>TAutoStrNavModifyEvent = procedure(    Sender: TObject;
+                                     var S: string;
+                                     var Action: TAutoStrNavAction) of object;</h6>
+
+<hr />
+
+
+<h4>TAutoStrGroupBox = class(TCustomGroupBox)</h4>
+
+<p>TAutoStrGroupBox represents an auto-updating group box control that can display the string data corresponding to current position of a TUtilsStringIterator component.</p>
+
+<h5>Published Properties</h5>
+
+<h6>CaptionDefault: string</h6>
+
+<p>The default caption if no string data is available.</p>
+
+<h6>CaptionPrefix: string</h6>
+
+<p>A string that is automatically put out before any available string data.</p>
+
+<h6>CaptionSuffix: string</h6>
+
+<p>A string that is automatically put out after any available string data.</p>
+
+<h6>Iterator: TUtilsStringIterator</h6>
+
+<p>Links the control to the TUtilsStringIterator component through which the automated string list is being accessed.</p>
+
+<h5>Published Events</h5>
+
+<h6>OnGetUserText: TAutoStrUserTextEvent</h6>
+<h7>TAutoStrUserTextEvent = procedure(Sender: TObject; Iterator: TUtilsStringIterator; var S: string) of object;</h7>
+
+<p>This event allows the application to change the text to be printed out.</p>
+
+<p>Parameters:</p>
+<ul>
+<li>Sender<br /> The sender object that triggered the event.</li>
+<li>Iterator<br /> The iterator which provided S.</li>
+<li>S<br /> The string data corresponding to the current position of the Iterator. An event handler may change the value of S to output a user defined string. Note that providing another string effects only the output of this component and nothing else.</li>
+</ul>
+
+<h5>Public Methods</h5>
+
+<h6>procedure ForceUpdate; virtual;</h6>
+
+<p>Forces the control to immediately update its caption.</p>
+<hr />
+
+
+<h4>TAutoStrLabel = class(TCustomLabel)</h4>
+
+<p>TAutoStrLabel represents an auto-updating label control that can display the string data corresponding to current position of a TUtilsStringIterator component.</p>
+
+<h5>Published Properties</h5>
+
+<h6>CaptionDefault: string</h6>
+
+<p>The default caption if no string data is available.</p>
+
+<h6>CaptionPrefix: string</h6>
+
+<p>A string that is automatically put out before any available string data.</p>
+
+<h6>CaptionSuffix: string</h6>
+
+<p>A string that is automatically put out after any available string data.</p>
+
+<h6>Iterator: TUtilsStringIterator</h6>
+
+<p>Links the control to the TUtilsStringIterator component through which the automated string list is being accessed.</p>
+
+<h5>Published Events</h5>
+
+<h6>OnGetUserText: TAutoStrUserTextEvent</h6>
+<h7>TAutoStrUserTextEvent = procedure(Sender: TObject; Iterator: TUtilsStringIterator; var S: string) of object;</h7>
+
+<p>This event allows the application to change the text to be printed out.</p>
+
+<p>Parameters:</p>
+<ul>
+<li>Sender<br /> The sender object that triggered the event.</li>
+<li>Iterator<br /> The iterator which provided S.</li>
+<li>S<br /> The string data corresponding to the current position of the Iterator. An event handler may change the value of S to output a user defined string. Note that providing another string effects only the output of this component and nothing else.</li>
+</ul>
+
+<h5>Public Methods</h5>
+
+<h6>procedure ForceUpdate; virtual;</h6>
+
+<p>Forces the control to immediately update its caption.</p>
+
+
+<h4>TAutoStrButton = class(TButton)</h4>
+
+<p>TAutoStrButton represents an auto-updating button control that can display the string data corresponding to current position of a TUtilsStringIterator component.</p>
+
+<h5>Published Properties</h5>
+
+<h6>CaptionDefault: string</h6>
+
+<p>The default caption if no string data is available.</p>
+
+<h6>CaptionPrefix: string</h6>
+
+<p>A string that is automatically put out before any available string data.</p>
+
+<h6>CaptionSuffix: string</h6>
+
+<p>A string that is automatically put out after any available string data.</p>
+
+<h6>Iterator: TUtilsStringIterator</h6>
+
+<p>Links the control to the TUtilsStringIterator component through which the automated string list is being accessed.</p>
+
+<h5>Published Events</h5>
+
+<h6>OnGetUserText: TAutoStrUserTextEvent</h6>
+<h7>TAutoStrUserTextEvent = procedure(Sender: TObject; Iterator: TUtilsStringIterator; var S: string) of object;</h7>
+
+<p>This event allows the application to change the text to be printed out.</p>
+
+<p>Parameters:</p>
+<ul>
+<li>Sender<br /> The sender object that triggered the event.</li>
+<li>Iterator<br /> The iterator which provided S.</li>
+<li>S<br /> The string data corresponding to the current position of the Iterator. An event handler may change the value of S to output a user defined string. Note that providing another string effects only the output of this component and nothing else.</li>
+</ul>
+
+<h5>Public Methods</h5>
+
+<h6>procedure ForceUpdate; virtual;</h6>
+
+<p>Forces the control to immediately update its caption.</p>
+
+
+<h4>TAutoStrMemo = class(TCustomMemo)</h4>
+
+<p>TAutoStrMemo represents an auto-updating memo control that can display the string data corresponding to current position of a TUtilsStringIterator component.</p>
+
+<h5>Published Properties</h5>
+
+<h6>Iterator: TUtilsStringIterator</h6>
+
+<p>Links the control to the TUtilsStringIterator component through which the automated string list is being accessed.</p>
+
+<h6>TextDefault: string</h6>
+
+<p>The default text if no string data is available.</p>
+
+<h5>Published Events</h5>
+
+<h6>OnGetUserText: TAutoStrUserTextEvent</h6>
+<h7>TAutoStrUserTextEvent = procedure(Sender: TObject; Iterator: TUtilsStringIterator; var S: string) of object;</h7>
+
+<p>This event allows the application to change the text to be printed out.</p>
+
+<p>Parameters:</p>
+<ul>
+<li>Sender<br /> The sender object that triggered the event.</li>
+<li>Iterator<br /> The iterator which provided S.</li>
+<li>S<br /> The string data corresponding to the current position of the Iterator. An event handler may change the value of S to output a user defined string. Note that providing another string effects only the output of this component and nothing else.</li>
+</ul>
+
+<h5>Public Methods</h5>
+
+<h6>procedure ForceUpdate; virtual;</h6>
+
+<p>Forces the control to immediately update its caption.</p>
+
+
+<h4>TAutoStrListBox = class(TCustomListBox)</h4>
+
+<p>TAutoStrListBox represents an auto-updating list box control that can display the string data corresponding to a TUtilsStringIterator component. If the CanNavigate property of the control is 'True' the focused item of the control is synchronized with the iterator by automatically updating the iterator's position when another item is selected.</p>
+
+<h5>Published Properties</h5>
+
+<h6>CanNavigate: Boolean</h6>
+
+<p>If 'True' the focused item of the control is synchronized with the iterator by automatically updating the iterator's position when another item is selected.</p>
+
+<h6>Iterator: TUtilsStringIterator</h6>
+
+<p>Links the control to the TUtilsStringIterator component through which the automated string list is being accessed.</p>
+
+<h5>Published Events</h5>
+
+<h6>OnGetUserText: TAutoStrUserTextEvent</h6>
+<h7>TAutoStrUserTextEvent = procedure(Sender: TObject; Iterator: TUtilsStringIterator; var S: string) of object;</h7>
+
+<p>This event allows the application to change the text to be printed out. This event is called separately for each item to print.</p>
+
+<p>Parameters:</p>
+<ul>
+<li>Sender<br /> The sender object that triggered the event.</li>
+<li>Iterator<br /> The iterator which provided S.</li>
+<li>S<br /> The string data to print out. An event handler may change the value of S to output a user defined string. Note that providing another string effects only the output of this component and nothing else.</li>
+</ul>
+
+<h5>Public Methods</h5>
+
+<h6>procedure ForceUpdate; virtual;</h6>
+
+<p>Forces the control to immediately update its contents.</p>
+
+
+<h4>TAutoStrComboBox = class(TCustomComboBox)</h4>
+
+<p>TAutoStrComboBox represents an auto-updating combo box control that can display the string data corresponding to a TUtilsStringIterator component. If the CanNavigate property of the control is 'True' the focused item of the control is synchronized with the iterator by automatically updating the iterator's position when another item is selected.</p>
+
+<h5>Published Properties</h5>
+
+<h6>CanNavigate: Boolean</h6>
+
+<p>If 'True' the focused item of the control is synchronized with the iterator by automatically updating the iterator's position when another item is selected.</p>
+
+<h6>Iterator: TUtilsStringIterator</h6>
+
+<p>Links the control to the TUtilsStringIterator component through which the automated string list is being accessed.</p>
+
+<h5>Published Events</h5>
+
+<h6>OnGetUserText: TAutoStrUserTextEvent</h6>
+<h7>TAutoStrUserTextEvent = procedure(Sender: TObject; Iterator: TUtilsStringIterator; var S: string) of object;</h7>
+
+<p>This event allows the application to change the text to be printed out. This event is called separately for each item to print.</p>
+
+<p>Parameters:</p>
+<ul>
+<li>Sender<br /> The sender object that triggered the event.</li>
+<li>Iterator<br /> The iterator which provided S.</li>
+<li>S<br /> The string data to print out. An event handler may change the value of S to output a user defined string. Note that providing another string effects only the output of this component and nothing else.</li>
+</ul>
+
+<h5>Public Methods</h5>
+
+<h6>procedure ForceUpdate; virtual;</h6>
+
+<p>Forces the control to immediately update its contents.</p>
+
+
+<h4>TAutoStrTabControl = class(TCustomTabControl)</h4>
+
+<p><b><font color="red">TAutoStrTabControl is not available for Delphi 6.</font></b></p>
+
+<p>TAutoStrTabControl represents an auto-updating tab control that can display the string data corresponding to a TUtilsStringIterator component. If the CanNavigate property of the control is 'True' the focused item of the control is synchronized with the iterator by automatically updating the iterator's position when another item is selected.</p>
+
+<h5>Published Properties</h5>
+
+<h6>CanNavigate: Boolean</h6>
+
+<p>If 'True' the focused item of the control is synchronized with the iterator by automatically updating the iterator's position when another item is selected.</p>
+
+<h6>Iterator: TUtilsStringIterator</h6>
+
+<p>Links the control to the TUtilsStringIterator component through which the automated string list is being accessed.</p>
+
+<h5>Published Events</h5>
+
+<h6>OnGetUserText: TAutoStrUserTextEvent</h6>
+<h7>TAutoStrUserTextEvent = procedure(Sender: TObject; Iterator: TUtilsStringIterator; var S: string) of object;</h7>
+
+<p>This event allows the application to change the text to be printed out. This event is called separately for each item to print.</p>
+
+<p>Parameters:</p>
+<ul>
+<li>Sender<br /> The sender object that triggered the event.</li>
+<li>Iterator<br /> The iterator which provided S.</li>
+<li>S<br /> The string data to print out. An event handler may change the value of S to output a user defined string. Note that providing another string effects only the output of this component and nothing else.</li>
+</ul>
+
+<h5>Public Methods</h5>
+
+<h6>procedure ForceUpdate; virtual;</h6>
+
+<p>Forces the control to immediately update its contents.</p>
+
+
+<h4>TAutoStrTrackBar = class(TTrackBar)</h4>
+
+<p>TAutoStrTrackBar represents an auto-updating track bar control that can display the position of a TUtilsStringIterator component. If the CanNavigate property of the control is 'True' the slider of the track bar can be moved during program execution which automatically updates the position of the associated iterator.</p>
+
+<h5>Published Properties</h5>
+
+<h6>CanNavigate: Boolean</h6>
+
+<p>If 'True' the slider of the track bar can be moved during program execution which automatically updates the position of the associated iterator.</p>
+
+<h6>Iterator: TUtilsCustomIterator</h6>
+
+<p>The associated TUtilsCustomIterator component.</p>
+
+
+<h4>TAutoStrNavigator = class (TCustomPanel)</h4>
+
+<p>TAutoStrNavigator represents an auto-updating navigation control that is used during program execution to navigate the position of an associated iterator. This control imitates the look and feel of Delphi's native DBNavigator control.</p>
+
+<p><b><font color="red">The edit functionality for this control has not yet been completely implemented. The Add, Delete and Edit buttons are placeholders for future extensions. Users are discouraged to use them. Also the OnAdd and OnEdit events do not work properly.</font></b></p>
+
+<h5>Published Properties</h5>
+
+<h6>Iterator: TUtilsCustomIterator</h6>
+
+<p>The associated TUtilsCustomIterator component.</p>
+
+</body>
+</html>
