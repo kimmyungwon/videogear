@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="windows-1250"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="9.00"
 	Name="dsutil"
 	ProjectGUID="{FC70988B-1AE5-4381-866D-4F405E28AC42}"
 	RootNamespace="dsutil"
 	Keyword="Win32Proj"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -39,9 +40,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="..\..\..\BaseClasses"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;"
-				
-				
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -98,10 +98,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				
+				AdditionalIncludeDirectories="..\..\..\BaseClasses"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;"
-				
-				
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -157,9 +155,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="..\..\..\BaseClasses"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;"
-				
-				
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -215,10 +212,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				
+				AdditionalIncludeDirectories="..\..\..\BaseClasses"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;"
-				
-				
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
