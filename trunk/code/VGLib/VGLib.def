@@ -1,7 +1,0 @@
-; VGLib.def : 声明 DLL 的模块参数。
-
-LIBRARY      "VGLib"
-
-EXPORTS
-	CreatePlayer
-    ; 此处可以是显式导出
