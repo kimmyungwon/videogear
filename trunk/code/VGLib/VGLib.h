@@ -18,6 +18,11 @@ class CVGLibApp : public CWinApp
 {
 public:
 	CVGLibApp();
+	~CVGLibApp();
+	CString GetAppRoot(void)	{ return m_strAppRoot; }
+
+private:
+	CString		m_strAppRoot;
 
 // ÖØÐ´
 public:

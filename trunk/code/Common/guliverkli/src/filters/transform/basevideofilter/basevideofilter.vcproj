@@ -239,6 +239,10 @@
 		</Configuration>
 	</Configurations>
 	<References>
+		<ProjectReference
+			ReferencedProjectIdentifier="{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}"
+			RelativePathToProject="..\Common\BaseClasses\baseclasses.vcproj"
+		/>
 	</References>
 	<Files>
 		<Filter

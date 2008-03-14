@@ -1446,11 +1446,20 @@ int CRMFile::GetMasterStream()
 // CRealVideoDecoder
 //
 
-CRealVideoDecoder::CRealVideoDecoder(LPUNKNOWN lpunk, HRESULT* phr)
+CRealVideoDecoder::CRealVideoDecoder(LPUNKNOWN lpunk, HRESULT* phr, LPCTSTR lpszDrvPath)
 	: CBaseVideoFilter(NAME("CRealVideoDecoder"), lpunk, phr, __uuidof(this))
 	, m_hDrvDll(NULL)
 	, m_dwCookie(0)
+	, m_strDrvPath(lpszDrvPath)
 {
+	if (!PathFileExists(m_strDrvPath))
+	{
+		TCHAR szPath[MAX_PATH];
+		GetModuleFileName(NULL, szPath, MAX_PATH);
+		PathRemoveFileSpec(szPath);
+		PathAddBackslash(szPath);
+		m_strDrvPath = szPath;
+	}
 }
 
 CRealVideoDecoder::~CRealVideoDecoder()
@@ -1705,7 +1714,7 @@ HRESULT CRealVideoDecoder::CheckInputType(const CMediaType* mtIn)
 			mtIn->subtype == FOURCCMap('02VR') ? _T("drv2.dll") :
 			_T("drvc.dll");
 
-		CRegKey key;
+		/*CRegKey key;
 		TCHAR buff[MAX_PATH];
 		ULONG len = sizeof(buff);
 		if(ERROR_SUCCESS == key.Open(HKEY_CLASSES_ROOT, _T("Software\\RealNetworks\\Preferences\\DT_Codecs"), KEY_READ)
@@ -1731,6 +1740,11 @@ HRESULT CRealVideoDecoder::CheckInputType(const CMediaType* mtIn)
 		paths.AddTail(newdll); // default dll paths
 		if(!newpath.IsEmpty()) paths.AddTail(newpath + olddll);
 		if(!oldpath.IsEmpty()) paths.AddTail(oldpath + olddll);
+		paths.AddTail(olddll); // default dll paths*/
+
+		paths.AddTail(m_strDrvPath + newdll);
+		paths.AddTail(newdll); // default dll paths
+		paths.AddTail(m_strDrvPath + olddll);
 		paths.AddTail(olddll); // default dll paths
 
 		POSITION pos = paths.GetHeadPosition();
@@ -1831,11 +1845,21 @@ HRESULT CRealVideoDecoder::AlterQuality(Quality q)
 // CRealAudioDecoder
 //
 
-CRealAudioDecoder::CRealAudioDecoder(LPUNKNOWN lpunk, HRESULT* phr)
+CRealAudioDecoder::CRealAudioDecoder(LPUNKNOWN lpunk, HRESULT* phr, LPCTSTR lpszDrvPath)
 	: CTransformFilter(NAME("CRealAudioDecoder"), lpunk, __uuidof(this))
 	, m_hDrvDll(NULL)
 	, m_dwCookie(0)
+	, m_strDrvPath(lpszDrvPath)
 {
+	if (!PathFileExists(m_strDrvPath))
+	{
+		TCHAR szPath[MAX_PATH];
+		GetModuleFileName(NULL, szPath, MAX_PATH);
+		PathRemoveFileSpec(szPath);
+		PathAddBackslash(szPath);
+		m_strDrvPath = szPath;
+	}
+	
 	if(phr) *phr = S_OK;
 }
 
@@ -2144,7 +2168,7 @@ HRESULT CRealAudioDecoder::CheckInputType(const CMediaType* mtIn)
 		olddll.Format(_T("%s3260.dll"), fourcc);
 		newdll.Format(_T("%s.dll"), fourcc);
 
-		CRegKey key;
+		/*CRegKey key;
 		TCHAR buff[MAX_PATH];
 		ULONG len = sizeof(buff);
 		if(ERROR_SUCCESS == key.Open(HKEY_CLASSES_ROOT, _T("Software\\RealNetworks\\Preferences\\DT_Codecs"), KEY_READ)
@@ -2170,6 +2194,11 @@ HRESULT CRealAudioDecoder::CheckInputType(const CMediaType* mtIn)
 		paths.AddTail(newdll); // default dll paths
 		if(!newpath.IsEmpty()) paths.AddTail(newpath + olddll);
 		if(!oldpath.IsEmpty()) paths.AddTail(oldpath + olddll);
+		paths.AddTail(olddll); // default dll paths*/
+
+		paths.AddTail(m_strDrvPath + newdll);
+		paths.AddTail(newdll); // default dll paths
+		paths.AddTail(m_strDrvPath + olddll);
 		paths.AddTail(olddll); // default dll paths
 
 		POSITION pos = paths.GetHeadPosition();
@@ -2197,12 +2226,15 @@ HRESULT CRealAudioDecoder::CheckInputType(const CMediaType* mtIn)
 
 		if(m_hDrvDll)
 		{
-			char buff[MAX_PATH];
+			/*char buff[MAX_PATH];
 			GetModuleFileNameA(m_hDrvDll, buff, MAX_PATH);
 			CPathA p(buff);
 			p.RemoveFileSpec();
 			p.AddBackslash();
 			m_dllpath = p.m_strPath;
+			if(RASetDLLAccessPath)
+				RASetDLLAccessPath("DT_Codecs=" + m_dllpath);*/
+			m_dllpath = CT2A(m_strDrvPath);
 			if(RASetDLLAccessPath)
 				RASetDLLAccessPath("DT_Codecs=" + m_dllpath);
 		}

@@ -39,3 +39,4 @@
 
 #include <ObjBase.h>
 #include <streams.h>
+#include <comdef.h>

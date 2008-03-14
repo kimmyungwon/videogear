@@ -183,6 +183,10 @@
 			ReferencedProjectIdentifier="{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}"
 			RelativePathToProject="..\Common\BaseClasses\baseclasses.vcproj"
 		/>
+		<ProjectReference
+			ReferencedProjectIdentifier="{53CF9195-19DB-457D-8F55-8DB1706DFA84}"
+			RelativePathToProject="..\Common\guliverkli\src\filters\parser\realmediasplitter\RealMediaSplitter.vcproj"
+		/>
 	</References>
 	<Files>
 		<Filter

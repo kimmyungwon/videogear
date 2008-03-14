@@ -59,5 +59,16 @@ BOOL CVGLibApp::InitInstance()
 {
 	CWinApp::InitInstance();
 
+	TCHAR szPath[MAX_PATH];
+	
+	CoInitialize(NULL);
+	GetModuleFileName(m_hInstance, szPath, MAX_PATH);
+	m_strAppRoot = szPath;
+
 	return TRUE;
+}
+
+CVGLibApp::~CVGLibApp()
+{
+	CoUninitialize();
 }
