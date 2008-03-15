@@ -4,4 +4,8 @@ LIBRARY      "VGLib"
 
 EXPORTS
 	VGEnumMatchingFilters
+	DllCanUnloadNow			PRIVATE
+	DllGetClassObject		PRIVATE
+	DllRegisterServer		PRIVATE
+	DllUnregisterServer		PRIVATE
     ; 此处可以是显式导出

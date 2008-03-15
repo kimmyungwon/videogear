@@ -83,6 +83,7 @@ HRESULT STDMETHODCALLTYPE CVGFilterList::Get( DWORD nIndex, IBaseFilter** ppBF )
 	}
 
 	*ppBF = m_filters[nIndex];
+	(*ppBF)->AddRef();
 	return S_OK;
 }
 

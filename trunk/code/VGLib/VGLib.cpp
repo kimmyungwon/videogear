@@ -57,7 +57,8 @@ CVGLibApp theApp;
 
 BOOL CVGLibApp::InitInstance()
 {
-	CWinApp::InitInstance();
+	//CWinApp::InitInstance();
+	CFilterApp::InitInstance();
 
 	TCHAR szPath[MAX_PATH];
 	GetModuleFileName(m_hInstance, szPath, MAX_PATH);
@@ -70,8 +71,8 @@ BOOL CVGLibApp::InitInstance()
 
 //////////////////////////////////////////////////////////////////////////
 
-namespace VGF_RM
-{
+namespace VGF_RM { };
+
 	const AMOVIESETUP_MEDIATYPE sudPinTypesIn[] =
 	{
 		{&MEDIATYPE_Stream, &MEDIASUBTYPE_NULL},
@@ -143,7 +144,22 @@ namespace VGF_RM
 	};
 
 	int g_cTemplates = countof(g_Templates);
-};
+
+	STDAPI DllRegisterServer()
+	{
+		RegisterSourceFilter(CLSID_AsyncReader, MEDIASUBTYPE_RealMedia, _T("0,4,,2E524D46"), _T(".rm"), _T(".rmvb"), _T(".ram"), NULL);
+
+		return AMovieDllRegisterServer2(TRUE);
+	}
+
+	STDAPI DllUnregisterServer()
+	{
+		UnRegisterSourceFilter(MEDIASUBTYPE_RealMedia);
+
+		return AMovieDllRegisterServer2(FALSE);
+	}
+
+/*};*/
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -247,7 +263,7 @@ HRESULT EnumMatchingFilters( CFactoryTemplate* pTemplates,
 			continue;
 		if (bOutputNeeded && nOutPins == 0)
 			continue;	
-		if (!bMatchIn || !bMatchOut)
+		if ((bInputNeeded && !bMatchIn) || (bOutputNeeded && !bMatchOut))
 			continue;
 		pFilter = (CBaseFilter*)pTemplates[idxFilter].CreateInstance(NULL, &hr);
 		if (SUCCEEDED(hr))
@@ -278,7 +294,7 @@ HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGFilterList **ppList,
 	HRESULT hr;
 	IVGFilterListPtr pFilters = new CVGFilterList;
 
-	hr = EnumMatchingFilters(VGF_RM::g_Templates, VGF_RM::g_cTemplates, pFilters, dwFlags, bExactMatch, dwMerit, bInputNeeded, cInputTypes, pInputTypes, pMedIn, 
+	hr = EnumMatchingFilters(/*VGF_RM::*/g_Templates, /*VGF_RM::*/g_cTemplates, pFilters, dwFlags, bExactMatch, dwMerit, bInputNeeded, cInputTypes, pInputTypes, pMedIn, 
 							pPinCategoryIn, bRender, bOutputNeeded, cOutputTypes, pOutputTypes, pMedOut, pPinCategoryOut);
 	if (FAILED(hr))
 		return hr;

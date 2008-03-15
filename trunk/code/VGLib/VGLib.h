@@ -9,12 +9,13 @@
 
 #include "resource.h"		// 主符号
 #include "VGFilterList.h"
+#include "../common/guliverkli/src/filters/FilterApp.h"
 
 // CVGLibApp
 // 有关此类实现的信息，请参阅 VGLib.cpp
 //
 
-class CVGLibApp : public CWinApp
+class CVGLibApp : public CFilterApp
 {
 public:
 	CVGLibApp();
@@ -33,6 +34,7 @@ public:
 #ifdef DEBUG
 #pragma comment(lib, "strmbasd.lib")
 #pragma comment(lib, "dsutilDU.lib")
+#pragma comment(lib, "filtersDU.lib")
 #pragma comment(lib, "RealMediaSplitterDU.lib")
 #else
 #pragma comment(lib, "strmbase.lib")
