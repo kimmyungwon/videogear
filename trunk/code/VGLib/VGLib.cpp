@@ -141,7 +141,89 @@ namespace VGF_RM
 
 //////////////////////////////////////////////////////////////////////////
 
-HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGFilterList **ppEnum,
+bool MatchPin(const AMOVIESETUP_PIN *pPinInfo, DWORD cTypes, const GUID *pTypes)
+{
+	return false;
+}
+
+HRESULT EnumMatchingFilters( CFactoryTemplate* pTemplates,
+							int nTemplates,
+							IVGFilterList *pList,
+							DWORD dwFlags,
+							BOOL bExactMatch,
+							DWORD dwMerit,
+							BOOL bInputNeeded,
+							DWORD cInputTypes,
+							const GUID *pInputTypes,
+							const REGPINMEDIUM *pMedIn,
+							const CLSID *pPinCategoryIn,
+							BOOL bRender,
+							BOOL bOutputNeeded,
+							DWORD cOutputTypes,
+							const GUID *pOutputTypes,
+							const REGPINMEDIUM *pMedOut,
+							const CLSID *pPinCategoryOut )
+{
+	CheckPointer(pList, E_POINTER);
+
+	HRESULT hr = S_OK;
+	bool bMatchIn = false, bMatchOut = false;
+	IBaseFilter *pFilter = NULL;
+	const AMOVIESETUP_FILTER *pFilterInfo;
+	const AMOVIESETUP_PIN *pPinInfo;
+	UINT nInPins = 0, nOutPins = 0;
+	
+	for (int idxFilter = 0; idxFilter < nTemplates - 1; idxFilter++)
+	{
+		pFilterInfo = pTemplates[idxFilter].m_pAMovieSetup_Filter;
+		bMatchIn = false; bMatchOut = false;
+
+		// 如果该滤镜没有Pin则认为不匹配
+		if (pFilterInfo->nPins == 0)
+			continue;
+
+		nInPins = 0;
+		nOutPins = 0;
+		for (UINT idxPin = 0; idxPin < pFilterInfo->nPins; idxPin++)
+		{
+			pPinInfo = &pFilterInfo->lpPin[idxPin];
+
+			// 如果该Pin没有注册任何MediaType则认为不匹配
+			if (pPinInfo->nMediaTypes == 0)
+				continue;
+			
+			if (!pPinInfo->bOutput) 
+			{
+				nInPins++;
+				bMatchIn = MatchPin(pPinInfo, cInputTypes, pInputTypes);
+				if (!bMatchIn)
+					break;
+			}
+			else
+			{
+				nOutPins++;
+				bMatchOut = MatchPin(pPinInfo, cOutputTypes, pOutputTypes);
+				if (!bMatchOut)
+					break;
+			}
+		}	// end for idxPin
+
+		// 如果匹配则添加到结果列表
+		if (bInputNeeded && nInPins == 0)
+			continue;
+		if (bOutputNeeded && nOutPins == 0)
+			continue;	
+		if (!bMatchIn || !bMatchOut)
+			continue;
+		pFilter = (CBaseFilter*)pTemplates[idxFilter].CreateInstance(NULL, &hr);
+		if (SUCCEEDED(hr))
+			pList->Add(pFilter);
+	}
+
+	return pList->GetCount() > 0 ? S_OK : E_FAIL;
+}
+
+HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGFilterList **ppList,
 												DWORD dwFlags,
 												BOOL bExactMatch,
 												DWORD dwMerit,
@@ -157,7 +239,16 @@ HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGFilterList **ppEnum,
 												const REGPINMEDIUM *pMedOut,
 												const CLSID *pPinCategoryOut )
 {
-	
-	
-	return E_NOTIMPL;
+	CheckPointer(ppList, E_POINTER);
+
+	HRESULT hr;
+	IVGFilterListPtr pFilters = new CVGFilterList;
+
+	hr = EnumMatchingFilters(VGF_RM::g_Templates, VGF_RM::g_cTemplates, pFilters, dwFlags, bExactMatch, dwMerit, bInputNeeded, cInputTypes, pInputTypes, pMedIn, 
+							pPinCategoryIn, bRender, bOutputNeeded, cOutputTypes, pOutputTypes, pMedOut, pPinCategoryOut);
+	if (FAILED(hr))
+		return hr;
+
+	*ppList = pFilters;
+	return S_OK;
 }

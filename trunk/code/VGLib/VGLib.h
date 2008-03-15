@@ -32,12 +32,17 @@ public:
 #pragma comment(lib, "strmiids.lib")
 #ifdef DEBUG
 #pragma comment(lib, "strmbasd.lib")
+#pragma comment(lib, "dsutilDU.lib")
 #pragma comment(lib, "RealMediaSplitterDU.lib")
+#else
+#pragma comment(lib, "strmbase.lib")
+#pragma comment(lib, "dsutilRU.lib")
+#pragma comment(lib, "RealMediaSplitterRU.lib")
 #endif
 
 //////////////////////////////////////////////////////////////////////////
 
-HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGFilterList **ppEnum,
+HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGFilterList **ppList,
 											  DWORD dwFlags,
 											  BOOL bExactMatch,
 											  DWORD dwMerit,

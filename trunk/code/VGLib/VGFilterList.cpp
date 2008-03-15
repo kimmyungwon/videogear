@@ -20,7 +20,11 @@ HRESULT STDMETHODCALLTYPE CVGFilterList::QueryInterface( REFIID riid, __RPC__der
 
 	/* We know only about IUnknown */
 
-	if (riid == IID_IUnknown) {
+	if (riid == IID_IVGFilterList)
+	{
+		GetInterface((IVGFilterList*)this, ppvObject);
+		return S_OK;
+	} else if (riid == IID_IUnknown) {
 		GetInterface((LPUNKNOWN)this, ppvObject);
 		return S_OK;
 	} else {
