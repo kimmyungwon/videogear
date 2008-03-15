@@ -9,13 +9,12 @@
 
 #include "resource.h"		// 主符号
 #include "VGFilterList.h"
-#include "../common/guliverkli/src/filters/FilterApp.h"
 
 // CVGLibApp
 // 有关此类实现的信息，请参阅 VGLib.cpp
 //
 
-class CVGLibApp : public CFilterApp
+class CVGLibApp : public CWinApp
 {
 public:
 	CVGLibApp();
@@ -29,6 +28,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
+#pragma comment(lib, "quartz.lib")
 #pragma comment(lib, "winmm.lib")
 #pragma comment(lib, "strmiids.lib")
 #ifdef DEBUG
@@ -39,23 +39,6 @@ public:
 #else
 #pragma comment(lib, "strmbase.lib")
 #pragma comment(lib, "dsutilRU.lib")
+#pragma comment(lib, "filtersRU.lib")
 #pragma comment(lib, "RealMediaSplitterRU.lib")
 #endif
-
-//////////////////////////////////////////////////////////////////////////
-
-HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGFilterList **ppList,
-											  DWORD dwFlags,
-											  BOOL bExactMatch,
-											  DWORD dwMerit,
-											  BOOL bInputNeeded,
-											  DWORD cInputTypes,
-											  const GUID *pInputTypes,
-											  const REGPINMEDIUM *pMedIn,
-											  const CLSID *pPinCategoryIn,
-											  BOOL bRender,
-											  BOOL bOutputNeeded,
-											  DWORD cOutputTypes,
-											  const GUID *pOutputTypes,
-											  const REGPINMEDIUM *pMedOut,
-											  const CLSID *pPinCategoryOut );

@@ -29,50 +29,11 @@ type
     function Clone(out enm: IEnumMoniker): HResult; stdcall;
   end;
 
-  TFakeFilterMapper2 = class(TInterfacedObject, IFilterMapper2)
-  private
-    FRealFM2: IFilterMapper2;
-  public
-    constructor Create;
-    { IFilterMapper2 }
-    function CreateCategory(const clsidCategory: TGUID; dwCategoryMerit: DWORD;
-        Description: PWideChar): HResult; stdcall;
-    function UnregisterFilter(const pclsidCategory: TGUID;
-        szInstance: PWideChar; const Filter: TGUID): HResult; stdcall;
-    function RegisterFilter(const clsidFilter: TGUID; Name: PWideChar;
-        ppMoniker: IMoniker; pclsidCategory: PGUID;
-        szInstance: PWideChar; const prf2: TRegFilter2): HResult; stdcall;
-    function EnumMatchingFilters(out ppEnum: IEnumMoniker; dwFlags: DWORD; bExactMatch: BOOL;
-        dwMerit: DWORD; bInputNeeded: BOOL; cInputTypes: DWORD; pInputTypes: PGUID;
-        pMedIn: PREGPINMEDIUM; pPinCategoryIn: PGUID; bRender, bOutputNeeded: BOOL;
-        cOutputTypes: DWORD; pOutputTypes: PGUID; pMedOut: PRegPinMedium;
-        pPinCategoryOut: PGUID): HResult; stdcall;
-  end;
-
-  function VGEnumMatchingFilters(out pList: IVGFilterList; dwFlags: DWORD; bExactMatch: BOOL;
-        dwMerit: DWORD; bInputNeeded: BOOL; cInputTypes: DWORD; pInputTypes: PGUID;
-        pMedIn: PREGPINMEDIUM; pPinCategoryIn: PGUID; bRender, bOutputNeeded: BOOL;
-        cOutputTypes: DWORD; pOutputTypes: PGUID; pMedOut: PRegPinMedium;
-        pPinCategoryOut: PGUID): HResult; stdcall; external 'VGLib.dll';
-
-var
-  gHooks: TJclPeMapImgHooks;
-  gRealCoCreateInstance: function (const clsid: TCLSID; unkOuter: IUnknown;
-    dwClsContext: Longint; const iid: TIID; out pv): HResult; stdcall;
+  function VGEnumMatchingFilters(out pList: IVGFilterList; dwMerit: DWORD; bInputNeeded: BOOL;
+    clsInMaj, clsInSub: TCLSID; bRender, bOutputNeeded: BOOL;
+    clsOutMaj, clsOutSub: TCLSID): HResult; stdcall; external 'VGLib.dll';
 
 implementation
-
-function MyCoCreateInstance(const clsid: TCLSID; unkOuter: IUnknown;
-  dwClsContext: Longint; const iid: TIID; out pv): HResult; stdcall;
-begin
-  if IsEqualIID(IID_IFilterMapper2, iid) then
-  begin
-    IFilterMapper2(pv) := TFakeFilterMapper2.Create;
-    Result := S_OK;
-  end
-  else
-    Result := gRealCoCreateInstance(clsid, unkOuter, dwClsContext, iid, pv);
-end;
 
 { TVGFilterListAdapter }
 
@@ -137,53 +98,5 @@ begin
     Result := S_OK; 
   end;
 end;
-
-{ CFakeFilterMapper2 }
-
-constructor TFakeFilterMapper2.Create;
-begin
-  gRealCoCreateInstance(CLSID_FilterMapper2, nil, CLSCTX_INPROC_SERVER, IID_IFilterMapper2, FRealFM2);
-end;
-
-function TFakeFilterMapper2.CreateCategory(const clsidCategory: TGUID; dwCategoryMerit: DWORD; Description: PWideChar): HResult;
-begin
-  Result := FRealFM2.CreateCategory(clsidCategory, dwCategoryMerit, Description);
-end;
-
-function TFakeFilterMapper2.EnumMatchingFilters(out ppEnum: IEnumMoniker; dwFlags: DWORD; bExactMatch: BOOL; dwMerit: DWORD;
-  bInputNeeded: BOOL; cInputTypes: DWORD; pInputTypes: PGUID; pMedIn: PREGPINMEDIUM; pPinCategoryIn: PGUID; bRender, bOutputNeeded: BOOL;
-  cOutputTypes: DWORD; pOutputTypes: PGUID; pMedOut: PRegPinMedium; pPinCategoryOut: PGUID): HResult;
-var
-  pList: IVGFilterList;
-begin
-  Result := VGEnumMatchingFilters(pList, dwFlags, bExactMatch, dwMerit, bInputNeeded, cInputTypes, pInputTypes,
-    pMedIn, pPinCategoryIn, bRender, bOutputNeeded, cOutputTypes, pOutputTypes, pMedOut, pPinCategoryOut);
-  if Failed(Result) then
-    Result := FRealFM2.EnumMatchingFilters(ppEnum, dwFlags, bExactMatch, dwMerit, bInputNeeded, cInputTypes, pInputTypes,
-      pMedIn, pPinCategoryIn, bRender, bOutputNeeded, cOutputTypes, pOutputTypes, pMedOut, pPinCategoryOut)
-  else
-  begin
-    ppEnum := TVGFilterListAdapter.Create(pList);
-  end;
-end;
-
-function TFakeFilterMapper2.RegisterFilter(const clsidFilter: TGUID; Name: PWideChar; ppMoniker: IMoniker; pclsidCategory: PGUID;
-  szInstance: PWideChar; const prf2: TRegFilter2): HResult;
-begin
-  Result := FRealFM2.RegisterFilter(clsidFilter, Name, ppMoniker, pclsidCategory, szInstance, prf2);
-end;
-
-function TFakeFilterMapper2.UnregisterFilter(const pclsidCategory: TGUID; szInstance: PWideChar; const Filter: TGUID): HResult;
-begin
-  Result := FRealFM2.UnregisterFilter(pclsidCategory, szInstance, Filter);
-end;
-
-initialization
-  //CoInitialize(nil);
-  //gHooks := TJclPeMapImgHooks.Create;
-  //gHooks.HookImport(Pointer(HInstance), 'ole32.dll', 'CoCreateInstance', @MyCoCreateInstance, @gRealCoCreateInstance);
-
-finalization
-  //FreeAndNil(gHooks);
 
 end.

@@ -26,18 +26,16 @@ uses uVGLib;
 
 procedure TfrmMain.FormDblClick(Sender: TObject);
 var
-  hr: HRESULT;
   pList: IVGFilterList;
   InTypes: array[0..1] of TGUID;
   pSource, pRMVDec: IBaseFilter;
-  szMsg: array[0..1024] of Char; 
 begin
   CoCreateInstance(CLSID_FilterGraph, nil, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, pGB);
   CoCreateInstance(CLSID_AsyncReader, nil, CLSCTX_INPROC_SERVER, IID_IBaseFilter, pSource);
   InTypes[0] := MEDIATYPE_Stream;
   InTypes[1] := MEDIASUBTYPE_NULL;
-  if Succeeded(VGEnumMatchingFilters(pList, 0, False, MERIT_NORMAL, True, Length(InTypes), @InTypes[0], nil, nil,
-    False, False, 0, nil, nil, nil)) then
+  if Succeeded(VGEnumMatchingFilters(pList, MERIT_NORMAL, True, MEDIATYPE_Stream, MEDIASUBTYPE_NULL, False, False,
+    MEDIATYPE_NULL, MEDIASUBTYPE_NULL)) then
   begin
     pList.Get(0, pRMVDec);
     (pSource as IFileSourceFilter).Load('d:\test.rmvb', nil);

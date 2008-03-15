@@ -57,8 +57,7 @@ CVGLibApp theApp;
 
 BOOL CVGLibApp::InitInstance()
 {
-	//CWinApp::InitInstance();
-	CFilterApp::InitInstance();
+	CWinApp::InitInstance();
 
 	TCHAR szPath[MAX_PATH];
 	GetModuleFileName(m_hInstance, szPath, MAX_PATH);
@@ -71,7 +70,7 @@ BOOL CVGLibApp::InitInstance()
 
 //////////////////////////////////////////////////////////////////////////
 
-namespace VGF_RM { };
+namespace VGF_RM {
 
 	const AMOVIESETUP_MEDIATYPE sudPinTypesIn[] =
 	{
@@ -144,53 +143,28 @@ namespace VGF_RM { };
 	};
 
 	int g_cTemplates = countof(g_Templates);
-
-	STDAPI DllRegisterServer()
-	{
-		RegisterSourceFilter(CLSID_AsyncReader, MEDIASUBTYPE_RealMedia, _T("0,4,,2E524D46"), _T(".rm"), _T(".rmvb"), _T(".ram"), NULL);
-
-		return AMovieDllRegisterServer2(TRUE);
-	}
-
-	STDAPI DllUnregisterServer()
-	{
-		UnRegisterSourceFilter(MEDIASUBTYPE_RealMedia);
-
-		return AMovieDllRegisterServer2(FALSE);
-	}
-
-/*};*/
+};
 
 //////////////////////////////////////////////////////////////////////////
 
-inline bool MatchGUID(const GUID &guid1, const GUID &guid2, BOOL bExactMatch)
+inline bool MatchGUID(const GUID &guid1, const GUID &guid2)
 {
-	if (IsEqualGUID(guid1, guid2))
+	if (IsEqualCLSID(guid1, guid2))
 		return true;
 	else
-		return (!bExactMatch && (IsEqualGUID(GUID_NULL, guid1) || IsEqualGUID(GUID_NULL, guid2)));
+		return (IsEqualCLSID(GUID_NULL, guid1) || IsEqualCLSID(GUID_NULL, guid2));
 }
 
-bool MatchPin(const AMOVIESETUP_PIN *pPinInfo, DWORD cTypes, const GUID *pTypes, BOOL bExactMatch = FALSE)
+bool MatchPin(const AMOVIESETUP_PIN *pPinInfo, CLSID clsMaj, CLSID clsSub)
 {
-	if (cTypes == 0 || pTypes == NULL)
-		return true;
-
-	GUID mtMajor, mtMinor;
 	bool bMajorMatched, bMinorMatched;
 
-	for (DWORD i = 0; i < cTypes; i += 2)
+	for (UINT j = 0; j < pPinInfo->nMediaTypes; j++)
 	{
-		mtMajor = pTypes[i];
-		mtMinor = pTypes[i + 1];
-
-		for (UINT j = 0; j < pPinInfo->nMediaTypes; j++)
-		{
-			bMajorMatched = MatchGUID(mtMajor, *pPinInfo->lpMediaType[j].clsMajorType, bExactMatch);
-			bMinorMatched = MatchGUID(mtMinor, *pPinInfo->lpMediaType[j].clsMinorType, bExactMatch);
-			if (bMajorMatched && bMinorMatched)
-				return true;
-		}
+		bMajorMatched = MatchGUID(clsMaj, *pPinInfo->lpMediaType[j].clsMajorType);
+		bMinorMatched = MatchGUID(clsSub, *pPinInfo->lpMediaType[j].clsMinorType);
+		if (bMajorMatched && bMinorMatched)
+			return true;
 	}
 
 	return false;
@@ -199,20 +173,14 @@ bool MatchPin(const AMOVIESETUP_PIN *pPinInfo, DWORD cTypes, const GUID *pTypes,
 HRESULT EnumMatchingFilters( CFactoryTemplate* pTemplates,
 							int nTemplates,
 							IVGFilterList *pList,
-							DWORD dwFlags,
-							BOOL bExactMatch,
 							DWORD dwMerit,
 							BOOL bInputNeeded,
-							DWORD cInputTypes,
-							const GUID *pInputTypes,
-							const REGPINMEDIUM *pMedIn,
-							const CLSID *pPinCategoryIn,
+							CLSID clsInMaj,
+							CLSID clsInSub,
 							BOOL bRender,
 							BOOL bOutputNeeded,
-							DWORD cOutputTypes,
-							const GUID *pOutputTypes,
-							const REGPINMEDIUM *pMedOut,
-							const CLSID *pPinCategoryOut )
+							CLSID clsOutMaj,
+							CLSID clsOutSub )
 {
 	CheckPointer(pList, E_POINTER);
 
@@ -226,7 +194,7 @@ HRESULT EnumMatchingFilters( CFactoryTemplate* pTemplates,
 	for (int idxFilter = 0; idxFilter < nTemplates - 1; idxFilter++)
 	{
 		pFilterInfo = pTemplates[idxFilter].m_pAMovieSetup_Filter;
-		bMatchIn = false; bMatchOut = false;
+		bMatchIn = true; bMatchOut = true;
 
 		// 如果该滤镜没有Pin则认为不匹配
 		if (pFilterInfo->nPins == 0)
@@ -245,25 +213,27 @@ HRESULT EnumMatchingFilters( CFactoryTemplate* pTemplates,
 			if (!pPinInfo->bOutput) 
 			{
 				nInPins++;
-				bMatchIn = MatchPin(pPinInfo, cInputTypes, pInputTypes, bExactMatch);
+				bMatchIn = MatchPin(pPinInfo, clsInMaj, clsInSub);
 				if (!bMatchIn)
 					break;
 			}
 			else
 			{
 				nOutPins++;
-				bMatchOut = MatchPin(pPinInfo, cOutputTypes, pOutputTypes, bExactMatch);
+				bMatchOut = MatchPin(pPinInfo, clsOutMaj, clsOutSub);
+				if (bRender && !pPinInfo->bRendered)
+					bMatchOut = false;
 				if (!bMatchOut)
 					break;
 			}
 		}	// end for idxPin
 
-		// 如果匹配则添加到结果列表
 		if (bInputNeeded && nInPins == 0)
-			continue;
+			bMatchIn = false;
 		if (bOutputNeeded && nOutPins == 0)
-			continue;	
-		if ((bInputNeeded && !bMatchIn) || (bOutputNeeded && !bMatchOut))
+			bMatchOut = false;
+		// 如果匹配则添加到结果列表
+		if (!bMatchIn || !bMatchOut)
 			continue;
 		pFilter = (CBaseFilter*)pTemplates[idxFilter].CreateInstance(NULL, &hr);
 		if (SUCCEEDED(hr))
@@ -274,28 +244,21 @@ HRESULT EnumMatchingFilters( CFactoryTemplate* pTemplates,
 }
 
 HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGFilterList **ppList,
-												DWORD dwFlags,
-												BOOL bExactMatch,
 												DWORD dwMerit,
 												BOOL bInputNeeded,
-												DWORD cInputTypes,
-												const GUID *pInputTypes,
-												const REGPINMEDIUM *pMedIn,
-												const CLSID *pPinCategoryIn,
+												CLSID clsInMaj,
+												CLSID clsInSub,
 												BOOL bRender,
 												BOOL bOutputNeeded,
-												DWORD cOutputTypes,
-												const GUID *pOutputTypes,
-												const REGPINMEDIUM *pMedOut,
-												const CLSID *pPinCategoryOut )
+												CLSID clsOutMaj,
+												CLSID clsOutSub )
 {
 	CheckPointer(ppList, E_POINTER);
 
 	HRESULT hr;
 	IVGFilterListPtr pFilters = new CVGFilterList;
 
-	hr = EnumMatchingFilters(/*VGF_RM::*/g_Templates, /*VGF_RM::*/g_cTemplates, pFilters, dwFlags, bExactMatch, dwMerit, bInputNeeded, cInputTypes, pInputTypes, pMedIn, 
-							pPinCategoryIn, bRender, bOutputNeeded, cOutputTypes, pOutputTypes, pMedOut, pPinCategoryOut);
+	hr = EnumMatchingFilters(VGF_RM::g_Templates, VGF_RM::g_cTemplates, pFilters, dwMerit, bInputNeeded, clsInMaj, clsInSub, bRender, bOutputNeeded, clsOutMaj, clsOutSub);
 	if (FAILED(hr))
 		return hr;
 
