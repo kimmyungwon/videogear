@@ -70,6 +70,15 @@ BOOL CVGLibApp::InitInstance()
 
 //////////////////////////////////////////////////////////////////////////
 
+struct SourceFilterInfoW
+{
+	CLSID clsid;
+	const CFactoryTemplate *pTemplate;
+	TCHAR *szChkBytes; 
+	UINT nExts;
+	LPCTSTR *lpExts;
+};
+
 namespace VGF_RM {
 
 	const AMOVIESETUP_MEDIATYPE sudPinTypesIn[] =
@@ -143,6 +152,15 @@ namespace VGF_RM {
 	};
 
 	int g_cTemplates = countof(g_Templates);
+
+	LPCTSTR g_Exts[] = { _T(".rm"), _T(".rmvb"), _T(".ram") };
+
+	SourceFilterInfoW g_Sources[] = 
+	{
+		{CLSID_AsyncReader, &g_Templates[1], _T("0,4,,2E524D46"), countof(g_Exts), g_Exts}
+	};
+
+	int g_cSources = countof(g_Sources);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -155,18 +173,13 @@ inline bool MatchGUID(const GUID &guid1, const GUID &guid2)
 		return (IsEqualCLSID(GUID_NULL, guid1) || IsEqualCLSID(GUID_NULL, guid2));
 }
 
-bool MatchPin(const AMOVIESETUP_PIN *pPinInfo, CLSID clsMaj, CLSID clsSub)
+inline bool MatchPin(const AMOVIESETUP_PIN *pPinInfo, CLSID clsMaj, CLSID clsSub)
 {
-	bool bMajorMatched, bMinorMatched;
-
 	for (UINT j = 0; j < pPinInfo->nMediaTypes; j++)
 	{
-		bMajorMatched = MatchGUID(clsMaj, *pPinInfo->lpMediaType[j].clsMajorType);
-		bMinorMatched = MatchGUID(clsSub, *pPinInfo->lpMediaType[j].clsMinorType);
-		if (bMajorMatched && bMinorMatched)
+		if (MatchGUID(clsMaj, *pPinInfo->lpMediaType[j].clsMajorType) && MatchGUID(clsSub, *pPinInfo->lpMediaType[j].clsMinorType))
 			return true;
 	}
-
 	return false;
 }
 
@@ -182,6 +195,7 @@ HRESULT EnumMatchingFilters( CFactoryTemplate* pTemplates,
 							CLSID clsOutMaj,
 							CLSID clsOutSub )
 {
+	CheckPointer(pTemplates, E_POINTER);
 	CheckPointer(pList, E_POINTER);
 
 	HRESULT hr = S_OK;
@@ -240,7 +254,7 @@ HRESULT EnumMatchingFilters( CFactoryTemplate* pTemplates,
 			pList->Add(pFilter);
 	}
 
-	return pList->GetCount() > 0 ? S_OK : E_FAIL;
+	return pList->GetCount() > 0 ? S_OK : S_FALSE;
 }
 
 HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGFilterList **ppList,
@@ -265,4 +279,52 @@ HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGFilterList **ppList,
 	*ppList = pFilters;
 	(*ppList)->AddRef();
 	return S_OK;
+}
+
+HRESULT EnumMatchingSource( SourceFilterInfoW *pSources, int nSources, IVGFilterList *pList, LPCTSTR lpszFile )
+{
+	CheckPointer(pSources, E_POINTER);
+	CheckPointer(pList, E_POINTER);
+
+	HRESULT hr;
+	CString strExt = PathFindExtension(lpszFile);
+	IBaseFilter *pFilter = NULL;
+	
+	for (int i = 0; i < nSources; i++)
+	{
+		for (UINT j = 0; j < pSources[i].nExts; j++)
+		{
+			if (strExt.CompareNoCase(pSources[i].lpExts[j]) == 0)
+			{
+				pFilter = (CBaseFilter*)pSources[i].pTemplate->CreateInstance(NULL, &hr);
+				if (SUCCEEDED(hr))
+					pList->Add(pFilter);
+				break;
+			}
+		}
+	}
+
+	return pList->GetCount() > 0 ? S_OK : S_FALSE;
+}
+
+HRESULT STDMETHODCALLTYPE VGEnumMatchingSource( IVGFilterList **ppList, LPCTSTR lpszFile )
+{
+	CheckPointer(ppList, E_POINTER);
+
+	HRESULT hr;
+	*ppList = new CVGFilterList;
+	(*ppList)->AddRef();
+
+	hr = EnumMatchingSource(VGF_RM::g_Sources, VGF_RM::g_cSources, *ppList, lpszFile);
+	if (SUCCEEDED(hr))
+	{
+		(*ppList)->AddRef();
+		return S_OK;
+	}
+	// 没有合适的Source，使用默认的
+	IBaseFilter *pFilter = NULL;
+	hr = CoCreateInstance(CLSID_AsyncReader, NULL, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (LPVOID*)&pFilter);
+	if (SUCCEEDED(hr))
+		(*ppList)->Add(pFilter);
+	return hr;
 }

@@ -26,24 +26,30 @@ uses uVGLib;
 
 procedure TfrmMain.FormDblClick(Sender: TObject);
 var
+  hr: HRESULT;
   pList: IVGFilterList;
-  InTypes: array[0..1] of TGUID;
-  pSource, pRMVDec: IBaseFilter;
+  pSource, pRMSp, pRMVDec: IBaseFilter;
 begin
   CoCreateInstance(CLSID_FilterGraph, nil, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, pGB);
-  CoCreateInstance(CLSID_AsyncReader, nil, CLSCTX_INPROC_SERVER, IID_IBaseFilter, pSource);
-  InTypes[0] := MEDIATYPE_Stream;
-  InTypes[1] := MEDIASUBTYPE_NULL;
-  if Succeeded(VGEnumMatchingFilters(pList, MERIT_NORMAL, True, MEDIATYPE_Stream, MEDIASUBTYPE_NULL, False, False,
-    MEDIATYPE_NULL, MEDIASUBTYPE_NULL)) then
+  if Succeeded(VGEnumMatchingSource(pList, 'd:\test.rmvb')) then
   begin
-    pList.Get(0, pRMVDec);
-    (pSource as IFileSourceFilter).Load('d:\test.rmvb', nil);
-    pGB.AddFilter(pSource, nil);
-    pGB.AddFilter(pRMVDec, nil);
-    pGB.Connect(GetOutPin(pSource, 0), GetInPin(pRMVDec, 0));
-    pGB.Render(GetOutPin(pRMVDec, 0));
-    (pGB as IMediaControl).Run;
+    pList.Get(0, pSource);
+    if Succeeded(VGEnumMatchingFilters(pList, MERIT_NORMAL, True, MEDIATYPE_Stream, MEDIASUBTYPE_NULL, False, False,
+      MEDIATYPE_NULL, MEDIASUBTYPE_NULL)) then
+    begin
+      pList.Get(0, pRMSp);
+      (pSource as IFileSourceFilter).Load('d:\test.rmvb', nil);
+      pGB.AddFilter(pSource, nil);
+      if Succeeded(VGEnumMatchingFilters(pList, MERIT_NORMAL, True, MEDIATYPE_Video, MEDIASUBTYPE_NULL, False, False,
+        MEDIATYPE_NULL, MEDIASUBTYPE_NULL)) then
+      begin
+        pList.Get(0, pRMVDec);
+        pGB.AddFilter(pRMVDec, nil);
+        pGB.Connect(GetOutPin(pRMSp, 1), GetInPin(pRMVDec, 0));
+        pGB.Render(GetOutPin(pRMVDec, 0));
+        (pGB as IMediaControl).Run;
+      end;
+    end;
   end;
 end;
 

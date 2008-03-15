@@ -50,6 +50,8 @@ ULONG STDMETHODCALLTYPE CVGFilterList::Release( void )
 
 HRESULT STDMETHODCALLTYPE CVGFilterList::Add( IBaseFilter *pBF )
 {
+	CheckPointer(pBF, E_POINTER);
+
 	pBF->AddRef();
 	m_filters.push_back(pBF);
 	return S_OK;
