@@ -37,6 +37,7 @@
 #endif // _AFX_NO_AFXCMN_SUPPORT
 
 
+#include <ObjBase.h>
 #include <dshow.h>
 #include <streams.h>
 #include <dvdmedia.h>

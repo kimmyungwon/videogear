@@ -8,7 +8,7 @@
 #endif
 
 #include "resource.h"		// 主符号
-
+#include "VGEnumFilter.h"
 
 // CVGLibApp
 // 有关此类实现的信息，请参阅 VGLib.cpp
@@ -28,4 +28,18 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-
+HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGEnumFilter **ppEnum,
+											  DWORD dwFlags,
+											  BOOL bExactMatch,
+											  DWORD dwMerit,
+											  BOOL bInputNeeded,
+											  DWORD cInputTypes,
+											  const GUID *pInputTypes,
+											  const REGPINMEDIUM *pMedIn,
+											  const CLSID *pPinCategoryIn,
+											  BOOL bRender,
+											  BOOL bOutputNeeded,
+											  DWORD cOutputTypes,
+											  const GUID *pOutputTypes,
+											  const REGPINMEDIUM *pMedOut,
+											  const CLSID *pPinCategoryOut );

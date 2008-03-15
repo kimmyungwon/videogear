@@ -61,3 +61,26 @@ BOOL CVGLibApp::InitInstance()
 
 	return TRUE;
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IEnumMoniker **ppEnum,
+												DWORD dwFlags,
+												BOOL bExactMatch,
+												DWORD dwMerit,
+												BOOL bInputNeeded,
+												DWORD cInputTypes,
+												const GUID *pInputTypes,
+												const REGPINMEDIUM *pMedIn,
+												const CLSID *pPinCategoryIn,
+												BOOL bRender,
+												BOOL bOutputNeeded,
+												DWORD cOutputTypes,
+												const GUID *pOutputTypes,
+												const REGPINMEDIUM *pMedOut,
+												const CLSID *pPinCategoryOut )
+{
+	
+	
+	return E_NOTIMPL;
+}

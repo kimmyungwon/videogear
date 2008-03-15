@@ -210,6 +210,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\VGEnumFilter.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\VGLib.cpp"
 				>
 			</File>
@@ -233,6 +237,10 @@
 			</File>
 			<File
 				RelativePath=".\targetver.h"
+				>
+			</File>
+			<File
+				RelativePath=".\VGEnumFilter.h"
 				>
 			</File>
 			<File
