@@ -2,7 +2,7 @@
 #include "VGFilterList.h"
 
 CVGFilterList::CVGFilterList(void)
-	:m_cRef(1)
+	:m_cRef(0)
 {
 }
 
@@ -10,7 +10,8 @@ CVGFilterList::~CVGFilterList(void)
 {
 	if (m_cRef != 0)
 		throw "Invaild pointer";
-	InterlockedDecrement(&m_cRef);
+
+	Clear();
 }
 
 HRESULT STDMETHODCALLTYPE CVGFilterList::QueryInterface( REFIID riid, __RPC__deref_out void __RPC_FAR *__RPC_FAR *ppvObject )
@@ -49,13 +50,17 @@ ULONG STDMETHODCALLTYPE CVGFilterList::Release( void )
 
 HRESULT STDMETHODCALLTYPE CVGFilterList::Add( IBaseFilter *pBF )
 {
+	pBF->AddRef();
 	m_filters.push_back(pBF);
 	return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE CVGFilterList::Clear( void )
 {
-	m_filters.clear();
+	while (m_filters.size() > 0)
+	{
+		Delete(0);
+	}
 	return S_OK;
 }
 
@@ -64,6 +69,7 @@ HRESULT STDMETHODCALLTYPE CVGFilterList::Delete( DWORD nIndex )
 	if (nIndex >= m_filters.size())
 		return E_INVALIDARG;
 
+	m_filters[nIndex]->Release();
 	m_filters.erase(m_filters.begin() + nIndex);
 	return S_OK;
 }

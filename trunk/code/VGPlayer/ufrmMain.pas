@@ -26,12 +26,20 @@ uses uVGLib;
 
 procedure TfrmMain.FormDblClick(Sender: TObject);
 var
+  hr: HRESULT;
   pList: IVGFilterList;
-  InputTypes, OutputTypes: array of TGUID;
+  InputTypes, OutputTypes: array[0..1] of TGUID;
 begin
-  VGEnumMatchingFilters(pList, 0, False, MERIT_DO_NOT_USE, True, Length(InputTypes),
+  InputTypes[0] := MEDIATYPE_Video;
+  InputTypes[1] := MEDIASUBTYPE_NULL;
+  OutputTypes[0] := MEDIATYPE_Video;
+  OutputTypes[1] := MEDIASUBTYPE_RGB24;
+  hr := VGEnumMatchingFilters(pList, 0, False, MERIT_DO_NOT_USE, True, Length(InputTypes),
     @InputTypes[0], nil, nil, False, True, Length(OutputTypes), @OutputTypes[0],
     nil, nil);
+  if Failed(hr) then
+    Application.MessageBox(PChar(Format('Ê§°Ü£º%s', [SysErrorMessage(HResultCode(hr))])), '´íÎó', MB_OK + 
+      MB_ICONSTOP);
 end;
 
 end.

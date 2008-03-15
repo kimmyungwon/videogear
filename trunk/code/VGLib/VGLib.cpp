@@ -59,6 +59,12 @@ BOOL CVGLibApp::InitInstance()
 {
 	CWinApp::InitInstance();
 
+	TCHAR szPath[MAX_PATH];
+	GetModuleFileName(m_hInstance, szPath, MAX_PATH);
+	PathRemoveFileSpec(szPath);
+	PathAddBackslash(szPath);
+	g_strDrvPath = szPath;
+
 	return TRUE;
 }
 
@@ -141,8 +147,36 @@ namespace VGF_RM
 
 //////////////////////////////////////////////////////////////////////////
 
-bool MatchPin(const AMOVIESETUP_PIN *pPinInfo, DWORD cTypes, const GUID *pTypes)
+inline bool MatchGUID(const GUID &guid1, const GUID &guid2, BOOL bExactMatch)
 {
+	if (IsEqualGUID(guid1, guid2))
+		return true;
+	else
+		return (!bExactMatch && (IsEqualGUID(GUID_NULL, guid1) || IsEqualGUID(GUID_NULL, guid2)));
+}
+
+bool MatchPin(const AMOVIESETUP_PIN *pPinInfo, DWORD cTypes, const GUID *pTypes, BOOL bExactMatch = FALSE)
+{
+	if (cTypes == 0 || pTypes == NULL)
+		return true;
+
+	GUID mtMajor, mtMinor;
+	bool bMajorMatched, bMinorMatched;
+
+	for (DWORD i = 0; i < cTypes; i += 2)
+	{
+		mtMajor = pTypes[i];
+		mtMinor = pTypes[i + 1];
+
+		for (UINT j = 0; j < pPinInfo->nMediaTypes; j++)
+		{
+			bMajorMatched = MatchGUID(mtMajor, *pPinInfo->lpMediaType[j].clsMajorType, bExactMatch);
+			bMinorMatched = MatchGUID(mtMinor, *pPinInfo->lpMediaType[j].clsMinorType, bExactMatch);
+			if (bMajorMatched && bMinorMatched)
+				return true;
+		}
+	}
+
 	return false;
 }
 
@@ -195,14 +229,14 @@ HRESULT EnumMatchingFilters( CFactoryTemplate* pTemplates,
 			if (!pPinInfo->bOutput) 
 			{
 				nInPins++;
-				bMatchIn = MatchPin(pPinInfo, cInputTypes, pInputTypes);
+				bMatchIn = MatchPin(pPinInfo, cInputTypes, pInputTypes, bExactMatch);
 				if (!bMatchIn)
 					break;
 			}
 			else
 			{
 				nOutPins++;
-				bMatchOut = MatchPin(pPinInfo, cOutputTypes, pOutputTypes);
+				bMatchOut = MatchPin(pPinInfo, cOutputTypes, pOutputTypes, bExactMatch);
 				if (!bMatchOut)
 					break;
 			}
@@ -250,5 +284,6 @@ HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGFilterList **ppList,
 		return hr;
 
 	*ppList = pFilters;
+	(*ppList)->AddRef();
 	return S_OK;
 }
