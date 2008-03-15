@@ -42,6 +42,7 @@
 #include <dshow.h>
 #include <streams.h>
 #include <dvdmedia.h>
+#include <comdef.h>
 #include <InitGuid.h>
 #include "../common/guliverkli/include/moreuuids.h"
 #include "../common/guliverkli/src/dsutil/DSUtil.h"

@@ -16,6 +16,10 @@ DECLARE_INTERFACE_IID_(IVGFilterList, IUnknown, "CA6D4AE8-CFF5-4479-8FE0-11810F2
 	END_INTERFACE
 };
 
+#if defined(_COM_SMARTPTR_TYPEDEF)
+_COM_SMARTPTR_TYPEDEF(IVGFilterList, __uuidof(IVGFilterList));
+#endif
+
 using namespace std;
 
 class CVGFilterList : public IVGFilterList

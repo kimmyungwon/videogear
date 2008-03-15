@@ -222,8 +222,6 @@ class CRealVideoDecoder : public CBaseVideoFilter
 	typedef HRESULT (WINAPI *PRVInit)(void*, DWORD* dwCookie);
 	typedef HRESULT (WINAPI *PRVTransform)(BYTE*, BYTE*, void*, void*, DWORD);
 
-	CString m_strDrvPath;
-
 	PRVCustomMessage RVCustomMessage;
 	PRVFree RVFree;
 	PRVHiveMessage RVHiveMessage;
@@ -246,7 +244,7 @@ class CRealVideoDecoder : public CBaseVideoFilter
 	CAutoVectorPtr<BYTE> m_pI420, m_pI420Tmp;
 
 public:
-	CRealVideoDecoder(LPUNKNOWN lpunk, HRESULT* phr, LPCTSTR lpszDrvPath = NULL);
+	CRealVideoDecoder(LPUNKNOWN lpunk, HRESULT* phr);
 	virtual ~CRealVideoDecoder();
 
 	HRESULT Transform(IMediaSample* pIn);
@@ -278,8 +276,6 @@ class CRealAudioDecoder : public CTransformFilter
 	typedef void (WINAPI *PSetDLLAccessPath)(const char*);
 	typedef void (WINAPI *PSetPwd)(DWORD, const char*);
 
-	CString m_strDrvPath;
-
 	PCloseCodec RACloseCodec;
 	PDecode RADecode;
 	PFlush RAFlush;
@@ -308,7 +304,7 @@ class CRealAudioDecoder : public CTransformFilter
 	bool m_fBuffDiscontinuity;
 
 public:
-	CRealAudioDecoder(LPUNKNOWN lpunk, HRESULT* phr, LPCTSTR lpszDrvPath = NULL);
+	CRealAudioDecoder(LPUNKNOWN lpunk, HRESULT* phr);
 	virtual ~CRealAudioDecoder();
 
 	HRESULT Receive(IMediaSample* pIn);
@@ -326,4 +322,5 @@ public:
     HRESULT NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
 };
 
+extern CString g_strDrvPath;
 
