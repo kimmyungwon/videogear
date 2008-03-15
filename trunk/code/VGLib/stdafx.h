@@ -37,8 +37,13 @@
 #endif // _AFX_NO_AFXCMN_SUPPORT
 
 
+#include <vector>
 #include <ObjBase.h>
 #include <dshow.h>
 #include <streams.h>
 #include <dvdmedia.h>
+#include <InitGuid.h>
+#include "../common/guliverkli/include/moreuuids.h"
+#include "../common/guliverkli/src/dsutil/DSUtil.h"
+#include "../common/guliverkli/src/dsutil/MediaTypes.h"
 #include "../common/guliverkli/src/filters/parser/realmediasplitter/RealMediaSplitter.h"

@@ -8,7 +8,7 @@
 #endif
 
 #include "resource.h"		// 主符号
-#include "VGEnumFilter.h"
+#include "VGFilterList.h"
 
 // CVGLibApp
 // 有关此类实现的信息，请参阅 VGLib.cpp
@@ -28,7 +28,16 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGEnumFilter **ppEnum,
+#pragma comment(lib, "winmm.lib")
+#pragma comment(lib, "strmiids.lib")
+#ifdef DEBUG
+#pragma comment(lib, "strmbasd.lib")
+#pragma comment(lib, "RealMediaSplitterDU.lib")
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+
+HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGFilterList **ppEnum,
 											  DWORD dwFlags,
 											  BOOL bExactMatch,
 											  DWORD dwMerit,
