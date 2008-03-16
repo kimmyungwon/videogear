@@ -33,7 +33,7 @@ end;
 
 procedure TfrmMain.FormDblClick(Sender: TObject);
 begin
-  if Succeeded(FPlayer.RenderFile('d:\test.rmvb')) then
+  if Succeeded(FPlayer.RenderFile('d:\test.mkv')) then
     FPlayer.Play;
 end;
 

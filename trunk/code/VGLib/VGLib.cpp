@@ -161,6 +161,46 @@ namespace VGF_RM {
 	};
 
 	int g_cSources = countof(g_Sources);
+
+};
+
+namespace VGF_MK {
+	
+	const AMOVIESETUP_MEDIATYPE sudPinTypesIn[] =
+	{	
+		{&MEDIATYPE_Stream, &MEDIASUBTYPE_Matroska},
+		{&MEDIATYPE_Stream, &MEDIASUBTYPE_NULL}
+	};
+
+	const AMOVIESETUP_PIN sudpPins[] =
+	{
+		{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesIn), sudPinTypesIn},
+		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, 0, NULL}
+	};
+
+	const AMOVIESETUP_FILTER sudFilter[] =
+	{
+		{&__uuidof(CMatroskaSplitterFilter), L"Matroska Splitter", MERIT_NORMAL, countof(sudpPins), sudpPins},
+		{&__uuidof(CMatroskaSourceFilter), L"Matroska Source", MERIT_NORMAL, 0, NULL},
+	};
+
+	CFactoryTemplate g_Templates[] =
+	{
+		{sudFilter[0].strName, sudFilter[0].clsID, CreateInstance<CMatroskaSplitterFilter>, NULL, &sudFilter[0]},
+		{sudFilter[1].strName, sudFilter[1].clsID, CreateInstance<CMatroskaSourceFilter>, NULL, &sudFilter[1]},
+	};
+
+	int g_cTemplates = countof(g_Templates);
+
+	LPCTSTR g_Exts[] = { _T(".mkv"), _T(".mka"), _T(".mks") };
+
+	SourceFilterInfoW g_Sources[] = 
+	{
+		{CLSID_AsyncReader, &g_Templates[1], _T("0,4,,1A45DFA3"), countof(g_Exts), g_Exts}
+	};
+
+	int g_cSources = countof(g_Sources);
+
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -269,16 +309,14 @@ HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGFilterList **ppList,
 {
 	CheckPointer(ppList, E_POINTER);
 
-	HRESULT hr;
-	IVGFilterListPtr pFilters = new CVGFilterList;
 
-	hr = EnumMatchingFilters(VGF_RM::g_Templates, VGF_RM::g_cTemplates, pFilters, dwMerit, bInputNeeded, clsInMaj, clsInSub, bRender, bOutputNeeded, clsOutMaj, clsOutSub);
-	if (FAILED(hr))
-		return hr;
+	IVGFilterListPtr pFilters = new CVGFilterList;
+	EnumMatchingFilters(VGF_RM::g_Templates, VGF_RM::g_cTemplates, pFilters, dwMerit, bInputNeeded, clsInMaj, clsInSub, bRender, bOutputNeeded, clsOutMaj, clsOutSub);
+	EnumMatchingFilters(VGF_MK::g_Templates, VGF_MK::g_cTemplates, pFilters, dwMerit, bInputNeeded, clsInMaj, clsInSub, bRender, bOutputNeeded, clsOutMaj, clsOutSub);
 
 	*ppList = pFilters;
 	(*ppList)->AddRef();
-	return S_OK;
+	return (*ppList)->GetCount() > 0 ? S_OK : E_FAIL;
 }
 
 HRESULT EnumMatchingSource( SourceFilterInfoW *pSources, int nSources, LPCTSTR lpszFile, IBaseFilter **ppBF )
@@ -324,6 +362,9 @@ HRESULT STDMETHODCALLTYPE VGEnumMatchingSource( LPCTSTR lpszFile, IBaseFilter **
 	HRESULT hr;
 
 	hr = EnumMatchingSource(VGF_RM::g_Sources, VGF_RM::g_cSources, lpszFile, ppBF);
+	if (SUCCEEDED(hr))
+		return S_OK;
+	hr = EnumMatchingSource(VGF_MK::g_Sources, VGF_MK::g_cSources, lpszFile, ppBF);
 	if (SUCCEEDED(hr))
 		return S_OK;
 	// 没有合适的Source，使用默认的
