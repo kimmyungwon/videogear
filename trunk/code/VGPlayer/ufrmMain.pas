@@ -4,13 +4,15 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, ActiveX, DirectShow9, DSPack, DSUtil;
+  Dialogs, uVGPlayer;
 
 type
   TfrmMain = class(TForm)
+    procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
     procedure FormDblClick(Sender: TObject);
   private
-    pGB: IGraphBuilder;
+    FPlayer: TVGPlayer;
   public
     { Public declarations }
   end;
@@ -24,33 +26,20 @@ uses uVGLib;
 
 {$R *.dfm}
 
-procedure TfrmMain.FormDblClick(Sender: TObject);
-var
-  hr: HRESULT;
-  pList: IVGFilterList;
-  pSource, pRMSp, pRMVDec: IBaseFilter;
+procedure TfrmMain.FormCreate(Sender: TObject);
 begin
-  CoCreateInstance(CLSID_FilterGraph, nil, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, pGB);
-  if Succeeded(VGEnumMatchingSource(pList, 'd:\test.rmvb')) then
-  begin
-    pList.Get(0, pSource);
-    if Succeeded(VGEnumMatchingFilters(pList, MERIT_NORMAL, True, MEDIATYPE_Stream, MEDIASUBTYPE_NULL, False, False,
-      MEDIATYPE_NULL, MEDIASUBTYPE_NULL)) then
-    begin
-      pList.Get(0, pRMSp);
-      (pSource as IFileSourceFilter).Load('d:\test.rmvb', nil);
-      pGB.AddFilter(pSource, nil);
-      if Succeeded(VGEnumMatchingFilters(pList, MERIT_NORMAL, True, MEDIATYPE_Video, MEDIASUBTYPE_NULL, False, False,
-        MEDIATYPE_NULL, MEDIASUBTYPE_NULL)) then
-      begin
-        pList.Get(0, pRMVDec);
-        pGB.AddFilter(pRMVDec, nil);
-        pGB.Connect(GetOutPin(pRMSp, 1), GetInPin(pRMVDec, 0));
-        pGB.Render(GetOutPin(pRMVDec, 0));
-        (pGB as IMediaControl).Run;
-      end;
-    end;
-  end;
+  FPlayer := TVGPlayer.Create;
+end;
+
+procedure TfrmMain.FormDblClick(Sender: TObject);
+begin
+  if Succeeded(FPlayer.RenderFile('d:\test.rmvb')) then
+    FPlayer.Play;
+end;
+
+procedure TfrmMain.FormDestroy(Sender: TObject);
+begin
+  FreeAndNil(FPlayer);
 end;
 
 end.

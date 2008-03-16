@@ -205,7 +205,7 @@ HRESULT EnumMatchingFilters( CFactoryTemplate* pTemplates,
 	const AMOVIESETUP_PIN *pPinInfo;
 	UINT nInPins = 0, nOutPins = 0;
 	
-	for (int idxFilter = 0; idxFilter < nTemplates - 1; idxFilter++)
+	for (int idxFilter = 0; idxFilter < nTemplates; idxFilter++)
 	{
 		pFilterInfo = pTemplates[idxFilter].m_pAMovieSetup_Filter;
 		bMatchIn = true; bMatchOut = true;
@@ -254,7 +254,7 @@ HRESULT EnumMatchingFilters( CFactoryTemplate* pTemplates,
 			pList->Add(pFilter);
 	}
 
-	return pList->GetCount() > 0 ? S_OK : S_FALSE;
+	return pList->GetCount() > 0 ? S_OK : E_FAIL;
 }
 
 HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGFilterList **ppList,
@@ -281,14 +281,14 @@ HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGFilterList **ppList,
 	return S_OK;
 }
 
-HRESULT EnumMatchingSource( SourceFilterInfoW *pSources, int nSources, IVGFilterList *pList, LPCTSTR lpszFile )
+HRESULT EnumMatchingSource( SourceFilterInfoW *pSources, int nSources, LPCTSTR lpszFile, IBaseFilter **ppBF )
 {
 	CheckPointer(pSources, E_POINTER);
-	CheckPointer(pList, E_POINTER);
+	CheckPointer(ppBF, E_POINTER);
 
 	HRESULT hr;
 	CString strExt = PathFindExtension(lpszFile);
-	IBaseFilter *pFilter = NULL;
+	CComPtr<IFileSourceFilter> pFileSrc;
 	
 	for (int i = 0; i < nSources; i++)
 	{
@@ -296,35 +296,39 @@ HRESULT EnumMatchingSource( SourceFilterInfoW *pSources, int nSources, IVGFilter
 		{
 			if (strExt.CompareNoCase(pSources[i].lpExts[j]) == 0)
 			{
-				pFilter = (CBaseFilter*)pSources[i].pTemplate->CreateInstance(NULL, &hr);
+				*ppBF = (CBaseFilter*)pSources[i].pTemplate->CreateInstance(NULL, &hr);
 				if (SUCCEEDED(hr))
-					pList->Add(pFilter);
+				{
+					(*ppBF)->AddRef();
+					hr = (*ppBF)->QueryInterface(IID_IFileSourceFilter, (LPVOID*)&pFileSrc);
+					if (SUCCEEDED(hr) && SUCCEEDED(pFileSrc->Load(lpszFile, NULL)))
+					{
+						//pFileSrc->Release();
+						return S_OK;
+					}
+				}
 				break;
 			}
 		}
 	}
 
-	return pList->GetCount() > 0 ? S_OK : S_FALSE;
+	return E_FAIL;
 }
 
-HRESULT STDMETHODCALLTYPE VGEnumMatchingSource( IVGFilterList **ppList, LPCTSTR lpszFile )
+HRESULT STDMETHODCALLTYPE VGEnumMatchingSource( LPCTSTR lpszFile, IBaseFilter **ppBF )
 {
-	CheckPointer(ppList, E_POINTER);
+	CheckPointer(ppBF, E_POINTER);
+	if (!PathFileExists(lpszFile))
+		return E_FAIL;
 
 	HRESULT hr;
-	*ppList = new CVGFilterList;
-	(*ppList)->AddRef();
 
-	hr = EnumMatchingSource(VGF_RM::g_Sources, VGF_RM::g_cSources, *ppList, lpszFile);
+	hr = EnumMatchingSource(VGF_RM::g_Sources, VGF_RM::g_cSources, lpszFile, ppBF);
 	if (SUCCEEDED(hr))
-	{
-		(*ppList)->AddRef();
 		return S_OK;
-	}
 	// 没有合适的Source，使用默认的
-	IBaseFilter *pFilter = NULL;
-	hr = CoCreateInstance(CLSID_AsyncReader, NULL, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (LPVOID*)&pFilter);
+	hr = CoCreateInstance(CLSID_AsyncReader, NULL, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (LPVOID*)ppBF);
 	if (SUCCEEDED(hr))
-		(*ppList)->Add(pFilter);
+		(*ppBF)->AddRef();
 	return hr;
 }

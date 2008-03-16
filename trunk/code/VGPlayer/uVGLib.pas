@@ -19,7 +19,7 @@ type
     clsInMaj, clsInSub: TCLSID; bRender, bOutputNeeded: BOOL;
     clsOutMaj, clsOutSub: TCLSID): HResult; stdcall; external 'VGLib.dll';
 
-  function VGEnumMatchingSource(out pList: IVGFilterList; lpszFile: PWideChar): HRESULT; stdcall; external 'VGLib.dll';
+  function VGEnumMatchingSource(lpszFile: PWideChar; out pBF: IBaseFilter): HRESULT; stdcall; external 'VGLib.dll';
 
 implementation
 

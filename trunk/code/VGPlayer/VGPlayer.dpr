@@ -3,7 +3,9 @@ program VGPlayer;
 uses
   Forms,
   ufrmMain in 'ufrmMain.pas' {frmMain},
-  uVGLib in 'uVGLib.pas';
+  uVGLib in 'uVGLib.pas',
+  uVGFilterManager in 'uVGFilterManager.pas',
+  uVGPlayer in 'uVGPlayer.pas';
 
 {$R *.res}
 
