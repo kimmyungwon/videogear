@@ -40,6 +40,7 @@
     <DCCReference Include="ufrmMain.pas">
       <Form>frmMain</Form>
     </DCCReference>
+    <DCCReference Include="uVGException.pas" />
     <DCCReference Include="uVGFilterManager.pas" />
     <DCCReference Include="uVGLib.pas" />
     <DCCReference Include="uVGPlayer.pas" />

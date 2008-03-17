@@ -3,7 +3,7 @@ unit uVGFilterManager;
 interface
 
 uses
-  Windows, ActiveX, DirectShow9, uVGLib;
+  Windows, ActiveX, DirectShow9, uVGLib, uAriaDebug;
 
 type
   TVGFilterManager = class
@@ -23,23 +23,31 @@ type
 
 implementation
 
-uses DSUtil, JclDebug;
+uses DSUtil;
 
 { TVGFilterManager }
 
 procedure TVGFilterManager.Clear;
 var
   lstFilter: TFilterList;
-  I: Integer;
+  lstPin: TPinList;
+  I, J: Integer;
 begin
   // 清除原有的滤镜
   lstFilter := TFilterList.Create(FGB);
+  lstPin := TPinList.Create;
   try
     for I := 0 to lstFilter.Count - 1 do
     begin
+      lstPin.Assign(lstFilter[I]);
+      for J := 0 to lstPin.Count - 1 do
+      begin
+        FGB.Disconnect(lstPin[J]);
+      end;
       FGB.RemoveFilter(lstFilter[I]);
     end;
   finally
+    lstPin.Free;
     lstFilter.Free;
   end;
 end;
@@ -119,11 +127,11 @@ begin
       Continue;
 
     bRendered := False;
-    TraceFmt('Trying to render "%s"...', [GetPinName(pPinOut)]);
+    Trace('Trying to render "%s"...', [GetPinName(pPinOut)]);
     pPinOut.EnumMediaTypes(pEnumMT);
     while pEnumMT.Next(1, pmt, nil) = S_OK do
     begin
-      TraceFmt('Trying MediaType "%s"...', [GetMediaTypeDescription(pmt)]);
+      Trace('Trying MediaType "%s"...', [GetMediaTypeDescription(pmt)]);
       if Failed(VGEnumMatchingFilters(lstMatched, MERIT_DO_NOT_USE, True, pmt^.MajorType, pmt^.SubType,
         False, False, GUID_NULL, GUID_NULL)) then
       begin
@@ -157,12 +165,12 @@ begin
     // 内置滤镜尝试失败，使用系统滤镜
     if not bRendered then
     begin
-      TraceFmt('Internal filter can''t render "%s", try system filters...', [GetPinName(pPinOut)]);
+      Trace('Internal filter can''t render "%s", try system filters...', [GetPinName(pPinOut)]);
       Result := FGB.Render(pPinOut);
       if Succeeded(Result) then
         bRendered := True
       else
-        TraceFmt('"%s" can''t be rendered!', [GetPinName(pPinOut)]);
+        Trace('"%s" can''t be rendered!', [GetPinName(pPinOut)]);
     end;
 
     if bRendered then
