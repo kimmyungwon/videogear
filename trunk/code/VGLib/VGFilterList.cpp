@@ -60,6 +60,7 @@ HRESULT STDMETHODCALLTYPE CVGFilter::CreateInstance( IBaseFilter **ppvObj )
 		*ppvObj = NULL;
 		return hr;
 	}
+	(*ppvObj)->AddRef();
 	return S_OK;
 }
 

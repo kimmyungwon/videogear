@@ -3,5 +3,5 @@
 LIBRARY      "VGLib"
 
 EXPORTS
-	GetInternalFilters	@1	
+	GetInternalFilters	@1	NONAME
     ; 此处可以是显式导出
