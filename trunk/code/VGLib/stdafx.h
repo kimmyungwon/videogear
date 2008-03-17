@@ -49,3 +49,4 @@
 #include "../common/guliverkli/src/dsutil/MediaTypes.h"
 #include "../common/guliverkli/src/filters/parser/realmediasplitter/RealMediaSplitter.h"
 #include "../common/guliverkli/src/filters/parser/matroskasplitter/MatroskaSplitter.h"
+#include "../common/guliverkli/src/filters/switcher/audioswitcher/AudioSwitcher.h"

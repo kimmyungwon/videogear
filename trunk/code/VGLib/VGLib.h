@@ -38,6 +38,7 @@ public:
 #pragma comment(lib, "filtersDU.lib")
 #pragma comment(lib, "RealMediaSplitterDU.lib")
 #pragma comment(lib, "MatroskaSplitterDU.lib")
+#pragma comment(lib, "audioswitcherDU.lib")
 #else
 #pragma comment(lib, "zlibR.lib")
 #pragma comment(lib, "strmbase.lib")
@@ -45,4 +46,5 @@ public:
 #pragma comment(lib, "filtersRU.lib")
 #pragma comment(lib, "RealMediaSplitterRU.lib")
 #pragma comment(lib, "MatroskaSplitterRU.lib")
+#pragma comment(lib, "audioswitcherRU.lib")
 #endif

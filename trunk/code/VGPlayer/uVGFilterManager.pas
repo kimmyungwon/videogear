@@ -9,6 +9,7 @@ type
   TVGFilterManager = class
   protected
     FGB: IGraphBuilder;
+    FAudioSwitcher: IBaseFilter;
   protected
     function ConnectDirect(AOutPin: IPin; AFilter: IBaseFilter; AMT: PAMMediaType): HRESULT;
     procedure DisconnectFilters;
@@ -16,6 +17,7 @@ type
     function GetPinName(APin: IPin): WideString;
     function IsPinConnected(APin: IPin): Boolean;
     function RenderFilter(AFilter: IBaseFilter): HRESULT;
+    function RenderPin(APin: IPin): HRESULT;
   public
     constructor Create;
     procedure Clear;
@@ -33,6 +35,7 @@ procedure TVGFilterManager.Clear;
 var
   I: integer;
   FilterList: TFilterList;
+  pName: PWideChar;
 begin
   if Assigned(FGB) then
   begin
@@ -44,6 +47,9 @@ begin
       CheckDSError(FGB.RemoveFilter(FilterList.Items[i]));
     FilterList.Free;
   end;
+  // ÃÌº”ƒ¨»œ¬Àæµ
+  VGCreateAudioSwitcher(FAudioSwitcher, pName);
+  FGB.AddFilter(FAudioSwitcher, pName);
 end;
 
 function TVGFilterManager.ConnectDirect(AOutPin: IPin; AFilter: IBaseFilter; AMT: PAMMediaType): HRESULT;
@@ -54,6 +60,9 @@ begin
   AFilter.EnumPins(pEnumPin);
   while pEnumPin.Next(1, pPinIn, nil) = S_OK do
   begin
+    if GetPinDir(pPinIn) = PINDIR_OUTPUT then
+      Continue;
+    
     Result := FGB.ConnectDirect(AOutPin, pPinIn, AMT);
     if Succeeded(Result) then
       Exit;
@@ -149,14 +158,8 @@ end;
 function TVGFilterManager.RenderFilter(AFilter: IBaseFilter): HRESULT;
 var
   pEnumPin: IEnumPins;
-  pEnumMT: IEnumMediaTypes;
   pPinOut: IPin;
-  pmt: PAMMediaType;
-  pMatched: IBaseFilter;
-  lstMatched: IVGFilterList;
-  pMatchedName: PWideChar;
-  K, nRendered: Integer;
-  bRendered: Boolean;
+  nRendered: Integer;
 begin
   nRendered := 0;
 
@@ -165,59 +168,75 @@ begin
   begin
     if IsPinConnected(pPinOut) or (GetPinDir(pPinOut) = PINDIR_INPUT) then
       Continue;
-
-    bRendered := False;
-    Trace('Trying to render "%s"...', [GetPinName(pPinOut)]);
-    pPinOut.EnumMediaTypes(pEnumMT);
-    while pEnumMT.Next(1, pmt, nil) = S_OK do
-    begin
-      Trace('Trying MediaType "%s"...', [GetMediaTypeDescription(pmt)]);
-      if Failed(VGEnumMatchingFilters(lstMatched, MERIT_DO_NOT_USE, True, pmt^.MajorType, pmt^.SubType,
-        False, False, GUID_NULL, GUID_NULL)) then
-      begin
-        DeleteMediaType(pmt);
-        Continue;
-      end;
-
-      for K := 0 to lstMatched.GetCount - 1 do
-      begin
-        lstMatched.Get(K, pMatched, pMatchedName);
-        FGB.AddFilter(pMatched, pMatchedName);
-        if Succeeded(ConnectDirect(pPinOut, pMatched, pmt)) then
-        begin
-          Result := RenderFilter(pMatched);
-          if Succeeded(Result) then
-            bRendered := True;
-          DeleteMediaType(pmt);
-          Break;
-        end
-        else
-        begin
-          FGB.RemoveFilter(pMatched);
-          DeleteMediaType(pmt);
-          Continue;
-        end;
-      end;
-
-      if bRendered then
-        Break;
-    end; // end while
-    // ƒ⁄÷√¬Àæµ≥¢ ‘ ß∞‹£¨ π”√œµÕ≥¬Àæµ
-    if not bRendered then
-    begin
-      Trace('Internal filter can''t render "%s", try system filters...', [GetPinName(pPinOut)]);
-      Result := FGB.Render(pPinOut);
-      if Succeeded(Result) then
-        bRendered := True
-      else
-        Trace('"%s" can''t be rendered!', [GetPinName(pPinOut)]);
-    end;
-
-    if bRendered then
+    Result := RenderPin(pPinOut);
+    if Succeeded(Result) then
       Inc(nRendered);
   end;
 
   if nRendered > 0 then
+    Result := S_OK
+  else
+    Result := VFW_E_CANNOT_RENDER;
+end;
+
+function TVGFilterManager.RenderPin(APin: IPin): HRESULT;
+var
+  pEnumMT: IEnumMediaTypes;
+  pmt: PAMMediaType;
+  pMatched: IBaseFilter;
+  lstMatched: IVGFilterList;
+  pMatchedName: PWideChar;
+  bRendered: Boolean;
+  I: Integer;
+begin
+  bRendered := False;
+  Trace('Trying to render "%s"...', [GetPinName(APin)]);
+  APin.EnumMediaTypes(pEnumMT);
+  while pEnumMT.Next(1, pmt, nil) = S_OK do
+  begin
+    Trace('Trying MediaType "%s"...', [GetMediaTypeDescription(pmt)]);
+    if Failed(VGEnumMatchingFilters(lstMatched, MERIT_DO_NOT_USE, True, pmt^.MajorType, pmt^.SubType,
+      False, False, GUID_NULL, GUID_NULL)) then
+    begin
+      DeleteMediaType(pmt);
+      Continue;
+    end;
+
+    for I := 0 to lstMatched.GetCount - 1 do
+    begin
+      lstMatched.Get(I, pMatched, pMatchedName);
+      FGB.AddFilter(pMatched, pMatchedName);
+      if Succeeded(ConnectDirect(APin, pMatched, pmt)) then
+      begin
+        Result := RenderFilter(pMatched);
+        if Succeeded(Result) then
+          bRendered := True;
+        DeleteMediaType(pmt);
+        Break;
+      end
+      else
+      begin
+        FGB.RemoveFilter(pMatched);
+        DeleteMediaType(pmt);
+        Continue;
+      end;
+    end;
+
+    if bRendered then
+      Break;
+  end; // end while
+  // ƒ⁄÷√¬Àæµ≥¢ ‘ ß∞‹£¨ π”√œµÕ≥¬Àæµ
+  if not bRendered then
+  begin
+    Trace('Internal filter can''t render "%s", try system filters...', [GetPinName(APin)]);
+    Result := FGB.Render(APin);
+    if Succeeded(Result) then
+      bRendered := True
+    else
+      Trace('"%s" can''t be rendered!', [GetPinName(APin)]);
+  end;
+
+  if bRendered then
     Result := S_OK
   else
     Result := VFW_E_CANNOT_RENDER;

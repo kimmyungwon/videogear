@@ -203,6 +203,37 @@ namespace VGF_MK {
 
 };
 
+namespace VGF_AudioSwitcher
+{
+	const AMOVIESETUP_MEDIATYPE sudPinTypesIn[] =
+	{
+		{&MEDIATYPE_Audio, &MEDIASUBTYPE_NULL}
+	};
+
+	const AMOVIESETUP_MEDIATYPE sudPinTypesOut[] =
+	{
+		{&MEDIATYPE_Audio, &MEDIASUBTYPE_NULL}
+	};
+
+	const AMOVIESETUP_PIN sudpPins[] =
+	{
+		{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesIn), sudPinTypesIn},
+		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesOut), sudPinTypesOut}
+	};
+
+	const AMOVIESETUP_FILTER sudFilter[] =
+	{
+		{&__uuidof(CAudioSwitcherFilter), L"AudioSwitcher", MERIT_DO_NOT_USE, countof(sudpPins), sudpPins}
+	};
+
+	CFactoryTemplate g_Templates[] =
+	{
+		{sudFilter[0].strName, sudFilter[0].clsID, CreateInstance<CAudioSwitcherFilter>, NULL, &sudFilter[0]}
+	};
+
+	int g_cTemplates = countof(g_Templates);
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 inline bool MatchGUID(const GUID &guid1, const GUID &guid2)
@@ -372,4 +403,19 @@ HRESULT STDMETHODCALLTYPE VGEnumMatchingSource( LPCTSTR lpszFile, IBaseFilter **
 	if (SUCCEEDED(hr))
 		(*ppBF)->AddRef();
 	return hr;
+}
+
+HRESULT STDMETHODCALLTYPE VGCreateAudioSwitcher( IBaseFilter **ppBF, LPCWSTR *ppName )
+{
+	CheckPointer(ppBF, E_POINTER);
+	CheckPointer(ppName, E_POINTER);
+
+	HRESULT hr;
+	
+	*ppBF = (CBaseFilter*)VGF_AudioSwitcher::g_Templates[0].CreateInstance(NULL, &hr);
+	if (FAILED(hr))
+		return hr;
+	(*ppBF)->AddRef();
+	*ppName = VGF_AudioSwitcher::g_Templates[0].m_Name;
+	return S_OK;
 }
