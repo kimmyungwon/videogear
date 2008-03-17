@@ -33,7 +33,6 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    function GetFilterList: TWideStringList;
     function Init(AVideoWnd: TWinControl): HRESULT;
     function Pause: HRESULT;
     function Play: HRESULT;
@@ -85,26 +84,6 @@ destructor TVGPlayer.Destroy;
 begin
   Stop;
   inherited;
-end;
-
-function TVGPlayer.GetFilterList: TWideStringList;
-var
-  pEnum: IEnumFilters;
-  pBF: IBaseFilter;
-  Info: TFilterInfo;
-begin
-  Result := nil;
-  if (FGB = nil) then
-    Exit;
-  if Failed(FGB.EnumFilters(pEnum)) then
-    Exit;
-
-  Result := TWideStringList.Create;
-  while pEnum.Next(1, pBF, nil) = S_OK do
-  begin
-    pBF.QueryFilterInfo(Info);
-    Result.Add(Info.achName);
-  end;
 end;
 
 function TVGPlayer.GetVideoHeight: Integer;

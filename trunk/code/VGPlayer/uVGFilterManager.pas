@@ -3,7 +3,7 @@ unit uVGFilterManager;
 interface
 
 uses
-  Windows, ActiveX, DirectShow9, uVGLib, uAriaDebug;
+  Windows, ActiveX, DirectShow9, uVGLib, uAriaDebug, WideStrings;
 
 type
   TVGFilterManager = class
@@ -18,6 +18,7 @@ type
   public
     constructor Create;
     procedure Clear;
+    function GetFilterList: TWideStringList;
     function RenderFile(const AFileName: WideString): HRESULT; virtual; 
   end;
 
@@ -70,6 +71,26 @@ end;
 constructor TVGFilterManager.Create;
 begin
   CoCreateInstance(CLSID_FilterGraph, nil, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, FGB);
+end;
+
+function TVGFilterManager.GetFilterList: TWideStringList;
+var
+  pEnum: IEnumFilters;
+  pBF: IBaseFilter;
+  Info: TFilterInfo;
+begin
+  Result := nil;
+  if (FGB = nil) then
+    Exit;
+  if Failed(FGB.EnumFilters(pEnum)) then
+    Exit;
+
+  Result := TWideStringList.Create;
+  while pEnum.Next(1, pBF, nil) = S_OK do
+  begin
+    pBF.QueryFilterInfo(Info);
+    Result.Add(Info.achName);
+  end;
 end;
 
 function TVGFilterManager.GetPinDir(APin: IPin): PIN_DIRECTION;
