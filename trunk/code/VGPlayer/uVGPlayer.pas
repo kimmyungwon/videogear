@@ -7,11 +7,11 @@ uses
   DirectShow9, uVGFilterManager;
 
 type
-  TVGPlayer = class;
-  TVGPlayerNotifyEvent = procedure(APlayer: TVGPlayer) of object;
-
   TVGPlayerStatus = (vpsUninitialized, vpsInitialized, vpsStopped,
                     vpsPlaying, vpsPaused);
+  TVGPlayer = class;
+  TVGPlayerNotifyEvent = procedure(APlayer: TVGPlayer) of object;
+  TVGPlayerStatusChanged = procedure(APlayer: TVGPlayer; AOldStatus, ANewStatus: TVGPlayerStatus) of object;
 
   TVGPlayer = class(TVGFilterManager)
   private
@@ -23,11 +23,13 @@ type
     FVW: IVideoWindow;
     FBV: IBasicVideo;
     // 事件
-    FOnRenderComplete: TVGPlayerNotifyEvent;
-    function GetVideoWidth: Integer;
-    function GetVideoHeight: Integer;
+    FOnStatusChanged: TVGPlayerStatusChanged;
   protected
     procedure AdjustVideo;
+    function GetDuration: Cardinal;
+    function GetPosition: Cardinal;
+    function GetVideoWidth: Integer;
+    function GetVideoHeight: Integer;
     procedure SetStatus(const Value: TVGPlayerStatus);
     procedure VidWndProc(var Message: TMessage);
   public
@@ -38,19 +40,22 @@ type
     function Play: HRESULT;
     function PlayOrPause: HRESULT;
     function RenderFile(const AFileName: WideString): HRESULT; override;
+    procedure SetPosition(const Value: Cardinal);
     function Stop: HRESULT;
   public
+    property Duration: Cardinal read GetDuration;
+    property Position: Cardinal read GetPosition write SetPosition;
     property Status: TVGPlayerStatus read FStatus;
     property VideoHeight: Integer read GetVideoHeight;
     property VideoWidth: Integer read GetVideoWidth;
     // 事件
-    property OnRenderComplete: TVGPlayerNotifyEvent read FOnRenderComplete
-      write FOnRenderComplete;
+    property OnStatusChanged: TVGPlayerStatusChanged read FOnStatusChanged
+      write FOnStatusChanged;
   end;
 
 implementation
 
-uses uAriaGraphicUtils, uAriaDebug;
+uses uAriaGraphicUtils, uAriaDebug, DSUtil;
 
 { TVGPlayer }
 
@@ -84,6 +89,30 @@ destructor TVGPlayer.Destroy;
 begin
   Stop;
   inherited;
+end;
+
+function TVGPlayer.GetDuration: Cardinal;
+var
+  nDuration: Int64;
+begin
+  Result := 0;
+  if FMS = nil then
+    Exit;
+
+  FMS.GetDuration(nDuration);
+  Result := RefTimeToMiliSec(nDuration);
+end;
+
+function TVGPlayer.GetPosition: Cardinal;
+var
+  nCurPos: Int64;
+begin
+  Result := 0;
+  if FMS = nil then
+    Exit;
+
+  FMS.GetCurrentPosition(nCurPos);
+  Result := RefTimeToMiliSec(nCurPos);
 end;
 
 function TVGPlayer.GetVideoHeight: Integer;
@@ -142,6 +171,7 @@ begin
   Result := FMC.Run;
   if Succeeded(Result) then
     SetStatus(vpsPlaying);
+  SetPosition(0);
 end;
 
 function TVGPlayer.PlayOrPause: HRESULT;
@@ -160,21 +190,36 @@ end;
 
 function TVGPlayer.RenderFile(const AFileName: WideString): HRESULT;
 begin
+  Stop;
   Result := inherited RenderFile(AFileName);
   if Succeeded(Result) then
   begin
-    FMC := FGB as IMediaControl;
-    FMS := FGB as IMediaSeeking;
-    FVW := FGB as IVideoWindow;
-    FBV := FGB as IBasicVideo;
+    FGB.QueryInterface(IID_IMediaControl, FMC);
+    FGB.QueryInterface(IID_IMediaSeeking, FMS);
+    FGB.QueryInterface(IID_IVideoWindow, FVW);
+    FGB.QueryInterface(IID_IBasicVideo, FBV);
     SetStatus(vpsStopped);
-    if Assigned(FOnRenderComplete) then
-      FOnRenderComplete(Self);
+    {$IFDEF DEBUG}
+    SaveGraphFile(FGB, 'd:\test.grf');
+    {$ENDIF}
   end;
+end;
+
+procedure TVGPlayer.SetPosition(const Value: Cardinal);
+var
+  nCurPos, nStopPos: Int64;
+begin
+  if FMS = nil then
+    Exit;
+
+  nCurPos := MiliSecToRefTime(Value);
+  FMS.SetPositions(nCurPos, AM_SEEKING_AbsolutePositioning, nStopPos, AM_SEEKING_NoPositioning);
 end;
 
 procedure TVGPlayer.SetStatus(const Value: TVGPlayerStatus);
 begin
+  if Assigned(FOnStatusChanged) then
+    FOnStatusChanged(Self, FStatus, Value);
   FStatus := Value;
 end;
 
@@ -199,7 +244,6 @@ begin
     FMS := nil;
     FVW := nil;
     FBV := nil;
-    Clear;
   end;
 end;
 

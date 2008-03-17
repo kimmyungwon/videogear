@@ -1,42 +1,26 @@
 unit uVGLib;
 
-{$WARN SYMBOL_PLATFORM OFF}
-
 interface
 
 uses
-  Windows, Classes, SysUtils, ActiveX, DirectShow9, JclPeImage;
+  Windows, SysUtils, ActiveX, DirectShow9, JclPeImage;
 
 type
-  IVGFilter =  interface(IUnknown)
-  ['{6145535B-A312-438c-860C-7558ED1D6EB7}']
-    function CreateInstance(out ppvObj: IBaseFilter): HRESULT; stdcall;
-    function GetCLSID: TCLSID; stdcall;
-		function GetMerit: DWORD; stdcall;
-		function GetName: PWideChar; stdcall;
-    function GetPinCount: DWORD; stdcall;
-    function GetPinInfo(out pInfo: TRegFilterPins): HRESULT; stdcall;
+  IVGFilterList =  interface(IUnknown)
+  ['{CA6D4AE8-CFF5-4479-8FE0-11810F2FBFA5}']
+    function Add(pBF: IBaseFilter; pName: PWideChar): HRESULT; stdcall;
+    function Clear: HRESULT; stdcall;
+    function Delete(nIndex: Cardinal): HRESULT; stdcall;
+		function Get(nIndex: Cardinal; out pBF: IBaseFilter; out pName: PWideChar): HRESULT; stdcall;
+		function GetCount: Cardinal; stdcall;
   end;
 
-  function GetInternalFilters(out ppvObj: IEnumUnknown): HRESULT; stdcall; external 'VGLib.dll' index 0;
-  function GetMatchingInternalFilters(AMerit: Cardinal; AInputNeeded: Boolean; AClsInMaj, AClsInSub: TCLSID;
-    ARender, AOutputNeeded: Boolean; AClsOutMaj, AClsOutSub: TCLSID): TList;
+  function VGEnumMatchingFilters(out pList: IVGFilterList; dwMerit: DWORD; bInputNeeded: BOOL;
+    clsInMaj, clsInSub: TCLSID; bRender, bOutputNeeded: BOOL;
+    clsOutMaj, clsOutSub: TCLSID): HResult; stdcall; external 'VGLib.dll';
 
-var
-  gInternalFilters: IEnumUnknown;
+  function VGEnumMatchingSource(lpszFile: PWideChar; out pBF: IBaseFilter): HRESULT; stdcall; external 'VGLib.dll';
 
 implementation
-
-function GetMatchingInternalFilters(AMerit: Cardinal; AInputNeeded: Boolean; AClsInMaj, AClsInSub: TCLSID;
-  ARender, AOutputNeeded: Boolean; AClsOutMaj, AClsOutSub: TCLSID): TList;
-begin
-  Result := nil;
-end;
-
-initialization
-  GetInternalFilters(gInternalFilters);
-
-finalization
-  gInternalFilters := nil;
 
 end.

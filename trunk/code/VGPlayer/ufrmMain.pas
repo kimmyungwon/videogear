@@ -24,16 +24,18 @@ type
     mniVideoPlayPause: TTntMenuItem;
     mniSP2: TTntMenuItem;
     mniFilters: TTntMenuItem;
+    tmrMain: TTimer;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure pnlControlResize(Sender: TObject);
     procedure mniOpenFile(Sender: TObject);
     procedure btnPlayPauseClick(Sender: TObject);
     procedure pmVideoPopup(Sender: TObject);
+    procedure tmrMainTimer(Sender: TObject);
   private
     FPlayer: TVGPlayer;
   protected
-    procedure PlayerRenderComplete(APlayer: TVGPlayer);
+    procedure PlayerStatusChanges(APlayer: TVGPlayer; AOldStatus, ANewStatus: TVGPlayerStatus);
     procedure SetVideoPanelSize(ANewWidth, ANewHeight: Integer);
   public
     procedure ZoomVideo(AScale: Extended);
@@ -71,7 +73,7 @@ end;
 procedure TfrmMain.FormCreate(Sender: TObject);
 begin
   FPlayer := TVGPlayer.Create;
-  FPlayer.OnRenderComplete := PlayerRenderComplete;
+  FPlayer.OnStatusChanged := PlayerStatusChanges;
   FPlayer.Init(pnlVideo);
 end;
 
@@ -87,6 +89,7 @@ var
   szFile: array[0..MAX_PATH] of WideChar;
 begin
   FillChar(ofn, SizeOf(TOpenFilenameW), 0);
+  FillChar(szFile, SizeOf(szFile), 0);
   ofn.lStructSize := SizeOf(TOpenFilenameW);
   ofn.hWndOwner := Handle;
   ofn.lpstrFilter := 'RealMedia Files(*.rm;*.rmvb)' + #0 + '*.rm;*.rmvb' + #0;
@@ -106,9 +109,23 @@ begin
   end;
 end;
 
-procedure TfrmMain.PlayerRenderComplete(APlayer: TVGPlayer);
+procedure TfrmMain.PlayerStatusChanges(APlayer: TVGPlayer; AOldStatus, ANewStatus: TVGPlayerStatus);
 begin
-  ZoomVideo(1.0);
+  case ANewStatus of
+    vpsUninitialized: ;
+    vpsInitialized: ;
+    vpsStopped: begin
+      if AOldStatus = vpsInitialized then // ∏’∏’‰÷»æÕÍ±œ
+      begin
+        ZoomVideo(1.0);
+        tmrMain.Enabled := False;
+        trckbrProgress.Max := APlayer.Duration;
+        trckbrProgress.Position := 0;
+      end;
+    end;
+    vpsPlaying: tmrMain.Enabled := True;
+    vpsPaused: tmrMain.Enabled := False;
+  end;
 end;
 
 procedure TfrmMain.pmVideoPopup(Sender: TObject);
@@ -161,6 +178,11 @@ procedure TfrmMain.SetVideoPanelSize(ANewWidth, ANewHeight: Integer);
 begin
   ClientWidth := ANewWidth;
   ClientHeight := ANewHeight + SIZE_CONTROL_HEIGHT;
+end;
+
+procedure TfrmMain.tmrMainTimer(Sender: TObject);
+begin
+  trckbrProgress.Position := FPlayer.Position;
 end;
 
 procedure TfrmMain.ZoomVideo(AScale: Extended);

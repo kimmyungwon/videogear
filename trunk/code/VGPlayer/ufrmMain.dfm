@@ -119,4 +119,10 @@ object frmMain: TfrmMain
     Left = 40
     Top = 8
   end
+  object tmrMain: TTimer
+    Interval = 500
+    OnTimer = tmrMainTimer
+    Left = 72
+    Top = 8
+  end
 end

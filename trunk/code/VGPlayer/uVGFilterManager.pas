@@ -11,6 +11,7 @@ type
     FGB: IGraphBuilder;
   protected
     function ConnectDirect(AOutPin: IPin; AFilter: IBaseFilter; AMT: PAMMediaType): HRESULT;
+    procedure DisconnectFilters;
     function GetPinDir(APin: IPin): PIN_DIRECTION;
     function GetPinName(APin: IPin): WideString;
     function IsPinConnected(APin: IPin): Boolean;
@@ -30,26 +31,18 @@ uses DSUtil;
 
 procedure TVGFilterManager.Clear;
 var
-  lstFilter: TFilterList;
-  lstPin: TPinList;
-  I, J: Integer;
+  I: integer;
+  FilterList: TFilterList;
 begin
-  // 清除原有的滤镜
-  lstFilter := TFilterList.Create(FGB);
-  lstPin := TPinList.Create;
-  try
-    for I := 0 to lstFilter.Count - 1 do
-    begin
-      lstPin.Assign(lstFilter[I]);
-      for J := 0 to lstPin.Count - 1 do
-      begin
-        FGB.Disconnect(lstPin[J]);
-      end;
-      FGB.RemoveFilter(lstFilter[I]);
-    end;
-  finally
-    lstPin.Free;
-    lstFilter.Free;
+  if Assigned(FGB) then
+  begin
+    DisconnectFilters;
+    FilterList:= TFilterList.Create(FGB);
+
+    if FilterList.count > 0 then
+    for i := 0 to FilterList.Count - 1 do
+      CheckDSError(FGB.RemoveFilter(FilterList.Items[i]));
+    FilterList.Free;
   end;
 end;
 
@@ -71,6 +64,31 @@ end;
 constructor TVGFilterManager.Create;
 begin
   CoCreateInstance(CLSID_FilterGraph, nil, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, FGB);
+end;
+
+procedure TVGFilterManager.DisconnectFilters;
+var
+  FilterList: TFilterList;
+  PinList: TPinList;
+  BaseFilter: IBaseFilter;
+  i, j: integer;
+begin
+  if Assigned(FGB) then
+  begin
+    FilterList:= TFilterList.Create(FGB);
+    if FilterList.Count > 0 then
+      for i := 0 to FilterList.Count - 1 do
+        begin
+          BaseFilter := FilterList.Items[i] as IBaseFilter;
+          PinList := TPinList.Create(BaseFilter);
+          if PinList.Count > 0 then
+          for j := 0 to PinList.Count - 1 do
+            CheckDSError(IPin(PinList.Items[j]).Disconnect);
+          PinList.Free;
+          BaseFilter := nil;
+        end;
+    FilterList.Free;
+  end;
 end;
 
 function TVGFilterManager.GetFilterList: TWideStringList;
@@ -122,7 +140,7 @@ begin
   Result := VGEnumMatchingSource(PWideChar(AFileName), pSource);
   if Failed(Result) then
     Exit;
-  Result := FGB.AddFilter(pSource, nil);
+  Result := FGB.AddFilter(pSource, PWideChar(AFileName));
   if Failed(Result) then
     Exit;
   Result := RenderFilter(pSource);
@@ -135,7 +153,8 @@ var
   pPinOut: IPin;
   pmt: PAMMediaType;
   pMatched: IBaseFilter;
-  lstMatched: IVGFilterList; 
+  lstMatched: IVGFilterList;
+  pMatchedName: PWideChar;
   K, nRendered: Integer;
   bRendered: Boolean;
 begin
@@ -162,8 +181,8 @@ begin
 
       for K := 0 to lstMatched.GetCount - 1 do
       begin
-        lstMatched.Get(K, pMatched);
-        FGB.AddFilter(pMatched, nil);
+        lstMatched.Get(K, pMatched, pMatchedName);
+        FGB.AddFilter(pMatched, pMatchedName);
         if Succeeded(ConnectDirect(pPinOut, pMatched, pmt)) then
         begin
           Result := RenderFilter(pMatched);

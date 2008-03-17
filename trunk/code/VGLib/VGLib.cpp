@@ -205,13 +205,171 @@ namespace VGF_MK {
 
 //////////////////////////////////////////////////////////////////////////
 
-HRESULT GetInternalFilters(IEnumUnknown **ppvObj)
+inline bool MatchGUID(const GUID &guid1, const GUID &guid2)
 {
-	CheckPointer(ppvObj, E_POINTER);
-	ValidateReadWritePtr(ppvObj, sizeof(IEnumUnknown*));		
+	if (IsEqualCLSID(guid1, guid2))
+		return true;
+	else
+		return (IsEqualCLSID(GUID_NULL, guid1) || IsEqualCLSID(GUID_NULL, guid2));
+}
 
-	CVGFilterList *pList = new CVGFilterList;
-	pList->AddRef();
-	*ppvObj = pList;
-	return S_OK;
+inline bool MatchPin(const AMOVIESETUP_PIN *pPinInfo, CLSID clsMaj, CLSID clsSub)
+{
+	for (UINT j = 0; j < pPinInfo->nMediaTypes; j++)
+	{
+		if (MatchGUID(clsMaj, *pPinInfo->lpMediaType[j].clsMajorType) && MatchGUID(clsSub, *pPinInfo->lpMediaType[j].clsMinorType))
+			return true;
+	}
+	return false;
+}
+
+HRESULT EnumMatchingFilters( CFactoryTemplate* pTemplates,
+							int nTemplates,
+							IVGFilterList *pList,
+							DWORD dwMerit,
+							BOOL bInputNeeded,
+							CLSID clsInMaj,
+							CLSID clsInSub,
+							BOOL bRender,
+							BOOL bOutputNeeded,
+							CLSID clsOutMaj,
+							CLSID clsOutSub )
+{
+	CheckPointer(pTemplates, E_POINTER);
+	CheckPointer(pList, E_POINTER);
+
+	HRESULT hr = S_OK;
+	bool bMatchIn = false, bMatchOut = false;
+	IBaseFilter *pFilter = NULL;
+	const AMOVIESETUP_FILTER *pFilterInfo;
+	const AMOVIESETUP_PIN *pPinInfo;
+	UINT nInPins = 0, nOutPins = 0;
+	
+	for (int idxFilter = 0; idxFilter < nTemplates; idxFilter++)
+	{
+		pFilterInfo = pTemplates[idxFilter].m_pAMovieSetup_Filter;
+		bMatchIn = true; bMatchOut = true;
+
+		// 如果该滤镜没有Pin则认为不匹配
+		if (pFilterInfo->nPins == 0)
+			continue;
+
+		nInPins = 0;
+		nOutPins = 0;
+		for (UINT idxPin = 0; idxPin < pFilterInfo->nPins; idxPin++)
+		{
+			pPinInfo = &pFilterInfo->lpPin[idxPin];
+
+			// 如果该Pin没有注册任何MediaType则认为不匹配
+			if (pPinInfo->nMediaTypes == 0)
+				continue;
+			
+			if (!pPinInfo->bOutput) 
+			{
+				nInPins++;
+				bMatchIn = MatchPin(pPinInfo, clsInMaj, clsInSub);
+				if (!bMatchIn)
+					break;
+			}
+			else
+			{
+				nOutPins++;
+				bMatchOut = MatchPin(pPinInfo, clsOutMaj, clsOutSub);
+				if (bRender && !pPinInfo->bRendered)
+					bMatchOut = false;
+				if (!bMatchOut)
+					break;
+			}
+		}	// end for idxPin
+
+		if (bInputNeeded && nInPins == 0)
+			bMatchIn = false;
+		if (bOutputNeeded && nOutPins == 0)
+			bMatchOut = false;
+		// 如果匹配则添加到结果列表
+		if (!bMatchIn || !bMatchOut)
+			continue;
+		pFilter = (CBaseFilter*)pTemplates[idxFilter].CreateInstance(NULL, &hr);
+		if (SUCCEEDED(hr))
+			pList->Add(pFilter, pTemplates[idxFilter].m_Name);
+	}
+
+	return pList->GetCount() > 0 ? S_OK : E_FAIL;
+}
+
+HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGFilterList **ppList,
+												DWORD dwMerit,
+												BOOL bInputNeeded,
+												CLSID clsInMaj,
+												CLSID clsInSub,
+												BOOL bRender,
+												BOOL bOutputNeeded,
+												CLSID clsOutMaj,
+												CLSID clsOutSub )
+{
+	CheckPointer(ppList, E_POINTER);
+
+
+	IVGFilterListPtr pFilters = new CVGFilterList;
+	EnumMatchingFilters(VGF_RM::g_Templates, VGF_RM::g_cTemplates, pFilters, dwMerit, bInputNeeded, clsInMaj, clsInSub, bRender, bOutputNeeded, clsOutMaj, clsOutSub);
+	EnumMatchingFilters(VGF_MK::g_Templates, VGF_MK::g_cTemplates, pFilters, dwMerit, bInputNeeded, clsInMaj, clsInSub, bRender, bOutputNeeded, clsOutMaj, clsOutSub);
+
+	*ppList = pFilters;
+	(*ppList)->AddRef();
+	return (*ppList)->GetCount() > 0 ? S_OK : E_FAIL;
+}
+
+HRESULT EnumMatchingSource( SourceFilterInfoW *pSources, int nSources, LPCTSTR lpszFile, IBaseFilter **ppBF )
+{
+	CheckPointer(pSources, E_POINTER);
+	CheckPointer(ppBF, E_POINTER);
+
+	HRESULT hr;
+	CString strExt = PathFindExtension(lpszFile);
+	CComPtr<IFileSourceFilter> pFileSrc;
+	
+	for (int i = 0; i < nSources; i++)
+	{
+		for (UINT j = 0; j < pSources[i].nExts; j++)
+		{
+			if (strExt.CompareNoCase(pSources[i].lpExts[j]) == 0)
+			{
+				*ppBF = (CBaseFilter*)pSources[i].pTemplate->CreateInstance(NULL, &hr);
+				if (SUCCEEDED(hr))
+				{
+					(*ppBF)->AddRef();
+					hr = (*ppBF)->QueryInterface(IID_IFileSourceFilter, (LPVOID*)&pFileSrc);
+					if (SUCCEEDED(hr) && SUCCEEDED(pFileSrc->Load(lpszFile, NULL)))
+					{
+						//pFileSrc->Release();
+						return S_OK;
+					}
+				}
+				break;
+			}
+		}
+	}
+
+	return E_FAIL;
+}
+
+HRESULT STDMETHODCALLTYPE VGEnumMatchingSource( LPCTSTR lpszFile, IBaseFilter **ppBF )
+{
+	CheckPointer(ppBF, E_POINTER);
+	if (!PathFileExists(lpszFile))
+		return E_FAIL;
+
+	HRESULT hr;
+
+	hr = EnumMatchingSource(VGF_RM::g_Sources, VGF_RM::g_cSources, lpszFile, ppBF);
+	if (SUCCEEDED(hr))
+		return S_OK;
+	hr = EnumMatchingSource(VGF_MK::g_Sources, VGF_MK::g_cSources, lpszFile, ppBF);
+	if (SUCCEEDED(hr))
+		return S_OK;
+	// 没有合适的Source，使用默认的
+	hr = CoCreateInstance(CLSID_AsyncReader, NULL, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (LPVOID*)ppBF);
+	if (SUCCEEDED(hr))
+		(*ppBF)->AddRef();
+	return hr;
 }

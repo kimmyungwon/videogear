@@ -3,5 +3,6 @@
 LIBRARY      "VGLib"
 
 EXPORTS
-	GetInternalFilters	@1	NONAME
+	VGEnumMatchingFilters
+	VGEnumMatchingSource
     ; 此处可以是显式导出
