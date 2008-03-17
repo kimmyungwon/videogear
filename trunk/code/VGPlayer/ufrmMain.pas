@@ -6,7 +6,7 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, uVGPlayer, TntForms, Menus, TntMenus, ExtCtrls, TntExtCtrls,
   ComCtrls, TntComCtrls, StdCtrls, Buttons, TntButtons, TntDialogs,
-  DirectShow9, WideStrings;
+  DirectShow9, WideStrings, CommDlg;
 
 type
   TfrmMain = class(TTntForm)
@@ -83,11 +83,19 @@ end;
 procedure TfrmMain.mniOpenFile(Sender: TObject);
 var
   hr: HRESULT;
+  ofn: TOpenFilenameW;
+  szFile: array[0..MAX_PATH] of WideChar;
 begin
-  dlgOpen.Filter := 'RealMedia Files(*.rm;*.rmvb)|*.rm;*.rmvb';
-  if dlgOpen.Execute then
+  FillChar(ofn, SizeOf(TOpenFilenameW), 0);
+  ofn.lStructSize := SizeOf(TOpenFilenameW);
+  ofn.hWndOwner := Handle;
+  ofn.lpstrFilter := 'RealMedia Files(*.rm;*.rmvb)' + #0 + '*.rm;*.rmvb' + #0;
+  ofn.lpstrFile := szFile;
+  ofn.nMaxFile := MAX_PATH;
+  ofn.Flags := OFN_EXPLORER or OFN_FILEMUSTEXIST;
+  if GetOpenFileNameW(ofn) then
   begin
-    hr := FPlayer.RenderFile(dlgOpen.FileName);
+    hr := FPlayer.RenderFile(szFile);
     if Failed(hr) then
     begin
       MessageBoxW(Handle, PWideChar(WideFormat('无法播放文件：%s',

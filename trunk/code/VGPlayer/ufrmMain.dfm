@@ -28,8 +28,6 @@ object frmMain: TfrmMain
     ParentBackground = False
     PopupMenu = pmVideo
     TabOrder = 0
-    ExplicitLeft = 8
-    ExplicitTop = 16
   end
   object pnlControl: TTntPanel
     Left = 0
@@ -40,8 +38,6 @@ object frmMain: TfrmMain
     BevelOuter = bvNone
     TabOrder = 1
     OnResize = pnlControlResize
-    ExplicitTop = 271
-    ExplicitWidth = 343
     DesignSize = (
       320
       32)
@@ -64,7 +60,6 @@ object frmMain: TfrmMain
       TabOrder = 0
       ThumbLength = 15
       TickStyle = tsNone
-      ExplicitLeft = 67
     end
     object btnPlayPause: TTntBitBtn
       Left = 0
