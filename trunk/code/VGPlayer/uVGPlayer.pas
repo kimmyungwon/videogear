@@ -18,6 +18,7 @@ type
     FVideoWnd: TWinControl;
     FVidWndProc: TWndMethod;
     FMC: IMediaControl;
+    FMS: IMediaSeeking;
     FVW: IVideoWindow;
     FBV: IBasicVideo;
     // ÊÂ¼þ
@@ -162,6 +163,7 @@ begin
   if Succeeded(Result) then
   begin
     FMC := FGB as IMediaControl;
+    FMS := FGB as IMediaSeeking;
     FVW := FGB as IVideoWindow;
     FBV := FGB as IBasicVideo;
     SetStatus(vpsStopped);
@@ -191,9 +193,11 @@ begin
     begin
       FVW.put_Visible(False);
       FVW.put_Owner(0);
-      FVW := nil;
     end;
     FMC := nil;
+    FMS := nil;
+    FVW := nil;
+    FBV := nil;
     Clear;
   end;
 end;
