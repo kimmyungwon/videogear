@@ -74,6 +74,7 @@ object frmMain: TfrmMain
       Align = alLeft
       Caption = 'P'
       TabOrder = 1
+      OnClick = btnPlayPauseClick
     end
     object btnStop: TTntBitBtn
       Left = 32

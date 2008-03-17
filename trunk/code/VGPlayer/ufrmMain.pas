@@ -26,10 +26,14 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure pnlControlResize(Sender: TObject);
     procedure mniOpenFile(Sender: TObject);
+    procedure btnPlayPauseClick(Sender: TObject);
   private
     FPlayer: TVGPlayer;
+  protected
+    procedure PlayerRenderComplete(APlayer: TVGPlayer);
+    procedure SetVideoPanelSize(ANewWidth, ANewHeight: Integer);
   public
-    { Public declarations }
+    procedure ZoomVideo(AScale: Extended);
   end;
 
 var
@@ -40,6 +44,7 @@ implementation
 {$R *.dfm}
 
 const
+  SIZE_CONTROL_HEIGHT     = 32;
   SIZE_VOLUME_WIDTH       = 100;
   SIZE_VOLUME_HEIGHT      = 20;
   SIZE_PROGRESS_HEIGHT    = 20;
@@ -55,9 +60,15 @@ end;
 
 { TfrmMain }
 
+procedure TfrmMain.btnPlayPauseClick(Sender: TObject);
+begin
+  FPlayer.PlayOrPause;
+end;
+
 procedure TfrmMain.FormCreate(Sender: TObject);
 begin
   FPlayer := TVGPlayer.Create;
+  FPlayer.OnRenderComplete := PlayerRenderComplete;
   FPlayer.Init(pnlVideo);
 end;
 
@@ -84,6 +95,11 @@ begin
   end;
 end;
 
+procedure TfrmMain.PlayerRenderComplete(APlayer: TVGPlayer);
+begin
+  ZoomVideo(1.0);
+end;
+
 procedure TfrmMain.pnlControlResize(Sender: TObject);
 begin
   with trckbrVolume do
@@ -100,6 +116,18 @@ begin
     Height := SIZE_PROGRESS_HEIGHT;
     Top := ((Sender as TTntPanel).ClientHeight - Height) div 2;
   end;
+end;
+
+procedure TfrmMain.SetVideoPanelSize(ANewWidth, ANewHeight: Integer);
+begin
+  ClientWidth := ANewWidth;
+  ClientHeight := ANewHeight + SIZE_CONTROL_HEIGHT;
+end;
+
+procedure TfrmMain.ZoomVideo(AScale: Extended);
+begin
+  SetVideoPanelSize(Round(FPlayer.VideoWidth * AScale),
+    Round(FPlayer.VideoHeight * AScale));
 end;
 
 end.

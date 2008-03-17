@@ -3,26 +3,47 @@ unit uVGPlayer;
 interface
 
 uses
-  Windows, Messages, Classes, Controls, DirectShow9, uVGFilterManager;
+  Windows, Messages, Classes, SysUtils, Controls, DirectShow9, uVGFilterManager;
 
 type
+  TVGPlayer = class;
+  TVGPlayerNotifyEvent = procedure(APlayer: TVGPlayer) of object;
+
+  TVGPlayerStatus = (vpsUninitialized, vpsInitialized, vpsStopped,
+                    vpsPlaying, vpsPaused);
+
   TVGPlayer = class(TVGFilterManager)
   private
+    FStatus: TVGPlayerStatus;
     FVideoWnd: TWinControl;
     FVidWndProc: TWndMethod;
     FMC: IMediaControl;
     FVW: IVideoWindow;
     FBV: IBasicVideo;
+    // 事件
+    FOnRenderComplete: TVGPlayerNotifyEvent;
+    function GetVideoWidth: Integer;
+    function GetVideoHeight: Integer;
   protected
     procedure AdjustVideo;
+    procedure SetStatus(const Value: TVGPlayerStatus);
     procedure VidWndProc(var Message: TMessage);
   public
+    constructor Create;
     destructor Destroy; override;
     function Init(AVideoWnd: TWinControl): HRESULT;
+    function Pause: HRESULT;
     function Play: HRESULT;
+    function PlayOrPause: HRESULT;
     function RenderFile(const AFileName: WideString): HRESULT; override;
     function Stop: HRESULT;
-    function ZoomVideo();
+  public
+    property Status: TVGPlayerStatus read FStatus;
+    property VideoHeight: Integer read GetVideoHeight;
+    property VideoWidth: Integer read GetVideoWidth;
+    // 事件
+    property OnRenderComplete: TVGPlayerNotifyEvent read FOnRenderComplete
+      write FOnRenderComplete;
   end;
 
 implementation
@@ -51,18 +72,54 @@ begin
   end;
 end;
 
+constructor TVGPlayer.Create;
+begin
+  inherited Create;
+  FStatus := vpsUninitialized;
+end;
+
 destructor TVGPlayer.Destroy;
 begin
   Stop;
   inherited;
 end;
 
+function TVGPlayer.GetVideoHeight: Integer;
+begin
+  if FBV <> nil then
+    FBV.get_VideoHeight(Result)
+  else
+    Result := 0;
+end;
+
+function TVGPlayer.GetVideoWidth: Integer;
+begin
+  if FBV <> nil then
+    FBV.get_VideoWidth(Result)
+  else
+    Result := 0;
+end;
+
 function TVGPlayer.Init(AVideoWnd: TWinControl): HRESULT;
 begin
   FVideoWnd := AVideoWnd;
   FVidWndProc := FVideoWnd.WindowProc;
-  FVideoWnd.WindowProc := VidWndProc; 
+  FVideoWnd.WindowProc := VidWndProc;
+  SetStatus(vpsInitialized); 
   Result := S_OK;
+end;
+
+function TVGPlayer.Pause: HRESULT;
+begin
+  If FMC = nil then
+  begin
+    Result := E_POINTER;
+    Exit;
+  end;
+
+  Result := FMC.Pause;
+  if Succeeded(Result) then
+    SetStatus(vpsPaused);
 end;
 
 function TVGPlayer.Play: HRESULT;
@@ -81,6 +138,22 @@ begin
     FVW.put_Visible(True);
   end;
   Result := FMC.Run;
+  if Succeeded(Result) then
+    SetStatus(vpsPlaying);
+end;
+
+function TVGPlayer.PlayOrPause: HRESULT;
+begin
+  if Status in [vpsStopped, vpsPaused] then
+  begin
+    Result := Play;   
+  end
+  else if Status = vpsPlaying then
+  begin
+    Result := Pause;
+  end
+  else
+    Result := E_FAIL;
 end;
 
 function TVGPlayer.RenderFile(const AFileName: WideString): HRESULT;
@@ -91,7 +164,15 @@ begin
     FMC := FGB as IMediaControl;
     FVW := FGB as IVideoWindow;
     FBV := FGB as IBasicVideo;
+    SetStatus(vpsStopped);
+    if Assigned(FOnRenderComplete) then
+      FOnRenderComplete(Self);
   end;
+end;
+
+procedure TVGPlayer.SetStatus(const Value: TVGPlayerStatus);
+begin
+  FStatus := Value;
 end;
 
 function TVGPlayer.Stop: HRESULT;
@@ -103,14 +184,18 @@ begin
   end;
 
   Result := FMC.Stop;
-  if FVW <> nil then
+  if Succeeded(Result) then
   begin
-    FVW.put_Visible(False);
-    FVW.put_Owner(0);
-    FVW := nil;
+    SetStatus(vpsInitialized);
+    if FVW <> nil then
+    begin
+      FVW.put_Visible(False);
+      FVW.put_Owner(0);
+      FVW := nil;
+    end;
+    FMC := nil;
+    Clear;
   end;
-  FMC := nil;
-  Clear;
 end;
 
 procedure TVGPlayer.VidWndProc(var Message: TMessage);
