@@ -99,6 +99,7 @@ object frmMain: TfrmMain
   end
   object pmVideo: TTntPopupMenu
     AutoHotkeys = maManual
+    OnPopup = pmVideoPopup
     Left = 8
     Top = 8
     object mniVideoOpenFile: TTntMenuItem
@@ -110,6 +111,12 @@ object frmMain: TfrmMain
     end
     object mniVideoPlayPause: TTntMenuItem
       Caption = #25773#25918'/'#26242#20572
+    end
+    object mniSP2: TTntMenuItem
+      Caption = '-'
+    end
+    object mniFilters: TTntMenuItem
+      Caption = #28388#38236
     end
   end
   object dlgOpen: TTntOpenDialog

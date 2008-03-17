@@ -6,7 +6,7 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, uVGPlayer, TntForms, Menus, TntMenus, ExtCtrls, TntExtCtrls,
   ComCtrls, TntComCtrls, StdCtrls, Buttons, TntButtons, TntDialogs,
-  DirectShow9;
+  DirectShow9, WideStrings;
 
 type
   TfrmMain = class(TTntForm)
@@ -22,11 +22,14 @@ type
     dlgOpen: TTntOpenDialog;
     mniSP1: TTntMenuItem;
     mniVideoPlayPause: TTntMenuItem;
+    mniSP2: TTntMenuItem;
+    mniFilters: TTntMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure pnlControlResize(Sender: TObject);
     procedure mniOpenFile(Sender: TObject);
     procedure btnPlayPauseClick(Sender: TObject);
+    procedure pmVideoPopup(Sender: TObject);
   private
     FPlayer: TVGPlayer;
   protected
@@ -98,6 +101,34 @@ end;
 procedure TfrmMain.PlayerRenderComplete(APlayer: TVGPlayer);
 begin
   ZoomVideo(1.0);
+end;
+
+procedure TfrmMain.pmVideoPopup(Sender: TObject);
+var
+  lstFilter: TWideStringList;
+  newItem: TTntMenuItem;
+  I: Integer;
+begin
+  if FPlayer.Status in [vpsPlaying, vpsPaused] then
+  begin
+    mniFilters.Enabled := True;
+    mniFilters.Clear;
+    lstFilter := FPlayer.GetFilterList;
+    if lstFilter <> nil then
+    begin
+      for I := 0 to lstFilter.Count - 1 do
+      begin
+        newItem := TTntMenuItem.Create(Sender as TTntPopupMenu);
+        newItem.Caption := lstFilter[I];
+        mniFilters.Add(newItem);
+      end;
+      lstFilter.Free;
+    end;
+  end
+  else
+  begin
+    mniFilters.Enabled := False;
+  end;
 end;
 
 procedure TfrmMain.pnlControlResize(Sender: TObject);
