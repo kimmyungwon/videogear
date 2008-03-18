@@ -6,4 +6,6 @@ EXPORTS
 	VGEnumMatchingFilters
 	VGEnumMatchingSource
 	VGCreateAudioSwitcher
+	VGEnumInternalFilters		@1	NONAME
+	VGEnumInternalSources		@2	NONAME
     ; 此处可以是显式导出

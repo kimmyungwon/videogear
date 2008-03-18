@@ -1,5 +1,7 @@
 unit uVGLib;
 
+{$WARN SYMBOL_PLATFORM OFF}
+
 interface
 
 uses
@@ -35,11 +37,21 @@ type
       boost: Single): HRESULT; stdcall;
   end;
 
+  LPFNEnumFilterProc = procedure(pUser: Pointer; const clsID: PCLSID; lpszName: PWideChar;
+    dwMerit: Cardinal; nPins: Cardinal; const lpPin: PRegFilterPins); stdcall;
+  LPFNEnumSourceProc = procedure(pUser: Pointer; const clsID: PCLSID; lpszName: PWideChar;
+    dwMerit: Cardinal; nPins: Cardinal; const lpPin: PRegFilterPins; lpszChkBytes: PWideChar;
+    nExts: Cardinal; ppszExts: PPWideChar); stdcall;
+
   function VGEnumMatchingFilters(out pList: IVGFilterList; dwMerit: DWORD; bInputNeeded: BOOL;
     clsInMaj, clsInSub: TCLSID; bRender, bOutputNeeded: BOOL;
     clsOutMaj, clsOutSub: TCLSID): HResult; stdcall; external 'VGLib.dll';
   function VGEnumMatchingSource(lpszFile: PWideChar; out pBF: IBaseFilter): HRESULT; stdcall; external 'VGLib.dll';
   function VGCreateAudioSwitcher(out pBF: IBaseFilter; out pName: PWideChar): HRESULT; stdcall; external 'VGLib.dll';
+  function VGEnumInternalFilters(lpfnProc: LPFNEnumFilterProc; pUser: Pointer): HRESULT;
+    stdcall; external 'VGLib.dll' index 1;
+  function VGEnumInternalSources(lpfnProc: LPFNEnumSourceProc; pUser: Pointer): HRESULT;
+    stdcall; external 'VGLib.dll' index 2;
 
 implementation
 

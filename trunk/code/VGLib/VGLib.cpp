@@ -153,7 +153,7 @@ namespace VGF_RM {
 
 	int g_cTemplates = countof(g_Templates);
 
-	LPCTSTR g_Exts[] = { _T(".rm"), _T(".rmvb"), _T(".ram") };
+	LPCWSTR g_Exts[] = { _T(".rm"), _T(".rmvb"), _T(".ram") };
 
 	SourceFilterInfoW g_Sources[] = 
 	{
@@ -192,7 +192,7 @@ namespace VGF_MK {
 
 	int g_cTemplates = countof(g_Templates);
 
-	LPCTSTR g_Exts[] = { _T(".mkv"), _T(".mka"), _T(".mks") };
+	LPCWSTR g_Exts[] = { _T(".mkv"), _T(".mka"), _T(".mks") };
 
 	SourceFilterInfoW g_Sources[] = 
 	{
@@ -417,5 +417,46 @@ HRESULT STDMETHODCALLTYPE VGCreateAudioSwitcher( IBaseFilter **ppBF, LPCWSTR *pp
 		return hr;
 	(*ppBF)->AddRef();
 	*ppName = VGF_AudioSwitcher::g_Templates[0].m_Name;
+	return S_OK;
+}
+
+typedef void(CALLBACK *LPFNEnumFilterProc)(PVOID pUser, const CLSID* clsID, LPCWSTR lpszName, DWORD dwMerit,
+											UINT nPins, const REGFILTERPINS* lpPin);
+typedef void(CALLBACK *LPFNEnumSourceProc)(PVOID pUser, const CLSID* clsID, LPCWSTR lpszName, DWORD dwMerit,
+												 UINT nPins, const REGFILTERPINS* lpPin, LPCWSTR lpszChkBytes,
+												 UINT nExts, LPCWSTR* ppszExts);
+
+__forceinline void EnumInternalFilter(const AMOVIESETUP_FILTER& filter, LPFNEnumFilterProc lpfnProc, PVOID pUser)
+{
+	lpfnProc(pUser, filter.clsID, filter.strName, filter.dwMerit, filter.nPins, filter.lpPin);
+}
+
+__forceinline void EnumInternalSource(const AMOVIESETUP_FILTER& filter, const SourceFilterInfoW& source, 
+									  LPFNEnumSourceProc lpfnProc, PVOID pUser)
+{
+	lpfnProc(pUser, filter.clsID, filter.strName, filter.dwMerit, filter.nPins, filter.lpPin, source.szChkBytes, 
+		source.nExts, source.lpExts);
+}
+
+HRESULT STDMETHODCALLTYPE VGEnumInternalFilters(LPFNEnumFilterProc lpfnProc, PVOID pUser)
+{
+	CheckPointer(lpfnProc, E_POINTER);
+
+	EnumInternalFilter(VGF_RM::sudFilter[0], lpfnProc, pUser);
+	EnumInternalFilter(VGF_RM::sudFilter[2], lpfnProc, pUser);
+	EnumInternalFilter(VGF_RM::sudFilter[3], lpfnProc, pUser);
+	EnumInternalFilter(VGF_MK::sudFilter[0], lpfnProc, pUser);
+	EnumInternalFilter(VGF_AudioSwitcher::sudFilter[0], lpfnProc, pUser);
+
+	return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE VGEnumInternalSources(LPFNEnumSourceProc lpfnProc, PVOID pUser)
+{
+	CheckPointer(lpfnProc, E_POINTER);
+
+	EnumInternalSource(VGF_RM::sudFilter[1], VGF_RM::g_Sources[0], lpfnProc, pUser);
+	EnumInternalSource(VGF_MK::sudFilter[1], VGF_MK::g_Sources[0], lpfnProc, pUser);
+
 	return S_OK;
 }
