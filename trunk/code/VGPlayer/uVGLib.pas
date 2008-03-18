@@ -7,16 +7,10 @@ interface
 uses
   Windows, SysUtils, ActiveX, DirectShow9, JclPeImage;
 
-type
-  IVGFilterList =  interface(IUnknown)
-  ['{CA6D4AE8-CFF5-4479-8FE0-11810F2FBFA5}']
-    function Add(pBF: IBaseFilter; pName: PWideChar): HRESULT; stdcall;
-    function Clear: HRESULT; stdcall;
-    function Delete(nIndex: Cardinal): HRESULT; stdcall;
-		function Get(nIndex: Cardinal; out pBF: IBaseFilter; out pName: PWideChar): HRESULT; stdcall;
-		function GetCount: Cardinal; stdcall;
-  end;
+const
+  IID_IAudioSwitcher: TGUID = '{18C16B08-6497-420E-AD14-22D21C2CEAB7}';
 
+type
   TSpeakerToChannelMap = array[0..17, 0..17] of DWORD;
 
   IAudioSwitcherFilter = interface(IUnknown)
@@ -43,11 +37,6 @@ type
     dwMerit: Cardinal; nPins: Cardinal; const lpPin: PRegFilterPins; lpszChkBytes: PWideChar;
     nExts: Cardinal; ppszExts: PPWideChar); stdcall;
 
-  function VGEnumMatchingFilters(out pList: IVGFilterList; dwMerit: DWORD; bInputNeeded: BOOL;
-    clsInMaj, clsInSub: TCLSID; bRender, bOutputNeeded: BOOL;
-    clsOutMaj, clsOutSub: TCLSID): HResult; stdcall; external 'VGLib.dll';
-  function VGEnumMatchingSource(lpszFile: PWideChar; out pBF: IBaseFilter): HRESULT; stdcall; external 'VGLib.dll';
-  function VGCreateAudioSwitcher(out pBF: IBaseFilter; out pName: PWideChar): HRESULT; stdcall; external 'VGLib.dll';
   function VGEnumInternalFilters(lpfnProc: LPFNEnumFilterProc; pUser: Pointer): HRESULT;
     stdcall; external 'VGLib.dll' index 1;
   function VGEnumInternalSources(lpfnProc: LPFNEnumSourceProc; pUser: Pointer): HRESULT;

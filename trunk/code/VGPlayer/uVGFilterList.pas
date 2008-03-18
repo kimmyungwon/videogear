@@ -48,6 +48,7 @@ type
     function GetPinCount: Integer;
     function GetPin(AIndex: Integer): TVGPin;
   public
+    property CLSID: TCLSID read FCLSID;
     property Name: WideString read FName;
     property Merit: Cardinal read FMerit;
     property InPins: Cardinal read FInPins;
@@ -69,21 +70,17 @@ type
     function QueryAccept(const AFile: WideString; AIgnoreExt: Boolean = False): Boolean;
   end;
 
-  TVGFilterList = class(TInterfacedObject, IEnumMoniker)
+  TVGFilterList = class
   private
     FItems: TObjectList;
     FPos: Integer;
     function GetCount: Integer;
   public
-    constructor Create(AOwnsObjects: Boolean = True);
+    constructor Create(AOwnsObjects: Boolean = False);
     destructor Destroy; override;
     function Add(AFilter: TVGFilter): Integer;
+    procedure Clear;
     function Get(AIndex: Integer): TVGFilter;
-    { IEnumMoniker }
-    function Next(celt: Longint; out elt; pceltFetched: PLongint): HResult; stdcall;
-    function Skip(celt: Longint): HResult; stdcall;
-    function Reset: HResult; stdcall;
-    function Clone(out enm: IEnumMoniker): HResult; stdcall;
   public
     property Count: Integer read GetCount;
     property Items[AIndex: Integer]: TVGFilter read Get; default;
@@ -325,17 +322,9 @@ begin
   FItems.Add(AFilter);
 end;
 
-function TVGFilterList.Clone(out enm: IEnumMoniker): HResult;
-var
-  NewList: TVGFilterList;
-  I: Integer;
+procedure TVGFilterList.Clear;
 begin
-  NewList := TVGFilterList.Create(False);
-  for I := 0 to FItems.Count - 1 do
-    NewList.Add(Get(I));
-  NewList.FPos := FPos;
-  enm := NewList;
-  Result := S_OK;
+  FItems.Clear;
 end;
 
 constructor TVGFilterList.Create(AOwnsObjects: Boolean);
@@ -361,59 +350,6 @@ end;
 function TVGFilterList.GetCount: Integer;
 begin
   Result := FItems.Count;
-end;
-
-function TVGFilterList.Next(celt: Integer; out elt;
-  pceltFetched: PLongint): HResult;
-var
-  nToDo, I: Integer;
-  pPtr: PIMoniker;
-begin
-  nToDo := FItems.Count - FPos;
-  if nToDo = 0 then
-  begin
-    Result := E_FAIL;
-    Exit;
-  end;
-  
-  if nToDo > celt then
-    nToDo := celt;
-  if pceltFetched <> nil then
-    pceltFetched^ := nToDo;
-  pPtr := @elt;
-  for I := 0 to nToDo - 1 do
-  begin
-    pPtr^ := Get(FPos + I).CreateInstance as IMoniker;
-    Inc(FPos);
-  end;
-  if nToDo = celt then
-    Result := S_OK
-  else
-    Result := S_FALSE;
-end;
-
-function TVGFilterList.Reset: HResult;
-begin
-  FPos := 0;
-  Result := S_OK;
-end;
-
-function TVGFilterList.Skip(celt: Integer): HResult;
-var
-  nToDo: Integer;
-begin
-  nToDo := FItems.Count - FPos;
-  if nToDo = 0 then
-  begin
-    Result := E_FAIL;
-    Exit;
-  end;
-
-  Inc(FPos, nToDo);
-  if nToDo = celt then
-    Result := S_OK
-  else
-    Result := S_FALSE;
 end;
 
 end.

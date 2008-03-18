@@ -23,9 +23,10 @@ type
     destructor Destroy; override;
     function FindMatchingSource(const AFile: WideString;
       out AFilter: IBaseFilter; AIgnoreExt: Boolean = False): Boolean;
-    function FindMatchingFilters(out AList: IEnumMoniker; AMerit: DWORD;
+    function FindMatchingFilters(out AList: TVGFilterList; AMerit: DWORD;
       AInputNeeded: BOOL; AClsInMaj, AClsInSub: TCLSID; ARender, AOutputNeeded: BOOL;
       AClsOutMaj, AClsOutSub: TCLSID): Boolean;
+    function Get(const clsID: TCLSID): TVGFilter;
   end;
 
 var
@@ -93,18 +94,17 @@ begin
   inherited;
 end;
 
-function TVGFilterManager.FindMatchingFilters(out AList: IEnumMoniker;
+function TVGFilterManager.FindMatchingFilters(out AList: TVGFilterList;
   AMerit: DWORD; AInputNeeded: BOOL; AClsInMaj, AClsInSub: TCLSID; ARender,
   AOutputNeeded: BOOL; AClsOutMaj, AClsOutSub: TCLSID): Boolean;
 var
-  NewList: TVGFilterList;
   I, J, K: Integer;
   Filter: TVGFilter;
   Pin: TVGPin;
   MT: TVGMediaType;
   bInMatched, bOutMatched: Boolean;
 begin
-  NewList := TVGFilterList.Create(False);
+  AList.Clear;
   for I := 0 to FInternalFilters.Count - 1 do
   begin
     Filter := FInternalFilters[I];
@@ -150,7 +150,13 @@ begin
           Break;
       end;
     end;
+    // 判断结果
+    if ((Filter.InPins > 0) and (not bInMatched)) or
+      ((Filter.OutPins > 0) and (not bOutMatched)) then
+      Continue;
+    AList.Add(Filter);
   end;
+  Result := AList.Count > 0;
 end;
 
 function TVGFilterManager.FindMatchingSource(const AFile: WideString;
@@ -174,6 +180,21 @@ begin
   // 内置Source无法解析文件，使用默认系统滤镜
   Result := Succeeded(CoCreateInstance(CLSID_AsyncReader, nil, CLSCTX_INPROC_SERVER,
     IID_IBaseFilter, AFilter));
+end;
+
+function TVGFilterManager.Get(const clsID: TCLSID): TVGFilter;
+var
+  I: Integer;
+begin
+  Result := nil;
+  for I := 0 to FInternalFilters.Count - 1 do
+  begin
+    if IsEqualCLSID(clsID, FInternalFilters[I].CLSID) then
+    begin
+      Result := FInternalFilters[I];
+      Exit;
+    end;
+  end;
 end;
 
 procedure TVGFilterManager.RegisterFilter(const clsID: PCLSID;
