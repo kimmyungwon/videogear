@@ -10,6 +10,7 @@ type
   protected
     FGB: IGraphBuilder;
     FAudioSwitcher: IBaseFilter;
+    FAudioSwitcherCtrl: IAudioSwitcherFilter;
   protected
     function ConnectDirect(AOutPin: IPin; AFilter: IBaseFilter; AMT: PAMMediaType): HRESULT;
     procedure DisconnectFilters;
@@ -52,7 +53,9 @@ begin
   end;
   // ∆Ù”√AudioSwitcher
   Filter := gFilterMan.Get(IID_IAudioSwitcher);
-  FGB.AddFilter(Filter.CreateInstance, PWideChar(Filter.Name));
+  FAudioSwitcher := Filter.CreateInstance;
+  FGB.AddFilter(FAudioSwitcher, PWideChar(Filter.Name));
+  FAudioSwitcherCtrl := FAudioSwitcher as IAudioSwitcherFilter;
 end;
 
 function TVGFilterManager.ConnectDirect(AOutPin: IPin; AFilter: IBaseFilter; AMT: PAMMediaType): HRESULT;
