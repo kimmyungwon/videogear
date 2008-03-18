@@ -25,6 +25,12 @@ type
   public
     constructor Create(const lpPin: PRegFilterPins);
     destructor Destroy; override;
+    function GetMediaTypeCount: Integer;
+    function GetMediaType(AIndex: Integer): TVGMediaType;
+  public
+    property Output: Boolean read FOutput;
+    property MediaTypeCount: Integer read GetMediaTypeCount;
+    property MediaTypes[AIndex: Integer]: TVGMediaType read GetMediaType;
   end;
 
   TVGFilter = class(TPersistent)
@@ -32,15 +38,22 @@ type
     FCLSID        : TCLSID;
     FName         : WideString;
     FMerit        : Cardinal;
+    FInPins, FOutPins: Cardinal;
     FPins         : array of TVGPin;
   public
     constructor Create(const clsID: PCLSID; lpszName: PWideChar;
       dwMerit: Cardinal; nPins: Cardinal; const lpPin: PRegFilterPins);
     destructor Destroy; override;
     function CreateInstance: IBaseFilter;
+    function GetPinCount: Integer;
+    function GetPin(AIndex: Integer): TVGPin;
   public
     property Name: WideString read FName;
     property Merit: Cardinal read FMerit;
+    property InPins: Cardinal read FInPins;
+    property OutPins: Cardinal read FOutPins;
+    property PinCount: Integer read GetPinCount;
+    property Pins[AIndex: Integer]: TVGPin read GetPin;
   end;
 
   TVGSource = class(TVGFilter)
@@ -78,7 +91,7 @@ type
 
 implementation
 
-uses uAriaDebug, TntClasses, TntSysUtils, uVGLib;
+uses uAriaDebug, TntClasses, TntSysUtils, uVGLib, uVGException, RTLConsts;
 
 function CompareFilter(AFilter1, AFilter2: TVGFilter): Integer; inline;
 begin
@@ -122,6 +135,18 @@ begin
   inherited;
 end;
 
+function TVGPin.GetMediaType(AIndex: Integer): TVGMediaType;
+begin
+  if (AIndex < Low(FMediaTypes)) or (AIndex > High(FMediaTypes)) then
+    raise EVGError.CreateResFmt(@SListIndexError, [AIndex]);
+  Result := FMediaTypes[Low(FMediaTypes) + AIndex];
+end;
+
+function TVGPin.GetMediaTypeCount: Integer;
+begin
+  Result := Length(FMediaTypes);
+end;
+
 { TVGFilter }
 
 constructor TVGFilter.Create(const clsID: PCLSID; lpszName: PWideChar; dwMerit,
@@ -133,11 +158,17 @@ begin
   FCLSID := clsID^;
   FName := lpszName;
   FMerit := dwMerit;
+  FInPins := 0;
+  FOutPins := 0;
   SetLength(FPins, nPins);
   pPtr := lpPin;
   for I := 0 to nPins - 1 do
   begin
     FPins[I] := TVGPin.Create(pPtr);
+    if FPins[I].Output then
+      Inc(FOutPins)
+    else
+      Inc(FInPins);
     Inc(pPtr);
   end;
   Trace('Register filter successfully: "%s", Merit:%.8X', [FName, FMerit]);
@@ -157,6 +188,19 @@ begin
     FreeAndNil(FPins[I]);
   SetLength(FPins, 0);
   inherited;
+end;
+
+function TVGFilter.GetPin(AIndex: Integer): TVGPin;
+begin
+  Result := nil;
+  if (AIndex < Low(FPins)) or (AIndex > High(FPins)) then
+    Exit;
+  Result := FPins[Low(FPins) + AIndex];
+end;
+
+function TVGFilter.GetPinCount: Integer;
+begin
+  Result := Length(FPins);
 end;
 
 { TVGSource }

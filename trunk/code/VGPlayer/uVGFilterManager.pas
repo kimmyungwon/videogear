@@ -189,6 +189,7 @@ var
   pEnumMT: IEnumMediaTypes;
   pmt: PAMMediaType;
   pMatched: IBaseFilter;
+  pEnumMatched: IEnumMoniker;
   lstMatched: IVGFilterList;
   pMatchedName: PWideChar;
   bRendered: Boolean;
@@ -200,8 +201,8 @@ begin
   while pEnumMT.Next(1, pmt, nil) = S_OK do
   begin
     Trace('Trying MediaType "%s"...', [GetMediaTypeDescription(pmt)]);
-    if Failed(VGEnumMatchingFilters(lstMatched, MERIT_DO_NOT_USE, True, pmt^.MajorType, pmt^.SubType,
-      False, False, GUID_NULL, GUID_NULL)) then
+    if not gFilterMan.FindMatchingFilters(pEnumMatched, MERIT_DO_NOT_USE, True,
+      pmt^.MajorType, pmt^.SubType, False, False, GUID_NULL, GUID_NULL) then
     begin
       DeleteMediaType(pmt);
       Continue;

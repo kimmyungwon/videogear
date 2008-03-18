@@ -23,6 +23,9 @@ type
     destructor Destroy; override;
     function FindMatchingSource(const AFile: WideString;
       out AFilter: IBaseFilter; AIgnoreExt: Boolean = False): Boolean;
+    function FindMatchingFilters(out AList: IEnumMoniker; AMerit: DWORD;
+      AInputNeeded: BOOL; AClsInMaj, AClsInSub: TCLSID; ARender, AOutputNeeded: BOOL;
+      AClsOutMaj, AClsOutSub: TCLSID): Boolean;
   end;
 
 var
@@ -56,6 +59,16 @@ begin
     nExts, ppszExts);
 end;
 
+function MatchGUID(const AGUID1, AGUID2: TGUID): Boolean; inline;
+begin
+  if IsEqualGUID(AGUID1, AGUID2) or
+    IsEqualGUID(AGUID1, GUID_NULL) or
+    IsEqualGUID(AGUID2, GUID_NULL) then
+    Result := True
+  else
+    Result := False;
+end;
+
 { TVGFilterManager }
 
 constructor TVGFilterManager.Create;
@@ -78,6 +91,66 @@ begin
   FFM2 := nil;
   FreeAndNil(FInternalFilters);
   inherited;
+end;
+
+function TVGFilterManager.FindMatchingFilters(out AList: IEnumMoniker;
+  AMerit: DWORD; AInputNeeded: BOOL; AClsInMaj, AClsInSub: TCLSID; ARender,
+  AOutputNeeded: BOOL; AClsOutMaj, AClsOutSub: TCLSID): Boolean;
+var
+  NewList: TVGFilterList;
+  I, J, K: Integer;
+  Filter: TVGFilter;
+  Pin: TVGPin;
+  MT: TVGMediaType;
+  bInMatched, bOutMatched: Boolean;
+begin
+  NewList := TVGFilterList.Create(False);
+  for I := 0 to FInternalFilters.Count - 1 do
+  begin
+    Filter := FInternalFilters[I];
+    bInMatched := False;
+    bOutMatched := False;
+    // 检查Merit
+    if Filter.Merit < AMerit then
+      Continue;
+    // 检查In、Out插针个数
+    if (AInputNeeded and (Filter.InPins = 0)) or
+      (AOutputNeeded and (Filter.OutPins = 0)) then
+      Continue;
+    // 检查每一个Pin
+    for J := 0 to Filter.PinCount - 1 do
+    begin
+      Pin := Filter.Pins[J];
+      if Pin.Output then
+      begin
+        // 检查每一个MediaType
+        for K := 0 to Pin.MediaTypeCount - 1 do
+        begin
+          MT := Pin.MediaTypes[K];
+          bOutMatched := MatchGUID(MT.clsMajorType, AClsOutMaj) and
+            MatchGUID(MT.clsMinorType, AClsOutSub);
+          if bOutMatched then
+            Break;
+        end;
+        if not bOutMatched then
+          Break;
+      end
+      else
+      begin
+        // 检查每一个MediaType
+        for K := 0 to Pin.MediaTypeCount - 1 do
+        begin
+          MT := Pin.MediaTypes[K];
+          bInMatched := MatchGUID(MT.clsMajorType, AClsInMaj) and
+            MatchGUID(MT.clsMinorType, AClsInSub);
+          if bInMatched then
+            Break;
+        end;
+        if not bInMatched then
+          Break;
+      end;
+    end;
+  end;
 end;
 
 function TVGFilterManager.FindMatchingSource(const AFile: WideString;
