@@ -198,29 +198,6 @@ int g_cSources = countof(g_Sources);
 
 //////////////////////////////////////////////////////////////////////////
 
-HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGFilterList **ppList,
-												DWORD dwMerit,
-												BOOL bInputNeeded,
-												CLSID clsInMaj,
-												CLSID clsInSub,
-												BOOL bRender,
-												BOOL bOutputNeeded,
-												CLSID clsOutMaj,
-												CLSID clsOutSub )
-{
-	return E_NOTIMPL;
-}
-
-HRESULT STDMETHODCALLTYPE VGEnumMatchingSource( LPCTSTR lpszFile, IBaseFilter **ppBF )
-{
-	return E_NOTIMPL;
-}
-
-HRESULT STDMETHODCALLTYPE VGCreateAudioSwitcher( IBaseFilter **ppBF, LPCWSTR *ppName )
-{
-	return E_NOTIMPL;
-}
-
 typedef void(CALLBACK *LPFNEnumFilterProc)(PVOID pUser, const CLSID* clsID, LPCWSTR lpszName, DWORD dwMerit,
 											UINT nPins, const REGFILTERPINS* lpPin);
 typedef void(CALLBACK *LPFNEnumSourceProc)(PVOID pUser, const CLSID* clsID, LPCWSTR lpszName, DWORD dwMerit,
