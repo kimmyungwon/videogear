@@ -1,6 +1,7 @@
 unit uVGFilterList;
 
 {$WARN SYMBOL_PLATFORM OFF}
+{$DEFINE __ARIA_HASHSET_TEMPLATE__}
 
 interface
 
@@ -9,7 +10,7 @@ uses
   DirectShow9, uVGFilterManager;
 
 type
-  TVGMediaType = record
+  TVGMediaType = packed record
     clsMajorType: TGUID;
     clsMinorType: TGUID;
   end;
@@ -70,9 +71,21 @@ type
     function QueryAccept(const AFile: WideString; AIgnoreExt: Boolean = False): Boolean;
   end;
 
+  _ITEM_TYPE_ = TVGMediaType;
+  _DATA_TYPE_ = TVGFilter;
+
+  {$INCLUDE 'tAriaHashSet.tpl'}
+  TAriaMTHashSet = class(_ARIA_HASHSET_TEMPLATE_)
+  protected
+    function HashItem(const AItem: _ITEM_TYPE_): Cardinal; override;
+    function IsNull(const AItem: _ITEM_TYPE_): Boolean; override;
+    function IsSame(const AItem1, AItem2: _ITEM_TYPE_): Boolean; override;
+  end; 
+
   TVGFilterList = class
   private
     FItems: TObjectList;
+    FLookup: TAriaMTHashSet;
     FPos: Integer;
     function GetCount: Integer;
   public
@@ -330,11 +343,13 @@ end;
 constructor TVGFilterList.Create(AOwnsObjects: Boolean);
 begin
   FItems := TObjectList.Create(AOwnsObjects);
+  FLookup := TAriaMTHashSet.Create;
   FPos := 0;
 end;
 
 destructor TVGFilterList.Destroy;
 begin
+  FreeAndNil(FLookup);
   FreeAndNil(FItems);
   inherited;
 end;
@@ -350,6 +365,35 @@ end;
 function TVGFilterList.GetCount: Integer;
 begin
   Result := FItems.Count;
+end;
+
+{ TAriaMTHashSet }
+
+{$INCLUDE 'tAriaHashSet.tpl'}
+
+function TAriaMTHashSet.HashItem(const AItem: _ITEM_TYPE_): Cardinal;
+var
+  pPtr: PByteArray;
+  I: Integer;
+begin
+  Result := 0;
+  pPtr := PByteArray(@AItem);
+  for I := 0 to SizeOf(AItem) - 1 do
+  begin
+    Result := (Result shl 4) + pPtr[I];
+  end;
+end;
+
+function TAriaMTHashSet.IsNull(const AItem: _ITEM_TYPE_): Boolean;
+begin
+  Result := IsEqualCLSID(AItem.clsMajorType, GUID_NULL) and
+    IsEqualCLSID(AItem.clsMinorType, GUID_NULL);
+end;
+
+function TAriaMTHashSet.IsSame(const AItem1, AItem2: _ITEM_TYPE_): Boolean;
+begin
+  Result := IsEqualCLSID(AItem1.clsMajorType, AItem2.clsMajorType) and
+    IsEqualCLSID(AItem1.clsMinorType, AItem2.clsMinorType);
 end;
 
 end.
