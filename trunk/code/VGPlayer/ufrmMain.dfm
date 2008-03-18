@@ -85,11 +85,14 @@ object frmMain: TfrmMain
       Top = 6
       Width = 100
       Height = 25
+      Max = 0
+      Min = -100
       ShowSelRange = False
       TabOrder = 3
       ThumbLength = 15
       TickMarks = tmBoth
       TickStyle = tsNone
+      OnChange = trckbrVolumeChange
     end
   end
   object pmVideo: TTntPopupMenu

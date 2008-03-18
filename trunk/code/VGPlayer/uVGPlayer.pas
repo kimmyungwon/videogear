@@ -22,6 +22,7 @@ type
     FMS: IMediaSeeking;
     FVW: IVideoWindow;
     FBV: IBasicVideo;
+    FBA: IBasicAudio;
     // 事件
     FOnStatusChanged: TVGPlayerStatusChanged;
   protected
@@ -30,6 +31,7 @@ type
     function GetPosition: Cardinal;
     function GetVideoWidth: Integer;
     function GetVideoHeight: Integer;
+    function GetVolume: Integer;
     procedure SetStatus(const Value: TVGPlayerStatus);
     procedure VidWndProc(var Message: TMessage);
   public
@@ -41,6 +43,7 @@ type
     function PlayOrPause: HRESULT;
     function RenderFile(const AFileName: WideString): HRESULT; override;
     procedure SetPosition(const Value: Cardinal);
+    procedure SetVolume(Value: Integer);
     function Stop: HRESULT;
   public
     property Duration: Cardinal read GetDuration;
@@ -48,6 +51,7 @@ type
     property Status: TVGPlayerStatus read FStatus;
     property VideoHeight: Integer read GetVideoHeight;
     property VideoWidth: Integer read GetVideoWidth;
+    property Volume: Integer read GetVolume write SetVolume;
     // 事件
     property OnStatusChanged: TVGPlayerStatusChanged read FOnStatusChanged
       write FOnStatusChanged;
@@ -131,6 +135,16 @@ begin
     Result := 0;
 end;
 
+function TVGPlayer.GetVolume: Integer;
+begin
+  Result := 0;
+  if FBA = nil then
+    Exit;
+
+  FBA.get_Volume(Result);
+  Result := Result div 100;
+end;
+
 function TVGPlayer.Init(AVideoWnd: TWinControl): HRESULT;
 begin
   FVideoWnd := AVideoWnd;
@@ -198,6 +212,7 @@ begin
     FGB.QueryInterface(IID_IMediaSeeking, FMS);
     FGB.QueryInterface(IID_IVideoWindow, FVW);
     FGB.QueryInterface(IID_IBasicVideo, FBV);
+    FGB.QueryInterface(IID_IBasicAudio, FBA);
     SetStatus(vpsStopped);
     {$IFDEF DEBUG}
     SaveGraphFile(FGB, 'd:\test.grf');
@@ -223,6 +238,17 @@ begin
   FStatus := Value;
 end;
 
+procedure TVGPlayer.SetVolume(Value: Integer);
+begin
+  if FBA = nil then
+    Exit;
+  if Value > 0 then
+    Value := 0
+  else if Value < -100 then
+    Value := -100;
+  FBA.put_Volume(Value * 100);
+end;
+
 function TVGPlayer.Stop: HRESULT;
 begin
   If FMC = nil then
@@ -244,6 +270,7 @@ begin
     FMS := nil;
     FVW := nil;
     FBV := nil;
+    FBA := nil;
   end;
 end;
 

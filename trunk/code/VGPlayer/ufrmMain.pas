@@ -32,6 +32,7 @@ type
     procedure btnPlayPauseClick(Sender: TObject);
     procedure pmVideoPopup(Sender: TObject);
     procedure tmrMainTimer(Sender: TObject);
+    procedure trckbrVolumeChange(Sender: TObject);
   private
     FPlayer: TVGPlayer;
   protected
@@ -113,14 +114,19 @@ procedure TfrmMain.PlayerStatusChanges(APlayer: TVGPlayer; AOldStatus, ANewStatu
 begin
   case ANewStatus of
     vpsUninitialized: ;
-    vpsInitialized: ;
+    vpsInitialized: begin
+      trckbrProgress.Position := trckbrProgress.Min;
+      trckbrProgress.Enabled := False;
+    end;
     vpsStopped: begin
       if AOldStatus = vpsInitialized then // ∏’∏’‰÷»æÕÍ±œ
       begin
         ZoomVideo(1.0);
         tmrMain.Enabled := False;
+        trckbrProgress.Enabled := True;
         trckbrProgress.Max := APlayer.Duration;
         trckbrProgress.Position := 0;
+        APlayer.Volume := trckbrVolume.Position;
       end;
     end;
     vpsPlaying: tmrMain.Enabled := True;
@@ -183,6 +189,14 @@ end;
 procedure TfrmMain.tmrMainTimer(Sender: TObject);
 begin
   trckbrProgress.Position := FPlayer.Position;
+end;
+
+procedure TfrmMain.trckbrVolumeChange(Sender: TObject);
+begin
+  if FPlayer.Status in [vpsStopped, vpsPlaying, vpsPaused] then
+  begin
+    FPlayer.Volume := (Sender as TTntTrackBar).Position;
+  end;
 end;
 
 procedure TfrmMain.ZoomVideo(AScale: Extended);
