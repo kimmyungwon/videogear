@@ -79,254 +79,124 @@ struct SourceFilterInfoW
 	LPCTSTR *lpExts;
 };
 
-namespace VGF_RM {
-
-	const AMOVIESETUP_MEDIATYPE sudPinTypesIn[] =
-	{
-		{&MEDIATYPE_Stream, &MEDIASUBTYPE_NULL},
-	};
-
-	const AMOVIESETUP_PIN sudpPins[] =
-	{
-		{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesIn), sudPinTypesIn},
-		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, 0, NULL}
-	};
-
-	const AMOVIESETUP_MEDIATYPE sudPinTypesIn2[] =
-	{
-		{&MEDIATYPE_Video, &MEDIASUBTYPE_RV20},
-		{&MEDIATYPE_Video, &MEDIASUBTYPE_RV30},
-		{&MEDIATYPE_Video, &MEDIASUBTYPE_RV40},
-		{&MEDIATYPE_Video, &MEDIASUBTYPE_RV41},
-	};
-
-	const AMOVIESETUP_MEDIATYPE sudPinTypesOut2[] =
-	{
-		{&MEDIATYPE_Video, &MEDIASUBTYPE_NULL},
-	};
-
-	const AMOVIESETUP_PIN sudpPins2[] =
-	{
-		{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesIn2), sudPinTypesIn2},
-		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesOut2), sudPinTypesOut2}
-	};
-
-	const AMOVIESETUP_MEDIATYPE sudPinTypesIn3[] =
-	{
-		{&MEDIATYPE_Audio, &MEDIASUBTYPE_14_4},
-		{&MEDIATYPE_Audio, &MEDIASUBTYPE_28_8},
-		{&MEDIATYPE_Audio, &MEDIASUBTYPE_ATRC},
-		{&MEDIATYPE_Audio, &MEDIASUBTYPE_COOK},
-		{&MEDIATYPE_Audio, &MEDIASUBTYPE_DNET},
-		{&MEDIATYPE_Audio, &MEDIASUBTYPE_SIPR},
-		{&MEDIATYPE_Audio, &MEDIASUBTYPE_AAC},
-		{&MEDIATYPE_Audio, &MEDIASUBTYPE_RAAC},
-		{&MEDIATYPE_Audio, &MEDIASUBTYPE_RACP},
-	};
-
-	const AMOVIESETUP_MEDIATYPE sudPinTypesOut3[] =
-	{
-		{&MEDIATYPE_Audio, &MEDIASUBTYPE_PCM},
-	};
-
-	const AMOVIESETUP_PIN sudpPins3[] =
-	{
-		{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesIn3), sudPinTypesIn3},
-		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesOut3), sudPinTypesOut3}
-	};
-
-	const AMOVIESETUP_FILTER sudFilter[] =
-	{
-		{&__uuidof(CRealMediaSplitterFilter), L"RealMedia Splitter", MERIT_NORMAL, countof(sudpPins), sudpPins},
-		{&__uuidof(CRealMediaSourceFilter), L"RealMedia Source", MERIT_NORMAL, 0, NULL},
-		{&__uuidof(CRealVideoDecoder), L"RealVideo Decoder", MERIT_NORMAL, countof(sudpPins2), sudpPins2},
-		{&__uuidof(CRealAudioDecoder), L"RealAudio Decoder", MERIT_NORMAL, countof(sudpPins3), sudpPins3},
-	};
-
-	CFactoryTemplate g_Templates[] =
-	{
-		{sudFilter[0].strName, sudFilter[0].clsID, CreateInstance<CRealMediaSplitterFilter>, NULL, &sudFilter[0]},
-		{sudFilter[1].strName, sudFilter[1].clsID, CreateInstance<CRealMediaSourceFilter>, NULL, &sudFilter[1]},
-		{sudFilter[2].strName, sudFilter[2].clsID, CreateInstance<CRealVideoDecoder>, NULL, &sudFilter[2]},
-		{sudFilter[3].strName, sudFilter[3].clsID, CreateInstance<CRealAudioDecoder>, NULL, &sudFilter[3]},
-	};
-
-	int g_cTemplates = countof(g_Templates);
-
-	LPCWSTR g_Exts[] = { _T(".rm"), _T(".rmvb"), _T(".ram") };
-
-	SourceFilterInfoW g_Sources[] = 
-	{
-		{CLSID_AsyncReader, &g_Templates[1], _T("0,4,,2E524D46"), countof(g_Exts), g_Exts}
-	};
-
-	int g_cSources = countof(g_Sources);
-
-};
-
-namespace VGF_MK {
-	
-	const AMOVIESETUP_MEDIATYPE sudPinTypesIn[] =
-	{	
-		{&MEDIATYPE_Stream, &MEDIASUBTYPE_Matroska},
-		{&MEDIATYPE_Stream, &MEDIASUBTYPE_NULL}
-	};
-
-	const AMOVIESETUP_PIN sudpPins[] =
-	{
-		{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesIn), sudPinTypesIn},
-		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, 0, NULL}
-	};
-
-	const AMOVIESETUP_FILTER sudFilter[] =
-	{
-		{&__uuidof(CMatroskaSplitterFilter), L"Matroska Splitter", MERIT_NORMAL, countof(sudpPins), sudpPins},
-		{&__uuidof(CMatroskaSourceFilter), L"Matroska Source", MERIT_NORMAL, 0, NULL},
-	};
-
-	CFactoryTemplate g_Templates[] =
-	{
-		{sudFilter[0].strName, sudFilter[0].clsID, CreateInstance<CMatroskaSplitterFilter>, NULL, &sudFilter[0]},
-		{sudFilter[1].strName, sudFilter[1].clsID, CreateInstance<CMatroskaSourceFilter>, NULL, &sudFilter[1]},
-	};
-
-	int g_cTemplates = countof(g_Templates);
-
-	LPCWSTR g_Exts[] = { _T(".mkv"), _T(".mka"), _T(".mks") };
-
-	SourceFilterInfoW g_Sources[] = 
-	{
-		{CLSID_AsyncReader, &g_Templates[1], _T("0,4,,1A45DFA3"), countof(g_Exts), g_Exts}
-	};
-
-	int g_cSources = countof(g_Sources);
-
-};
-
-namespace VGF_AudioSwitcher
+const AMOVIESETUP_MEDIATYPE sudPinTypesIn[] =
 {
-	const AMOVIESETUP_MEDIATYPE sudPinTypesIn[] =
-	{
-		{&MEDIATYPE_Audio, &MEDIASUBTYPE_NULL}
-	};
+	{&MEDIATYPE_Stream, &MEDIASUBTYPE_NULL},
+};
 
-	const AMOVIESETUP_MEDIATYPE sudPinTypesOut[] =
-	{
-		{&MEDIATYPE_Audio, &MEDIASUBTYPE_NULL}
-	};
+const AMOVIESETUP_PIN sudpPins[] =
+{
+	{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesIn), sudPinTypesIn},
+	{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, 0, NULL}
+};
 
-	const AMOVIESETUP_PIN sudpPins[] =
-	{
-		{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesIn), sudPinTypesIn},
-		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesOut), sudPinTypesOut}
-	};
+const AMOVIESETUP_MEDIATYPE sudPinTypesIn2[] =
+{
+	{&MEDIATYPE_Video, &MEDIASUBTYPE_RV20},
+	{&MEDIATYPE_Video, &MEDIASUBTYPE_RV30},
+	{&MEDIATYPE_Video, &MEDIASUBTYPE_RV40},
+	{&MEDIATYPE_Video, &MEDIASUBTYPE_RV41},
+};
 
-	const AMOVIESETUP_FILTER sudFilter[] =
-	{
-		{&__uuidof(CAudioSwitcherFilter), L"AudioSwitcher", MERIT_DO_NOT_USE, countof(sudpPins), sudpPins}
-	};
+const AMOVIESETUP_MEDIATYPE sudPinTypesOut2[] =
+{
+	{&MEDIATYPE_Video, &MEDIASUBTYPE_NULL},
+};
 
-	CFactoryTemplate g_Templates[] =
-	{
-		{sudFilter[0].strName, sudFilter[0].clsID, CreateInstance<CAudioSwitcherFilter>, NULL, &sudFilter[0]}
-	};
+const AMOVIESETUP_PIN sudpPins2[] =
+{
+	{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesIn2), sudPinTypesIn2},
+	{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesOut2), sudPinTypesOut2}
+};
 
-	int g_cTemplates = countof(g_Templates);
-}
+const AMOVIESETUP_MEDIATYPE sudPinTypesIn3[] =
+{
+	{&MEDIATYPE_Audio, &MEDIASUBTYPE_14_4},
+	{&MEDIATYPE_Audio, &MEDIASUBTYPE_28_8},
+	{&MEDIATYPE_Audio, &MEDIASUBTYPE_ATRC},
+	{&MEDIATYPE_Audio, &MEDIASUBTYPE_COOK},
+	{&MEDIATYPE_Audio, &MEDIASUBTYPE_DNET},
+	{&MEDIATYPE_Audio, &MEDIASUBTYPE_SIPR},
+	{&MEDIATYPE_Audio, &MEDIASUBTYPE_AAC},
+	{&MEDIATYPE_Audio, &MEDIASUBTYPE_RAAC},
+	{&MEDIATYPE_Audio, &MEDIASUBTYPE_RACP},
+};
+
+const AMOVIESETUP_MEDIATYPE sudPinTypesOut3[] =
+{
+	{&MEDIATYPE_Audio, &MEDIASUBTYPE_PCM},
+};
+
+const AMOVIESETUP_PIN sudpPins3[] =
+{
+	{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesIn3), sudPinTypesIn3},
+	{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesOut3), sudPinTypesOut3}
+};
+
+const AMOVIESETUP_MEDIATYPE sudPinTypesIn4[] =
+{	
+	{&MEDIATYPE_Stream, &MEDIASUBTYPE_Matroska},
+	{&MEDIATYPE_Stream, &MEDIASUBTYPE_NULL}
+};
+
+const AMOVIESETUP_PIN sudpPins4[] =
+{
+	{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesIn4), sudPinTypesIn4},
+	{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, 0, NULL}
+};
+
+const AMOVIESETUP_MEDIATYPE sudPinTypesIn5[] =
+{
+	{&MEDIATYPE_Audio, &MEDIASUBTYPE_NULL}
+};
+
+const AMOVIESETUP_MEDIATYPE sudPinTypesOut5[] =
+{
+	{&MEDIATYPE_Audio, &MEDIASUBTYPE_NULL}
+};
+
+const AMOVIESETUP_PIN sudpPins5[] =
+{
+	{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesIn5), sudPinTypesIn5},
+	{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesOut5), sudPinTypesOut5}
+};
+
+const AMOVIESETUP_FILTER sudFilter[] =
+{
+	{&__uuidof(CRealMediaSplitterFilter), L"RealMedia Splitter", MERIT_NORMAL, countof(sudpPins), sudpPins},
+	{&__uuidof(CRealMediaSourceFilter), L"RealMedia Source", MERIT_NORMAL, 0, NULL},
+	{&__uuidof(CRealVideoDecoder), L"RealVideo Decoder", MERIT_NORMAL, countof(sudpPins2), sudpPins2},
+	{&__uuidof(CRealAudioDecoder), L"RealAudio Decoder", MERIT_NORMAL, countof(sudpPins3), sudpPins3},
+	{&__uuidof(CMatroskaSplitterFilter), L"Matroska Splitter", MERIT_NORMAL, countof(sudpPins4), sudpPins4},
+	{&__uuidof(CMatroskaSourceFilter), L"Matroska Source", MERIT_NORMAL, 0, NULL},
+	{&__uuidof(CAudioSwitcherFilter), L"AudioSwitcher", MERIT_DO_NOT_USE, countof(sudpPins5), sudpPins5},
+};
+
+CFactoryTemplate g_Templates[] =
+{
+	{sudFilter[0].strName, sudFilter[0].clsID, CreateInstance<CRealMediaSplitterFilter>, NULL, &sudFilter[0]},
+	{sudFilter[1].strName, sudFilter[1].clsID, CreateInstance<CRealMediaSourceFilter>, NULL, &sudFilter[1]},
+	{sudFilter[2].strName, sudFilter[2].clsID, CreateInstance<CRealVideoDecoder>, NULL, &sudFilter[2]},
+	{sudFilter[3].strName, sudFilter[3].clsID, CreateInstance<CRealAudioDecoder>, NULL, &sudFilter[3]},
+	{sudFilter[4].strName, sudFilter[4].clsID, CreateInstance<CMatroskaSplitterFilter>, NULL, &sudFilter[4]},
+	{sudFilter[5].strName, sudFilter[5].clsID, CreateInstance<CMatroskaSourceFilter>, NULL, &sudFilter[5]},
+	{sudFilter[6].strName, sudFilter[6].clsID, CreateInstance<CAudioSwitcherFilter>, NULL, &sudFilter[6]}
+};
+
+int g_cTemplates = countof(g_Templates);
+
+LPCWSTR g_Exts[] = { _T(".rm"), _T(".rmvb"), _T(".ram") };
+LPCWSTR g_Exts2[] = { _T(".mkv"), _T(".mka"), _T(".mks") };
+
+SourceFilterInfoW g_Sources[] = 
+{
+	{CLSID_AsyncReader, &g_Templates[1], _T("0,4,,2E524D46"), countof(g_Exts), g_Exts},
+	{CLSID_AsyncReader, &g_Templates[5], _T("0,4,,1A45DFA3"), countof(g_Exts2), g_Exts2},
+};
+
+int g_cSources = countof(g_Sources);
 
 //////////////////////////////////////////////////////////////////////////
-
-inline bool MatchGUID(const GUID &guid1, const GUID &guid2)
-{
-	if (IsEqualCLSID(guid1, guid2))
-		return true;
-	else
-		return (IsEqualCLSID(GUID_NULL, guid1) || IsEqualCLSID(GUID_NULL, guid2));
-}
-
-inline bool MatchPin(const AMOVIESETUP_PIN *pPinInfo, CLSID clsMaj, CLSID clsSub)
-{
-	for (UINT j = 0; j < pPinInfo->nMediaTypes; j++)
-	{
-		if (MatchGUID(clsMaj, *pPinInfo->lpMediaType[j].clsMajorType) && MatchGUID(clsSub, *pPinInfo->lpMediaType[j].clsMinorType))
-			return true;
-	}
-	return false;
-}
-
-HRESULT EnumMatchingFilters( CFactoryTemplate* pTemplates,
-							int nTemplates,
-							IVGFilterList *pList,
-							DWORD dwMerit,
-							BOOL bInputNeeded,
-							CLSID clsInMaj,
-							CLSID clsInSub,
-							BOOL bRender,
-							BOOL bOutputNeeded,
-							CLSID clsOutMaj,
-							CLSID clsOutSub )
-{
-	CheckPointer(pTemplates, E_POINTER);
-	CheckPointer(pList, E_POINTER);
-
-	HRESULT hr = S_OK;
-	bool bMatchIn = false, bMatchOut = false;
-	IBaseFilter *pFilter = NULL;
-	const AMOVIESETUP_FILTER *pFilterInfo;
-	const AMOVIESETUP_PIN *pPinInfo;
-	UINT nInPins = 0, nOutPins = 0;
-	
-	for (int idxFilter = 0; idxFilter < nTemplates; idxFilter++)
-	{
-		pFilterInfo = pTemplates[idxFilter].m_pAMovieSetup_Filter;
-		bMatchIn = true; bMatchOut = true;
-
-		// 如果该滤镜没有Pin则认为不匹配
-		if (pFilterInfo->nPins == 0)
-			continue;
-
-		nInPins = 0;
-		nOutPins = 0;
-		for (UINT idxPin = 0; idxPin < pFilterInfo->nPins; idxPin++)
-		{
-			pPinInfo = &pFilterInfo->lpPin[idxPin];
-
-			// 如果该Pin没有注册任何MediaType则认为不匹配
-			if (pPinInfo->nMediaTypes == 0)
-				continue;
-			
-			if (!pPinInfo->bOutput) 
-			{
-				nInPins++;
-				bMatchIn = MatchPin(pPinInfo, clsInMaj, clsInSub);
-				if (!bMatchIn)
-					break;
-			}
-			else
-			{
-				nOutPins++;
-				bMatchOut = MatchPin(pPinInfo, clsOutMaj, clsOutSub);
-				if (bRender && !pPinInfo->bRendered)
-					bMatchOut = false;
-				if (!bMatchOut)
-					break;
-			}
-		}	// end for idxPin
-
-		if (bInputNeeded && nInPins == 0)
-			bMatchIn = false;
-		if (bOutputNeeded && nOutPins == 0)
-			bMatchOut = false;
-		// 如果匹配则添加到结果列表
-		if (!bMatchIn || !bMatchOut)
-			continue;
-		pFilter = (CBaseFilter*)pTemplates[idxFilter].CreateInstance(NULL, &hr);
-		if (SUCCEEDED(hr))
-			pList->Add(pFilter, pTemplates[idxFilter].m_Name);
-	}
-
-	return pList->GetCount() > 0 ? S_OK : E_FAIL;
-}
 
 HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGFilterList **ppList,
 												DWORD dwMerit,
@@ -338,86 +208,17 @@ HRESULT STDMETHODCALLTYPE VGEnumMatchingFilters( IVGFilterList **ppList,
 												CLSID clsOutMaj,
 												CLSID clsOutSub )
 {
-	CheckPointer(ppList, E_POINTER);
-
-
-	IVGFilterListPtr pFilters = new CVGFilterList;
-	EnumMatchingFilters(VGF_RM::g_Templates, VGF_RM::g_cTemplates, pFilters, dwMerit, bInputNeeded, clsInMaj, clsInSub, bRender, bOutputNeeded, clsOutMaj, clsOutSub);
-	EnumMatchingFilters(VGF_MK::g_Templates, VGF_MK::g_cTemplates, pFilters, dwMerit, bInputNeeded, clsInMaj, clsInSub, bRender, bOutputNeeded, clsOutMaj, clsOutSub);
-
-	*ppList = pFilters;
-	(*ppList)->AddRef();
-	return (*ppList)->GetCount() > 0 ? S_OK : E_FAIL;
-}
-
-HRESULT EnumMatchingSource( SourceFilterInfoW *pSources, int nSources, LPCTSTR lpszFile, IBaseFilter **ppBF )
-{
-	CheckPointer(pSources, E_POINTER);
-	CheckPointer(ppBF, E_POINTER);
-
-	HRESULT hr;
-	CString strExt = PathFindExtension(lpszFile);
-	CComPtr<IFileSourceFilter> pFileSrc;
-	
-	for (int i = 0; i < nSources; i++)
-	{
-		for (UINT j = 0; j < pSources[i].nExts; j++)
-		{
-			if (strExt.CompareNoCase(pSources[i].lpExts[j]) == 0)
-			{
-				*ppBF = (CBaseFilter*)pSources[i].pTemplate->CreateInstance(NULL, &hr);
-				if (SUCCEEDED(hr))
-				{
-					(*ppBF)->AddRef();
-					hr = (*ppBF)->QueryInterface(IID_IFileSourceFilter, (LPVOID*)&pFileSrc);
-					if (SUCCEEDED(hr) && SUCCEEDED(pFileSrc->Load(lpszFile, NULL)))
-					{
-						//pFileSrc->Release();
-						return S_OK;
-					}
-				}
-				break;
-			}
-		}
-	}
-
-	return E_FAIL;
+	return E_NOTIMPL;
 }
 
 HRESULT STDMETHODCALLTYPE VGEnumMatchingSource( LPCTSTR lpszFile, IBaseFilter **ppBF )
 {
-	CheckPointer(ppBF, E_POINTER);
-	if (!PathFileExists(lpszFile))
-		return E_FAIL;
-
-	HRESULT hr;
-
-	hr = EnumMatchingSource(VGF_RM::g_Sources, VGF_RM::g_cSources, lpszFile, ppBF);
-	if (SUCCEEDED(hr))
-		return S_OK;
-	hr = EnumMatchingSource(VGF_MK::g_Sources, VGF_MK::g_cSources, lpszFile, ppBF);
-	if (SUCCEEDED(hr))
-		return S_OK;
-	// 没有合适的Source，使用默认的
-	hr = CoCreateInstance(CLSID_AsyncReader, NULL, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (LPVOID*)ppBF);
-	if (SUCCEEDED(hr))
-		(*ppBF)->AddRef();
-	return hr;
+	return E_NOTIMPL;
 }
 
 HRESULT STDMETHODCALLTYPE VGCreateAudioSwitcher( IBaseFilter **ppBF, LPCWSTR *ppName )
 {
-	CheckPointer(ppBF, E_POINTER);
-	CheckPointer(ppName, E_POINTER);
-
-	HRESULT hr;
-	
-	*ppBF = (CBaseFilter*)VGF_AudioSwitcher::g_Templates[0].CreateInstance(NULL, &hr);
-	if (FAILED(hr))
-		return hr;
-	(*ppBF)->AddRef();
-	*ppName = VGF_AudioSwitcher::g_Templates[0].m_Name;
-	return S_OK;
+	return E_NOTIMPL;
 }
 
 typedef void(CALLBACK *LPFNEnumFilterProc)(PVOID pUser, const CLSID* clsID, LPCWSTR lpszName, DWORD dwMerit,
@@ -438,15 +239,36 @@ __forceinline void EnumInternalSource(const AMOVIESETUP_FILTER& filter, const So
 		source.nExts, source.lpExts);
 }
 
+HRESULT STDMETHODCALLTYPE VGCreateInstance(const CLSID* clsID, IBaseFilter **ppBF)
+{
+	CheckPointer(ppBF, E_POINTER);
+
+	HRESULT hr;
+	
+	for (int i=0; i<g_cTemplates; i++)
+	{
+		if (IsEqualCLSID(*g_Templates[i].m_ClsID, *clsID))
+		{
+			(*ppBF) = (CBaseFilter*)g_Templates[i].CreateInstance(NULL, &hr);
+			if (FAILED(hr))
+				return hr;
+			(*ppBF)->AddRef();
+			return S_OK;
+		}
+	}
+	*ppBF = NULL;
+	return E_FAIL;
+}
+
 HRESULT STDMETHODCALLTYPE VGEnumInternalFilters(LPFNEnumFilterProc lpfnProc, PVOID pUser)
 {
 	CheckPointer(lpfnProc, E_POINTER);
-
-	EnumInternalFilter(VGF_RM::sudFilter[0], lpfnProc, pUser);
-	EnumInternalFilter(VGF_RM::sudFilter[2], lpfnProc, pUser);
-	EnumInternalFilter(VGF_RM::sudFilter[3], lpfnProc, pUser);
-	EnumInternalFilter(VGF_MK::sudFilter[0], lpfnProc, pUser);
-	EnumInternalFilter(VGF_AudioSwitcher::sudFilter[0], lpfnProc, pUser);
+	
+	EnumInternalFilter(sudFilter[0], lpfnProc, pUser);
+	EnumInternalFilter(sudFilter[2], lpfnProc, pUser);
+	EnumInternalFilter(sudFilter[3], lpfnProc, pUser);
+	EnumInternalFilter(sudFilter[4], lpfnProc, pUser);
+	EnumInternalFilter(sudFilter[6], lpfnProc, pUser);
 
 	return S_OK;
 }
@@ -455,8 +277,8 @@ HRESULT STDMETHODCALLTYPE VGEnumInternalSources(LPFNEnumSourceProc lpfnProc, PVO
 {
 	CheckPointer(lpfnProc, E_POINTER);
 
-	EnumInternalSource(VGF_RM::sudFilter[1], VGF_RM::g_Sources[0], lpfnProc, pUser);
-	EnumInternalSource(VGF_MK::sudFilter[1], VGF_MK::g_Sources[0], lpfnProc, pUser);
+	EnumInternalSource(*g_Sources[0].pTemplate->m_pAMovieSetup_Filter, g_Sources[0], lpfnProc, pUser);
+	EnumInternalSource(*g_Sources[1].pTemplate->m_pAMovieSetup_Filter, g_Sources[1], lpfnProc, pUser);
 
 	return S_OK;
 }

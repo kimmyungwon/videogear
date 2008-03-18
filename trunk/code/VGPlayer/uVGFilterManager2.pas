@@ -5,55 +5,9 @@ unit uVGFilterManager2;
 interface
 
 uses
-  Windows, Classes, Contnrs, SysUtils, ActiveX, DirectShow9, uVGLib;
+  Windows, Classes, Contnrs, SysUtils, ActiveX, DirectShow9, uVGLib, uVGFilterList;
 
 type
-  TVGMediaType = record
-    clsMajorType: TGUID;
-    clsMinorType: TGUID;
-  end;
-
-  TVGPin = class
-  private
-    FName         : WideString;
-    FRendered     : Boolean;
-    FOutput       : Boolean;
-    FZero         : Boolean;
-    FMany         : Boolean;
-    FMediaTypes   : array of TVGMediaType;
-  public
-    constructor Create(const lpPin: PRegFilterPins);
-    destructor Destroy; override;
-  end;
-
-  TVGFilter = class
-  private
-    FCLSID        : TCLSID;
-    FName         : WideString;
-    FMerit        : Cardinal;
-    FPins         : array of TVGPin;
-  public
-    constructor Create(const clsID: PCLSID; lpszName: PWideChar;
-      dwMerit: Cardinal; nPins: Cardinal; const lpPin: PRegFilterPins);
-    destructor Destroy; override;
-  end;
-
-  TVGSource = class(TVGFilter)
-  private
-    FChkBytes     : WideString;
-    FExtensions   : array of WideString;
-  public
-    constructor Create(const clsID: PCLSID; lpszName: PWideChar;
-      dwMerit: Cardinal; nPins: Cardinal; const lpPin: PRegFilterPins;
-      lpszChkBytes: PWideChar; nExts: Cardinal; ppszExts: PPWideChar);
-    destructor Destroy; override;
-  end;
-
-  _ITEM_TYPE_ = TVGFilter;
-  {$INCLUDE tAriaList.tpl}
-
-  TVGFilterList = class(_ARIA_LIST_TEMPLATE_);
-
   TVGFilterManager = class
   strict private
     FFM2: IFilterMapper2;
@@ -102,8 +56,6 @@ begin
     nExts, ppszExts);
 end;
 
-{$INCLUDE tAriaList.tpl}
-
 { TVGFilterManager }
 
 constructor TVGFilterManager.Create;
@@ -140,7 +92,12 @@ begin
     if not (FInternalFilters[I] is TVGSource) then
       Continue;
     Filter := FInternalFilters[I] as TVGSource;
-    
+    if Filter.QueryAccept(AFile, AIgnoreExt) then
+    begin
+      AFilter := Filter.CreateInstance;
+      Result := True;
+      Exit;
+    end;
   end;
 end;
 
@@ -156,91 +113,6 @@ procedure TVGFilterManager.RegisterSource(const clsID: PCLSID;
 begin
   FInternalFilters.Add(TVGSource.Create(clsID, lpszName, dwMerit, nPins, lpPin,
     lpszChkBytes, nExts, ppszExts));
-end;
-
-{ TVGPin }
-
-constructor TVGPin.Create(const lpPin: PRegFilterPins);
-var
-  I: Integer;
-  pPtr: PRegPinTypes;
-begin
-  FName := lpPin^.strName;
-  FRendered := lpPin^.bRendered;
-  FOutput := lpPin^.bOutput;
-  FZero := lpPin^.bZero;
-  FMany := lpPin^.bMany;
-  SetLength(FMediaTypes, lpPin^.nMediaTypes);
-  pPtr := lpPin^.lpMediaType;
-  for I := 0 to lpPin^.nMediaTypes - 1 do
-  begin
-    FMediaTypes[I].clsMajorType := pPtr^.clsMajorType^;
-    FMediaTypes[I].clsMinorType := pPtr^.clsMinorType^;
-    Inc(pPtr);
-  end;
-end;
-
-destructor TVGPin.Destroy;
-begin
-  SetLength(FMediaTypes, 0);
-  inherited;
-end;
-
-{ TVGFilter }
-
-constructor TVGFilter.Create(const clsID: PCLSID; lpszName: PWideChar; dwMerit,
-  nPins: Cardinal; const lpPin: PRegFilterPins);
-var
-  I: Integer;
-  pPtr: PRegFilterPins;
-begin
-  FCLSID := clsID^;
-  FName := lpszName;
-  FMerit := dwMerit;
-  SetLength(FPins, nPins);
-  pPtr := lpPin;
-  for I := 0 to nPins - 1 do
-  begin
-    FPins[I] := TVGPin.Create(pPtr);
-    Inc(pPtr);
-  end;
-  Trace('Register filter "%s" successfully!', [FName]);
-end;
-
-destructor TVGFilter.Destroy;
-var
-  I: Integer;
-begin
-  for I := Low(FPins) to High(FPins) do
-    FreeAndNil(FPins[I]);
-  SetLength(FPins, 0);
-  inherited;
-end;
-
-{ TVGSource }
-
-constructor TVGSource.Create(const clsID: PCLSID; lpszName: PWideChar; dwMerit,
-  nPins: Cardinal; const lpPin: PRegFilterPins; lpszChkBytes: PWideChar;
-  nExts: Cardinal; ppszExts: PPWideChar);
-var
-  I: Integer;
-  pPtr: PPWideChar;
-begin
-  inherited Create(clsID, lpszName, dwMerit, nPins, lpPin);
-  FChkBytes := lpszChkBytes;
-  SetLength(FExtensions, nExts);
-  pPtr := ppszExts;
-  for I := 0 to nExts - 1 do
-  begin
-    FExtensions[I] := pPtr^;
-    Inc(pPtr);
-  end;
-end;
-
-destructor TVGSource.Destroy;
-begin
-  SetLength(FExtensions, 0);
-  inherited;
 end;
 
 initialization

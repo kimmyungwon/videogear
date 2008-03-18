@@ -52,6 +52,8 @@ type
     stdcall; external 'VGLib.dll' index 1;
   function VGEnumInternalSources(lpfnProc: LPFNEnumSourceProc; pUser: Pointer): HRESULT;
     stdcall; external 'VGLib.dll' index 2;
+  function VGCreateInstance(const clsID: PCLSID; out pBF: IBaseFilter): HRESULT;
+    stdcall; external 'VGLib.dll' index 3;
 
 implementation
 

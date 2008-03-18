@@ -27,7 +27,7 @@ type
 
 implementation
 
-uses DSUtil;
+uses DSUtil, uVGFilterManager2;
 
 { TVGFilterManager }
 
@@ -146,7 +146,12 @@ var
 begin
   Clear;
   // 优先使用内部源滤镜
-  Result := VGEnumMatchingSource(PWideChar(AFileName), pSource);
+  if not gFilterMan.FindMatchingSource(AFileName, pSource) then
+  begin
+    Result := VFW_E_CANNOT_RENDER;
+    Exit;
+  end;
+  Result := (pSource as IFileSourceFilter).Load(PWideChar(AFileName), nil);
   if Failed(Result) then
     Exit;
   Result := FGB.AddFilter(pSource, PWideChar(AFileName));
