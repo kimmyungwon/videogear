@@ -21,7 +21,7 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    function FindMatchingSource(const AFile: WideString; 
+    function FindMatchingSource(const AFile: WideString;
       out AFilter: IBaseFilter; AIgnoreExt: Boolean = False): Boolean;
   end;
 
@@ -86,7 +86,6 @@ var
   I: Integer;
   Filter: TVGSource;
 begin
-  Result := False;
   for I := 0 to FInternalFilters.Count - 1 do
   begin
     if not (FInternalFilters[I] is TVGSource) then
@@ -99,6 +98,9 @@ begin
       Exit;
     end;
   end;
+  // 内置Source无法解析文件，使用默认系统滤镜
+  Result := Succeeded(CoCreateInstance(CLSID_AsyncReader, nil, CLSCTX_INPROC_SERVER,
+    IID_IBaseFilter, AFilter));
 end;
 
 procedure TVGFilterManager.RegisterFilter(const clsID: PCLSID;
