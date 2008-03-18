@@ -56,6 +56,7 @@ begin
   FAudioSwitcher := Filter.CreateInstance;
   FGB.AddFilter(FAudioSwitcher, PWideChar(Filter.Name));
   FAudioSwitcherCtrl := FAudioSwitcher as IAudioSwitcherFilter;
+  FAudioSwitcherCtrl.SetNormalizeBoost(True, True, 0);
 end;
 
 function TVGFilterManager.ConnectDirect(AOutPin: IPin; AFilter: IBaseFilter; AMT: PAMMediaType): HRESULT;
