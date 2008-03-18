@@ -85,7 +85,6 @@ type
   TVGFilterList = class
   private
     FItems: TObjectList;
-    FLookup: TAriaMTHashSet;
     FPos: Integer;
     function GetCount: Integer;
   public
@@ -343,13 +342,11 @@ end;
 constructor TVGFilterList.Create(AOwnsObjects: Boolean);
 begin
   FItems := TObjectList.Create(AOwnsObjects);
-  FLookup := TAriaMTHashSet.Create;
   FPos := 0;
 end;
 
 destructor TVGFilterList.Destroy;
 begin
-  FreeAndNil(FLookup);
   FreeAndNil(FItems);
   inherited;
 end;
