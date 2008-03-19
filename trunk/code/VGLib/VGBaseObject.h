@@ -1,5 +1,10 @@
 #pragma once
 
+struct CGUID : public GUID
+{
+	CGUID(const GUID& _guid): GUID(_guid)	{}	
+};
+
 struct CVGMediaType
 {
 	GUID clsMajor, clsMinor;
