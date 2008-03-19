@@ -1,5 +1,12 @@
 #pragma once
 
+struct CVGMediaType
+{
+	GUID clsMajor, clsMinor;
+};
+
+//////////////////////////////////////////////////////////////////////////
+
 template<typename BASE_INTERFACE, REFIID iid >
 //BASE_INTERFACE should derive from IUnknown
 class CVGUnknownImpl : public BASE_INTERFACE

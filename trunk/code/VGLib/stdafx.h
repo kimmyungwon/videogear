@@ -38,6 +38,8 @@
 
 
 #include <vector>
+#include <hash_map>
+#include <utility>
 #include <ObjBase.h>
 #include <dshow.h>
 #include <streams.h>
