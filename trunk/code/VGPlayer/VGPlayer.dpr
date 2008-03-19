@@ -7,8 +7,9 @@ uses
   uVGFilterManager in 'uVGFilterManager.pas',
   uVGPlayer in 'uVGPlayer.pas',
   uVGException in 'uVGException.pas',
-  uVGFilterManager2 in 'uVGFilterManager2.pas',
-  uVGFilterList in 'uVGFilterList.pas';
+  uVGFilterList in 'uVGFilterList.pas',
+  uVGMTLookup in 'uVGMTLookup.pas',
+  uVGBase in 'uVGBase.pas';
 
 {$R *.res}
 

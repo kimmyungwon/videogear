@@ -3,14 +3,23 @@ unit uVGFilterManager;
 interface
 
 uses
-  Windows, ActiveX, DirectShow9, uVGLib, uAriaDebug, WideStrings;
+  Windows, ActiveX, WideStrings, DirectShow9, uVGLib, uAriaDebug, uVGBase,
+  uVGFilterList, uVGException;
 
 type
   TVGFilterManager = class
   protected
+    FFM2: IFilterMapper2;
     FGB: IGraphBuilder;
+    FInternalFilters: TVGFilterList;
     FAudioSwitcher: IBaseFilter;
     FAudioSwitcherCtrl: IAudioSwitcherFilter;
+  private
+    procedure RegisterFilter(const clsID: PCLSID; lpszName: PWideChar;
+      dwMerit: Cardinal; nPins: Cardinal; const lpPin: PRegFilterPins);
+    procedure RegisterSource(const clsID: PCLSID; lpszName: PWideChar;
+      dwMerit: Cardinal; nPins: Cardinal; const lpPin: PRegFilterPins;
+      lpszChkBytes: PWideChar; nExts: Cardinal; ppszExts: PPWideChar);
   protected
     function ConnectDirect(AOutPin: IPin; AFilter: IBaseFilter; AMT: PAMMediaType): HRESULT;
     procedure DisconnectFilters;
@@ -24,14 +33,55 @@ type
     function RenderPinUsingSystem(APIn: IPin): HRESULT;
   public
     constructor Create;
+    destructor Destroy; override;
     procedure Clear;
     function GetFilterList: TWideStringList;
-    function RenderFile(const AFileName: WideString): HRESULT; virtual; 
+    function FindMatchingSource(const AFile: WideString;
+      out AFilter: IBaseFilter; AIgnoreExt: Boolean = False): Boolean;
+    function FindMatchingFilters(out AList: TVGFilterList; AMerit: DWORD;
+      AInputNeeded: BOOL; AClsInMaj, AClsInSub: TCLSID; ARender, AOutputNeeded: BOOL;
+      AClsOutMaj, AClsOutSub: TCLSID): Boolean;
+    function Get(const clsID: TCLSID): TVGFilter;
+    function RenderFile(const AFileName: WideString): HRESULT; virtual;
   end;
 
 implementation
 
-uses DSUtil, uVGFilterManager2, uVGFilterList, JclSysUtils;
+uses DSUtil, JclSysUtils;
+
+function MatchGUID(const AGUID1, AGUID2: TGUID): Boolean; inline;
+begin
+  if IsEqualGUID(AGUID1, AGUID2) or
+    IsEqualGUID(AGUID1, GUID_NULL) or
+    IsEqualGUID(AGUID2, GUID_NULL) then
+    Result := True
+  else
+    Result := False;
+end;
+
+procedure EnumFilterProc(pUser: Pointer; const clsID: PCLSID; lpszName: PWideChar;
+  dwMerit: Cardinal; nPins: Cardinal; const lpPin: PRegFilterPins); stdcall;
+var
+  FM: TVGFilterManager; 
+begin
+  if pUser = nil then
+    Exit;
+  FM := TVGFilterManager(pUser);
+  FM.RegisterFilter(clsID, lpszName, dwMerit, nPins, lpPin);
+end;
+
+procedure EnumSourceProc(pUser: Pointer; const clsID: PCLSID; lpszName: PWideChar;
+  dwMerit: Cardinal; nPins: Cardinal; const lpPin: PRegFilterPins; lpszChkBytes: PWideChar;
+  nExts: Cardinal; ppszExts: PPWideChar); stdcall;
+var
+  FM: TVGFilterManager; 
+begin
+  if pUser = nil then
+    Exit;
+  FM := TVGFilterManager(pUser);
+  FM.RegisterSource(clsID, lpszName, dwMerit, nPins, lpPin, lpszChkBytes,
+    nExts, ppszExts);
+end;
 
 { TVGFilterManager }
 
@@ -52,7 +102,7 @@ begin
     FilterList.Free;
   end;
   // 启用AudioSwitcher
-  Filter := gFilterMan.Get(IID_IAudioSwitcher);
+  Filter := Get(IID_IAudioSwitcher);
   FAudioSwitcher := Filter.CreateInstance;
   FGB.AddFilter(FAudioSwitcher, PWideChar(Filter.Name));
   FAudioSwitcherCtrl := FAudioSwitcher as IAudioSwitcherFilter;
@@ -78,8 +128,29 @@ begin
 end;
 
 constructor TVGFilterManager.Create;
+var
+  hr: HRESULT;
 begin
-  CoCreateInstance(CLSID_FilterGraph, nil, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, FGB);
+  FInternalFilters := TVGFilterList.Create(True);
+
+  hr := CoCreateInstance(CLSID_FilterMapper2, nil, CLSCTX_INPROC_SERVER,
+    IID_IFilterMapper2, FFM2);
+  if Failed(hr) then
+    raise EVGError.CreateFromLastOSError(hr);
+  hr := CoCreateInstance(CLSID_FilterGraph, nil, CLSCTX_INPROC_SERVER,
+    IID_IGraphBuilder, FGB);
+  if Failed(hr) then
+    raise EVGError.CreateFromLastOSError(hr);
+  // 初始化内部滤镜列表
+  VGEnumInternalFilters(EnumFilterProc, Self);
+  VGEnumInternalSources(EnumSourceProc, Self);
+end;
+
+destructor TVGFilterManager.Destroy;
+begin
+  FFM2 := nil;
+  FreeAndNil(FInternalFilters);
+  inherited;
 end;
 
 procedure TVGFilterManager.DisconnectFilters;
@@ -104,6 +175,109 @@ begin
           BaseFilter := nil;
         end;
     FilterList.Free;
+  end;
+end;
+
+function TVGFilterManager.FindMatchingFilters(out AList: TVGFilterList;
+  AMerit: DWORD; AInputNeeded: BOOL; AClsInMaj, AClsInSub: TCLSID; ARender,
+  AOutputNeeded: BOOL; AClsOutMaj, AClsOutSub: TCLSID): Boolean;
+var
+  I, J, K: Integer;
+  Filter: TVGFilter;
+  Pin: TVGPin;
+  MT: TVGMediaType;
+  bInMatched, bOutMatched: Boolean;
+begin
+  AList.Clear;
+  for I := 0 to FInternalFilters.Count - 1 do
+  begin
+    Filter := FInternalFilters[I];
+    bInMatched := False;
+    bOutMatched := False;
+    // 检查Merit
+    if Filter.Merit < AMerit then
+      Continue;
+    // 检查In、Out插针个数
+    if (AInputNeeded and (Filter.InPins = 0)) or
+      (AOutputNeeded and (Filter.OutPins = 0)) then
+      Continue;
+    // 检查每一个Pin
+    for J := 0 to Filter.PinCount - 1 do
+    begin
+      Pin := Filter.Pins[J];
+      if Pin.Output then
+      begin
+        // 检查每一个MediaType
+        for K := 0 to Pin.MediaTypeCount - 1 do
+        begin
+          MT := Pin.MediaTypes[K];
+          bOutMatched := MatchGUID(MT.clsMajorType, AClsOutMaj) and
+            MatchGUID(MT.clsMinorType, AClsOutSub);
+          if bOutMatched then
+            Break;
+        end;
+        if not bOutMatched then
+          Break;
+      end
+      else
+      begin
+        // 检查每一个MediaType
+        for K := 0 to Pin.MediaTypeCount - 1 do
+        begin
+          MT := Pin.MediaTypes[K];
+          bInMatched := MatchGUID(MT.clsMajorType, AClsInMaj) and
+            MatchGUID(MT.clsMinorType, AClsInSub);
+          if bInMatched then
+            Break;
+        end;
+        if not bInMatched then
+          Break;
+      end;
+    end;
+    // 判断结果
+    if ((Filter.InPins > 0) and (not bInMatched)) or
+      ((Filter.OutPins > 0) and (not bOutMatched)) then
+      Continue;
+    AList.Add(Filter);
+  end;
+  Result := AList.Count > 0;
+end;
+
+function TVGFilterManager.FindMatchingSource(const AFile: WideString;
+  out AFilter: IBaseFilter; AIgnoreExt: Boolean): Boolean;
+var
+  I: Integer;
+  Filter: TVGSource;
+begin
+  for I := 0 to FInternalFilters.Count - 1 do
+  begin
+    if not (FInternalFilters[I] is TVGSource) then
+      Continue;
+    Filter := FInternalFilters[I] as TVGSource;
+    if Filter.QueryAccept(AFile, AIgnoreExt) then
+    begin
+      AFilter := Filter.CreateInstance;
+      Result := True;
+      Exit;
+    end;
+  end;
+  // 内置Source无法解析文件，使用默认系统滤镜
+  Result := Succeeded(CoCreateInstance(CLSID_AsyncReader, nil, CLSCTX_INPROC_SERVER,
+    IID_IBaseFilter, AFilter));
+end;
+
+function TVGFilterManager.Get(const clsID: TCLSID): TVGFilter;
+var
+  I: Integer;
+begin
+  Result := nil;
+  for I := 0 to FInternalFilters.Count - 1 do
+  begin
+    if IsEqualCLSID(clsID, FInternalFilters[I].CLSID) then
+    begin
+      Result := FInternalFilters[I];
+      Exit;
+    end;
   end;
 end;
 
@@ -147,13 +321,27 @@ begin
   Result := Succeeded(APin.ConnectionMediaType(pmt));
 end;
 
+procedure TVGFilterManager.RegisterFilter(const clsID: PCLSID;
+  lpszName: PWideChar; dwMerit, nPins: Cardinal; const lpPin: PRegFilterPins);
+begin
+  FInternalFilters.Add(TVGFilter.Create(clsID, lpszName, dwMerit, nPins, lpPin));
+end;
+
+procedure TVGFilterManager.RegisterSource(const clsID: PCLSID;
+  lpszName: PWideChar; dwMerit, nPins: Cardinal; const lpPin: PRegFilterPins;
+  lpszChkBytes: PWideChar; nExts: Cardinal; ppszExts: PPWideChar);
+begin
+  FInternalFilters.Add(TVGSource.Create(clsID, lpszName, dwMerit, nPins, lpPin,
+    lpszChkBytes, nExts, ppszExts));
+end;
+
 function TVGFilterManager.RenderFile(const AFileName: WideString): HRESULT;
 var
   pSource: IBaseFilter;
 begin
   Clear;
   // 优先使用内部源滤镜
-  if not gFilterMan.FindMatchingSource(AFileName, pSource) then
+  if not FindMatchingSource(AFileName, pSource) then
   begin
     Result := VFW_E_CANNOT_RENDER;
     Exit;
@@ -266,7 +454,7 @@ var
 begin
   lstMatched := TVGFilterList.Create(False);
   try
-    if not gFilterMan.FindMatchingFilters(lstMatched, MERIT_NORMAL, True,
+    if not FindMatchingFilters(lstMatched, MERIT_NORMAL, True,
       AMT^.MajorType, AMT^.SubType, False, False, GUID_NULL, GUID_NULL) then
     begin
       Result := VFW_E_CANNOT_RENDER;

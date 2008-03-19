@@ -48,11 +48,12 @@
     <DCCReference Include="ufrmMain.pas">
       <Form>frmMain</Form>
     </DCCReference>
+    <DCCReference Include="uVGBase.pas" />
     <DCCReference Include="uVGException.pas" />
     <DCCReference Include="uVGFilterList.pas" />
     <DCCReference Include="uVGFilterManager.pas" />
-    <DCCReference Include="uVGFilterManager2.pas" />
     <DCCReference Include="uVGLib.pas" />
+    <DCCReference Include="uVGMTLookup.pas" />
     <DCCReference Include="uVGPlayer.pas" />
   </ItemGroup>
 </Project>
