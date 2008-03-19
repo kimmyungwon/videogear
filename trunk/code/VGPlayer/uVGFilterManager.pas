@@ -3,8 +3,9 @@ unit uVGFilterManager;
 interface
 
 uses
-  Windows, ActiveX, WideStrings, DirectShow9, uVGLib, uAriaDebug, uVGBase,
-  uVGFilterList, uVGException;
+  Windows, ActiveX, WideStrings, DirectShow9,
+  uAriaDebug,
+  uVGBase, uVGLib, uVGFilterList, uVGException, uVGMTLookup;
 
 type
   TVGFilterManager = class
@@ -12,6 +13,7 @@ type
     FFM2: IFilterMapper2;
     FGB: IGraphBuilder;
     FInternalFilters: TVGFilterList;
+    FInternalFiltersLookupByMT: TVGFilterLookupByMediaType;
     FAudioSwitcher: IBaseFilter;
     FAudioSwitcherCtrl: IAudioSwitcherFilter;
   private
@@ -40,7 +42,9 @@ type
       out AFilter: IBaseFilter; AIgnoreExt: Boolean = False): Boolean;
     function FindMatchingFilters(out AList: TVGFilterList; AMerit: DWORD;
       AInputNeeded: BOOL; AClsInMaj, AClsInSub: TCLSID; ARender, AOutputNeeded: BOOL;
-      AClsOutMaj, AClsOutSub: TCLSID): Boolean;
+      AClsOutMaj, AClsOutSub: TCLSID): Boolean; overload;
+    function FindMatchingFilters(out AList: TVGFilterList; AMerit: DWORD;
+      AClsInMaj, AClsInSub: TCLSID): Boolean; overload;
     function Get(const clsID: TCLSID): TVGFilter;
     function RenderFile(const AFileName: WideString): HRESULT; virtual;
   end;
@@ -132,6 +136,7 @@ var
   hr: HRESULT;
 begin
   FInternalFilters := TVGFilterList.Create(True);
+  FInternalFiltersLookupByMT := TVGFilterLookupByMediaType.Create;
 
   hr := CoCreateInstance(CLSID_FilterMapper2, nil, CLSCTX_INPROC_SERVER,
     IID_IFilterMapper2, FFM2);
@@ -149,6 +154,7 @@ end;
 destructor TVGFilterManager.Destroy;
 begin
   FFM2 := nil;
+  FreeAndNil(FInternalFiltersLookupByMT);
   FreeAndNil(FInternalFilters);
   inherited;
 end;
@@ -243,6 +249,15 @@ begin
   Result := AList.Count > 0;
 end;
 
+function TVGFilterManager.FindMatchingFilters(out AList: TVGFilterList;
+  AMerit: DWORD; AClsInMaj, AClsInSub: TCLSID): Boolean;
+var
+  mtIn: TVGMediaType;
+begin
+  mtIn := TVGMediaType.Create(AClsInMaj, AClsInSub);
+  
+end;
+
 function TVGFilterManager.FindMatchingSource(const AFile: WideString;
   out AFilter: IBaseFilter; AIgnoreExt: Boolean): Boolean;
 var
@@ -323,8 +338,22 @@ end;
 
 procedure TVGFilterManager.RegisterFilter(const clsID: PCLSID;
   lpszName: PWideChar; dwMerit, nPins: Cardinal; const lpPin: PRegFilterPins);
+var
+  newFilter: TVGFilter;
+  I, J: Integer;
 begin
-  FInternalFilters.Add(TVGFilter.Create(clsID, lpszName, dwMerit, nPins, lpPin));
+  newFilter := TVGFilter.Create(clsID, lpszName, dwMerit, nPins, lpPin);
+  FInternalFilters.Add(newFilter);
+  // ◊¢≤· ‰»ÎPinµƒMediaTypeµΩLookup
+  for I := 0 to newFilter.PinCount - 1 do
+  begin
+    if newFilter.Pins[I].Output then
+      Continue;
+    for J := 0 to newFilter.Pins[I].MediaTypeCount - 1 do
+    begin
+      FInternalFiltersLookupByMT[newFilter.Pins[I].MediaTypes[J]] := newFilter;
+    end;
+  end;
 end;
 
 procedure TVGFilterManager.RegisterSource(const clsID: PCLSID;

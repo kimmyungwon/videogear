@@ -8,9 +8,10 @@ uses
   Classes, SysUtils, ActiveX, WideStrings, DirectShow9;
 
 type
-  TVGMediaType = packed record
+  TVGMediaType = record
     clsMajorType: TGUID;
     clsMinorType: TGUID;
+    constructor Create(AClsMaj, AClsSub: TGUID);
   end;
 
   TVGPin = class(TPersistent)
@@ -80,6 +81,14 @@ begin
   Result := '';
   for I := Low(ABytes) to High(ABytes) do
     Result := Result + WideFormat('%.2X', [ABytes[I]]);
+end;
+
+{ TVGMediaType }
+
+constructor TVGMediaType.Create(AClsMaj, AClsSub: TGUID);
+begin
+  clsMajorType := AClsMaj;
+  clsMinorType := AClsSub;
 end;
 
 { TVGPin }

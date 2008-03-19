@@ -9,7 +9,8 @@ uses
   uVGException in 'uVGException.pas',
   uVGFilterList in 'uVGFilterList.pas',
   uVGMTLookup in 'uVGMTLookup.pas',
-  uVGBase in 'uVGBase.pas';
+  uVGBase in 'uVGBase.pas',
+  uAriaJclExt in '..\common\uAriaJclExt.pas';
 
 {$R *.res}
 

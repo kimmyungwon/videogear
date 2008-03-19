@@ -45,6 +45,7 @@
     <DelphiCompile Include="VGPlayer.dpr">
       <MainSource>MainSource</MainSource>
     </DelphiCompile>
+    <DCCReference Include="..\common\uAriaJclExt.pas" />
     <DCCReference Include="ufrmMain.pas">
       <Form>frmMain</Form>
     </DCCReference>

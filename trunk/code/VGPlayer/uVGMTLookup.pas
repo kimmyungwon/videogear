@@ -5,14 +5,14 @@ unit uVGMTLookup;
 interface
 
 uses
-  SysUtils, ActiveX, uVGBase;
+  SysUtils, ActiveX, uVGBase, JclContainerIntf, JclHashMaps;
 
 type
   _ITEM_TYPE_ = TVGMediaType;
   _DATA_TYPE_ = TVGFilter;
 
   {$INCLUDE 'tAriaHashSet.tpl'}
-  TAriaMediaTypeLookup = class(_ARIA_HASHSET_TEMPLATE_)
+  TVGFilterLookupByMediaType = class(_ARIA_HASHSET_TEMPLATE_)
   protected
     function HashItem(const AItem: _ITEM_TYPE_): Cardinal; override;
     function IsNull(const AItem: _ITEM_TYPE_): Boolean; override;
@@ -25,7 +25,7 @@ implementation
 
 { TAriaMTHashSet }
 
-function TAriaMediaTypeLookup.HashItem(const AItem: _ITEM_TYPE_): Cardinal;
+function TVGFilterLookupByMediaType.HashItem(const AItem: _ITEM_TYPE_): Cardinal;
 var
   pPtr: PByteArray;
   I: Integer;
@@ -38,13 +38,13 @@ begin
   end;
 end;
 
-function TAriaMediaTypeLookup.IsNull(const AItem: _ITEM_TYPE_): Boolean;
+function TVGFilterLookupByMediaType.IsNull(const AItem: _ITEM_TYPE_): Boolean;
 begin
   Result := IsEqualCLSID(AItem.clsMajorType, GUID_NULL) and
     IsEqualCLSID(AItem.clsMinorType, GUID_NULL);
 end;
 
-function TAriaMediaTypeLookup.IsSame(const AItem1, AItem2: _ITEM_TYPE_): Boolean;
+function TVGFilterLookupByMediaType.IsSame(const AItem1, AItem2: _ITEM_TYPE_): Boolean;
 begin
   Result := IsEqualCLSID(AItem1.clsMajorType, AItem2.clsMajorType) and
     IsEqualCLSID(AItem1.clsMinorType, AItem2.clsMinorType);
