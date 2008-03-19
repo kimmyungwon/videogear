@@ -86,7 +86,7 @@ HRESULT CVGFilterManager::EnumMatchingFilters( IEnumGUID **ppEnum, BOOL bExactMa
 {
 	CEnumGUID *pEnum = new CEnumGUID;
 	pair<mt_lookup_iter_t, mt_lookup_iter_t> p;
-	CVGMediaType mt(clsInMaj, clsInSub);
+	CVGMediaType mt(clsInMaj, clsInSub, false);
 
 	// 枚举完全匹配的
 	p = m_lookupMT.equal_range(mt);

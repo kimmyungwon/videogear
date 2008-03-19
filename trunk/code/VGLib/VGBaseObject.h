@@ -10,16 +10,26 @@ struct CGUID : public GUID
 	}
 };
 
+__inline bool MatchGUID(REFGUID a, REFGUID b)
+{
+	return InlineIsEqualGUID(a, b) || InlineIsEqualGUID(a, GUID_NULL) || InlineIsEqualGUID(b, GUID_NULL);
+}
+
 struct CVGMediaType
 {
 	GUID clsMajor, clsMinor;
+	bool bExactMatch;
 
-	CVGMediaType(REFGUID major, REFGUID minor): clsMajor(major), clsMinor(minor)	{}
-	CVGMediaType(const REGPINTYPES& r): clsMajor(*r.clsMajorType), clsMinor(*r.clsMinorType)	{}
+	CVGMediaType(void): bExactMatch(true)	{}
+	CVGMediaType(REFGUID major, REFGUID minor, bool exact = true): clsMajor(major), clsMinor(minor), bExactMatch(exact)	{}
+	CVGMediaType(const REGPINTYPES& r): clsMajor(*r.clsMajorType), clsMinor(*r.clsMinorType), bExactMatch(true)	{}
 
 	friend bool operator==(const CVGMediaType& a, const CVGMediaType& b)
 	{
-		return InlineIsEqualGUID(a.clsMajor, b.clsMajor) && InlineIsEqualGUID(a.clsMinor, b.clsMinor);
+		if (a.bExactMatch && b.bExactMatch)
+			return InlineIsEqualGUID(a.clsMajor, b.clsMajor) && InlineIsEqualGUID(a.clsMinor, b.clsMinor);
+		else
+			return MatchGUID(a.clsMajor, b.clsMajor) && MatchGUID(a.clsMinor, b.clsMinor);
 	}
 };
 
