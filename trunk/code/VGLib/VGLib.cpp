@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include "VGLib.h"
+#include "VGPlayer.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -257,5 +258,14 @@ HRESULT STDMETHODCALLTYPE VGEnumInternalSources(LPFNEnumSourceProc lpfnProc, PVO
 	EnumInternalSource(*g_Sources[0].pTemplate->m_pAMovieSetup_Filter, g_Sources[0], lpfnProc, pUser);
 	EnumInternalSource(*g_Sources[1].pTemplate->m_pAMovieSetup_Filter, g_Sources[1], lpfnProc, pUser);
 
+	return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE VGCreatePlayer(IVGPlayer **ppvObject)
+{
+	CheckPointer(ppvObject, E_POINTER);
+
+	IVGPlayerPtr pPlayer = new CVGPlayer;
+	*ppvObject = pPlayer;
 	return S_OK;
 }

@@ -2,12 +2,25 @@
 
 struct CGUID : public GUID
 {
-	CGUID(const GUID& _guid): GUID(_guid)	{}	
+	CGUID(const GUID& r): GUID(r)	{}
+	
+	friend bool operator==(const CGUID& a, const CGUID& b)
+	{
+		return IsEqualGUID(a, b) == TRUE;
+	}
 };
 
 struct CVGMediaType
 {
 	GUID clsMajor, clsMinor;
+
+	CVGMediaType(REFGUID major, REFGUID minor): clsMajor(major), clsMinor(minor)	{}
+	CVGMediaType(const REGPINTYPES& r): clsMajor(*r.clsMajorType), clsMinor(*r.clsMinorType)	{}
+
+	friend bool operator==(const CVGMediaType& a, const CVGMediaType& b)
+	{
+		return InlineIsEqualGUID(a.clsMajor, b.clsMajor) && InlineIsEqualGUID(a.clsMinor, b.clsMinor);
+	}
 };
 
 //////////////////////////////////////////////////////////////////////////

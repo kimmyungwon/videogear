@@ -3,23 +3,30 @@ unit uVGException;
 interface
 
 uses
-  Classes, uAriaException, DirectShow9;
+  Classes, DirectShow9, TntSysUtils;
 
 type
-  EVGError = class(EAriaError)
+  EVGError = class(WideException)
   protected
-    function SysErrorToString(AHR: HRESULT): WideString; override;  
+    function SysErrorToString(hr: HRESULT): WideString;
+  public
+    constructor CreateOSError(AErrorCode: Integer);
   end;  
 
 implementation
 
 { EVGError }
 
-function EVGError.SysErrorToString(AHR: HRESULT): WideString;
+constructor EVGError.CreateOSError(AErrorCode: Integer);
+begin
+  inherited Create(SysErrorToString(AErrorCode));
+end;
+
+function EVGError.SysErrorToString(hr: HRESULT): WideString;
 var
   szMsg: array[0..MAX_ERROR_TEXT_LEN] of WideChar;
 begin
-  AMGetErrorTextW(AHR, szMsg, MAX_ERROR_TEXT_LEN);
+  AMGetErrorTextW(hr, szMsg, MAX_ERROR_TEXT_LEN);
   Result := szMsg;
 end;
 

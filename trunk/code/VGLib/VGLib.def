@@ -6,4 +6,5 @@ EXPORTS
 	VGEnumInternalFilters		@1	NONAME
 	VGEnumInternalSources		@2	NONAME
 	VGCreateInstance			@3	NONAME
+	VGCreatePlayer				@4	NONAME
     ; 此处可以是显式导出

@@ -37,8 +37,9 @@
 #endif // _AFX_NO_AFXCMN_SUPPORT
 
 
+#include <list>
 #include <vector>
-#include <hash_map>
+#include <map>
 #include <utility>
 #include <ObjBase.h>
 #include <dshow.h>

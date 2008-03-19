@@ -8,7 +8,6 @@
 #endif
 
 #include "resource.h"		// 主符号
-#include "VGFilterList.h"
 
 // CVGLibApp
 // 有关此类实现的信息，请参阅 VGLib.cpp

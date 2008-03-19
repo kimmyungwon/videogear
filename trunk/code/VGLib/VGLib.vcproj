@@ -210,10 +210,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\VGFilterList.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\VGFilterManager.cpp"
 				>
 			</File>
@@ -223,6 +219,10 @@
 			</File>
 			<File
 				RelativePath=".\VGLib.def"
+				>
+			</File>
+			<File
+				RelativePath=".\VGPlayer.cpp"
 				>
 			</File>
 		</Filter>
@@ -248,15 +248,19 @@
 				>
 			</File>
 			<File
-				RelativePath=".\VGFilterList.h"
-				>
-			</File>
-			<File
 				RelativePath=".\VGFilterManager.h"
 				>
 			</File>
 			<File
+				RelativePath=".\VGIntf.h"
+				>
+			</File>
+			<File
 				RelativePath=".\VGLib.h"
+				>
+			</File>
+			<File
+				RelativePath=".\VGPlayer.h"
 				>
 			</File>
 		</Filter>

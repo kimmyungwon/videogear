@@ -1,6 +1,7 @@
 program VGPlayer;
 
 uses
+  TntSystem,
   Forms,
   ufrmMain in 'ufrmMain.pas' {frmMain},
   uVGLib in 'uVGLib.pas',
@@ -15,6 +16,7 @@ uses
 {$R *.res}
 
 begin
+  InstallTntSystemUpdates;
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
   Application.CreateForm(TfrmMain, frmMain);
