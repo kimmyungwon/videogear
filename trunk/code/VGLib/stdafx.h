@@ -40,6 +40,7 @@
 #include <list>
 #include <vector>
 #include <map>
+#include <set>
 #include <utility>
 #include <ObjBase.h>
 #include <dshow.h>

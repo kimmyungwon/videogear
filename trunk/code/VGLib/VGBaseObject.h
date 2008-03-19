@@ -1,20 +1,5 @@
 #pragma once
 
-struct CGUID : public GUID
-{
-	CGUID(const GUID& r): GUID(r)	{}
-	
-	friend bool operator<(const CGUID& a, const CGUID& b)
-	{
-		return memcmp(&a, &b, sizeof(GUID)) < 0;
-	}
-	
-	friend bool operator==(const CGUID& a, const CGUID& b)
-	{
-		return InlineIsEqualGUID(a, b) == TRUE;
-	}
-};
-
 __inline bool MatchGUID(REFGUID a, REFGUID b)
 {
 	return InlineIsEqualGUID(a, b) || InlineIsEqualGUID(a, GUID_NULL) || InlineIsEqualGUID(b, GUID_NULL);

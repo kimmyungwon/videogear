@@ -5,11 +5,19 @@
 
 using namespace std;
 
+struct guid_less : public binary_function <GUID, GUID, bool> 
+{
+	bool operator()(REFGUID _Left, REFGUID _Right) const
+	{
+		return memcmp(&_Left, &_Right, sizeof(GUID)) < 0;
+	}
+};
+
 class CEnumGUID : public CVGUnknownImpl<IEnumGUID, IID_IEnumGUID>
 {
 private:
-	vector<GUID>	m_items;
-	size_t			m_nIter;
+	set<GUID, guid_less>					m_items;
+	set<GUID, guid_less>::const_iterator	m_iter;
 public:
 	CEnumGUID(void);
 	void Add(const GUID &guid);
@@ -24,9 +32,9 @@ public:
 class CVGFilterManager : public CVGUnknownImpl<IVGFilterManager, IID_IVGFilterManager>
 {
 private:
-	typedef map<GUID, CFactoryTemplate*> guid2ft_t;
-	typedef map<GUID, guid2ft_t> maj2subs_t;
-	typedef map<GUID, CFactoryTemplate*> filter_lookup_t;
+	typedef map<GUID, CFactoryTemplate*, guid_less> guid2ft_t;
+	typedef map<GUID, guid2ft_t, guid_less> maj2subs_t;
+	typedef map<GUID, CFactoryTemplate*, guid_less> filter_lookup_t;
 private:
 	//mt_lookup_t			m_lookupMT;		// 输入Pin的MediaType到滤镜的映射
 	maj2subs_t			m_lookupMT;
