@@ -31,6 +31,16 @@ type
       boost: Single): HRESULT; stdcall;
   end;
 
+  IVGFilterManager = interface(IUnknown)
+  ['{8BAC0406-06F0-4232-B6BB-87F92DBC7945}']
+    function EnumMatchingFilters(out ppEnum: IEnumGUID; bExactMatch: LongBool;
+      dwMerit: Cardinal; clsInMaj, clsInSub: TCLSID): HRESULT; stdcall; 
+  end;
+
+  IVGPlayer = interface(IUnknown)
+  ['{14868E59-6444-4bca-9004-6C697E4E66ED}']
+  end;
+
   LPFNEnumFilterProc = procedure(pUser: Pointer; const clsID: PCLSID; lpszName: PWideChar;
     dwMerit: Cardinal; nPins: Cardinal; const lpPin: PRegFilterPins); stdcall;
   LPFNEnumSourceProc = procedure(pUser: Pointer; const clsID: PCLSID; lpszName: PWideChar;
@@ -43,6 +53,7 @@ type
     stdcall; external 'VGLib.dll' index 2;
   function VGCreateInstance(const clsID: PCLSID; out pBF: IBaseFilter): HRESULT;
     stdcall; external 'VGLib.dll' index 3;
+  function VGCreatePlayer(out ppvObject: IVGPlayer): HRESULT; stdcall; external 'VGLib.dll' index 4;
 
 implementation
 

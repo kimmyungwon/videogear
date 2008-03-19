@@ -4,9 +4,14 @@ struct CGUID : public GUID
 {
 	CGUID(const GUID& r): GUID(r)	{}
 	
+	friend bool operator<(const CGUID& a, const CGUID& b)
+	{
+		return memcmp(&a, &b, sizeof(GUID)) < 0;
+	}
+	
 	friend bool operator==(const CGUID& a, const CGUID& b)
 	{
-		return IsEqualGUID(a, b) == TRUE;
+		return InlineIsEqualGUID(a, b) == TRUE;
 	}
 };
 
@@ -18,18 +23,13 @@ __inline bool MatchGUID(REFGUID a, REFGUID b)
 struct CVGMediaType
 {
 	GUID clsMajor, clsMinor;
-	bool bExactMatch;
 
-	CVGMediaType(void): bExactMatch(true)	{}
-	CVGMediaType(REFGUID major, REFGUID minor, bool exact = true): clsMajor(major), clsMinor(minor), bExactMatch(exact)	{}
-	CVGMediaType(const REGPINTYPES& r): clsMajor(*r.clsMajorType), clsMinor(*r.clsMinorType), bExactMatch(true)	{}
+	CVGMediaType(REFGUID major, REFGUID minor): clsMajor(major), clsMinor(minor)	{}
+	CVGMediaType(const REGPINTYPES& r): clsMajor(*r.clsMajorType), clsMinor(*r.clsMinorType)	{}
 
 	friend bool operator==(const CVGMediaType& a, const CVGMediaType& b)
 	{
-		if (a.bExactMatch && b.bExactMatch)
-			return InlineIsEqualGUID(a.clsMajor, b.clsMajor) && InlineIsEqualGUID(a.clsMinor, b.clsMinor);
-		else
-			return MatchGUID(a.clsMajor, b.clsMajor) && MatchGUID(a.clsMinor, b.clsMinor);
+		return InlineIsEqualGUID(a.clsMajor, b.clsMajor) && InlineIsEqualGUID(a.clsMinor, b.clsMinor);
 	}
 };
 

@@ -11,6 +11,11 @@ void CEnumGUID::Add( const GUID &guid )
 	m_items.push_back(guid);
 }
 
+size_t CEnumGUID::GetCount( void )
+{
+	return m_items.size();
+}
+
 HRESULT STDMETHODCALLTYPE CEnumGUID::Next( ULONG celt, GUID *rgelt, ULONG *pceltFetched )
 {
 	CheckPointer(rgelt, E_POINTER);
@@ -55,7 +60,7 @@ HRESULT STDMETHODCALLTYPE CEnumGUID::Clone( IEnumGUID **ppenum )
 
 //////////////////////////////////////////////////////////////////////////
 
-extern CFactoryTemplate *g_Templates;
+extern CFactoryTemplate *g_pTemplates;
 extern int g_cTemplates;
 
 CVGFilterManager::CVGFilterManager(void)
@@ -65,15 +70,16 @@ CVGFilterManager::CVGFilterManager(void)
 	
 	for (int i=0; i<g_cTemplates; i++)
 	{
-		m_lookupFlt[*g_Templates[i].m_ClsID] = &g_Templates[i];
-		pMSF = g_Templates[i].m_pAMovieSetup_Filter;
+		m_lookupFlt[*g_pTemplates[i].m_ClsID] = &g_pTemplates[i];
+		pMSF = g_pTemplates[i].m_pAMovieSetup_Filter;
 		for (UINT j=0; j<pMSF->nPins; j++)
 		{
 			pMSP = &pMSF->lpPin[j];
 			if (pMSP->bOutput)
 				continue;
 			for (UINT k=0; k<pMSP->nMediaTypes; k++)
-				m_lookupMT.insert(make_pair(pMSP->lpMediaType[k], &g_Templates[i]));
+				//m_lookupMT.insert(make_pair(pMSP->lpMediaType[k], &g_pTemplates[i]));
+				m_lookupMT[*pMSP->lpMediaType[k].clsMajorType][*pMSP->lpMediaType[k].clsMinorType] = &g_pTemplates[i];
 		}
 	}
 }
@@ -82,19 +88,40 @@ CVGFilterManager::~CVGFilterManager(void)
 {
 }
 
-HRESULT CVGFilterManager::EnumMatchingFilters( IEnumGUID **ppEnum, BOOL bExactMatch, DWORD dwMerit, CLSID clsInMaj, CLSID clsInSub )
+HRESULT STDMETHODCALLTYPE CVGFilterManager::EnumMatchingFilters( IEnumGUID **ppEnum, BOOL bExactMatch, DWORD dwMerit, CLSID clsInMaj, CLSID clsInSub )
 {
+	CheckPointer(ppEnum, E_POINTER);
+	
 	CEnumGUID *pEnum = new CEnumGUID;
-	pair<mt_lookup_iter_t, mt_lookup_iter_t> p;
-	CVGMediaType mt(clsInMaj, clsInSub, false);
-
-	// 枚举完全匹配的
-	p = m_lookupMT.equal_range(mt);
-	if (p.first != m_lookupMT.end() && p.second != m_lookupMT.end())
+	
+	if (bExactMatch)
 	{
-		for (mt_lookup_iter_t it=p.first; it!=p.second; it++)
-			pEnum->Add(*it->second->m_ClsID);
+
+	}
+	else
+	{
+		for (maj2subs_t::const_iterator itMaj=m_lookupMT.begin(); itMaj!=m_lookupMT.end(); itMaj++)
+		{
+			if (!MatchGUID(itMaj->first, clsInMaj))
+				continue;
+
+			for (guid2ft_t::const_iterator itSub=itMaj->second.begin(); itSub!=itMaj->second.end(); itSub++)
+			{
+				if (MatchGUID(itSub->first, clsInSub))
+					pEnum->Add(*itSub->second->m_ClsID);
+			}
+		}
 	}
 
-	return S_OK;
+	if (pEnum->GetCount() > 0)
+	{
+		pEnum->AddRef();
+		*ppEnum = pEnum;
+		return S_OK;
+	}
+	else
+	{
+		*ppEnum = NULL;
+		return E_FAIL;
+	}
 }

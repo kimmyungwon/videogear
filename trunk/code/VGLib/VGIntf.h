@@ -15,7 +15,7 @@ DECLARE_INTERFACE_IID_(IVGFilterManager, IUnknown, "8BAC0406-06F0-4232-B6BB-87F9
 	virtual ULONG STDMETHODCALLTYPE AddRef(void) = 0;
 	virtual ULONG STDMETHODCALLTYPE Release(void) = 0;
 	// *** IVGFilterManager methods ***
-	virtual HRESULT EnumMatchingFilters(IEnumGUID **ppEnum, BOOL bExactMatch, DWORD dwMerit, CLSID clsInMaj, CLSID clsInSub) = 0;	
+	virtual HRESULT STDMETHODCALLTYPE EnumMatchingFilters(IEnumGUID **ppEnum, BOOL bExactMatch, DWORD dwMerit, CLSID clsInMaj, CLSID clsInSub) = 0;	
 };
 
 #undef  INTERFACE

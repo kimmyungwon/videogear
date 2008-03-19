@@ -28,6 +28,7 @@ object frmMain: TfrmMain
     ParentBackground = False
     PopupMenu = pmVideo
     TabOrder = 0
+    OnDblClick = pnlVideoDblClick
   end
   object pnlControl: TTntPanel
     Left = 0

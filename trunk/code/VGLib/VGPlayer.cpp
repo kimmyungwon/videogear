@@ -15,6 +15,7 @@ HRESULT STDMETHODCALLTYPE CVGPlayer::QueryInterface( REFIID refiid, void **ppv )
 	if (refiid == IID_IVGFilterManager)
 	{
 		*ppv = m_pFM;
+		m_pFM->AddRef();
 		return S_OK;
 	}
 	else

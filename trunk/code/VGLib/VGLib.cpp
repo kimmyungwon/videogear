@@ -184,6 +184,7 @@ CFactoryTemplate g_Templates[] =
 	{sudFilter[6].strName, sudFilter[6].clsID, CreateInstance<CAudioSwitcherFilter>, NULL, &sudFilter[6]}
 };
 
+CFactoryTemplate *g_pTemplates = g_Templates;
 int g_cTemplates = countof(g_Templates);
 
 LPCWSTR g_Exts[] = { _T(".rm"), _T(".rmvb"), _T(".ram") };
@@ -266,6 +267,7 @@ HRESULT STDMETHODCALLTYPE VGCreatePlayer(IVGPlayer **ppvObject)
 	CheckPointer(ppvObject, E_POINTER);
 
 	IVGPlayerPtr pPlayer = new CVGPlayer;
+	pPlayer->AddRef();
 	*ppvObject = pPlayer;
 	return S_OK;
 }

@@ -141,11 +141,11 @@ begin
   hr := CoCreateInstance(CLSID_FilterMapper2, nil, CLSCTX_INPROC_SERVER,
     IID_IFilterMapper2, FFM2);
   if Failed(hr) then
-    raise EVGError.CreateFromLastOSError(hr);
+    raise EVGError.CreateOSError(hr);
   hr := CoCreateInstance(CLSID_FilterGraph, nil, CLSCTX_INPROC_SERVER,
     IID_IGraphBuilder, FGB);
   if Failed(hr) then
-    raise EVGError.CreateFromLastOSError(hr);
+    raise EVGError.CreateOSError(hr);
   // 初始化内部滤镜列表
   VGEnumInternalFilters(EnumFilterProc, Self);
   VGEnumInternalSources(EnumSourceProc, Self);
@@ -351,7 +351,7 @@ begin
       Continue;
     for J := 0 to newFilter.Pins[I].MediaTypeCount - 1 do
     begin
-      FInternalFiltersLookupByMT[newFilter.Pins[I].MediaTypes[J]] := newFilter;
+      //FInternalFiltersLookupByMT[newFilter.Pins[I].MediaTypes[J]] := newFilter;
     end;
   end;
 end;

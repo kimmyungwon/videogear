@@ -6,7 +6,7 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, uVGPlayer, TntForms, Menus, TntMenus, ExtCtrls, TntExtCtrls,
   ComCtrls, TntComCtrls, StdCtrls, Buttons, TntButtons, TntDialogs,
-  DirectShow9, WideStrings, CommDlg;
+  DirectShow9, WideStrings, CommDlg, ActiveX;
 
 type
   TfrmMain = class(TTntForm)
@@ -33,6 +33,7 @@ type
     procedure pmVideoPopup(Sender: TObject);
     procedure tmrMainTimer(Sender: TObject);
     procedure trckbrVolumeChange(Sender: TObject);
+    procedure pnlVideoDblClick(Sender: TObject);
   private
     FPlayer: TVGPlayer;
   protected
@@ -46,6 +47,8 @@ var
   frmMain: TfrmMain;
 
 implementation
+
+uses uVGLib;
 
 {$R *.dfm}
 
@@ -178,6 +181,15 @@ begin
     Height := SIZE_PROGRESS_HEIGHT;
     Top := ((Sender as TTntPanel).ClientHeight - Height) div 2;
   end;
+end;
+
+procedure TfrmMain.pnlVideoDblClick(Sender: TObject);
+var
+  Player: IVGPlayer;
+  pEnum: IEnumGUID;
+begin
+  VGCreatePlayer(Player);
+  (Player as IVGFilterManager).EnumMatchingFilters(pEnum, False, MERIT_NORMAL, MEDIATYPE_Video, MEDIASUBTYPE_NULL);
 end;
 
 procedure TfrmMain.SetVideoPanelSize(ANewWidth, ANewHeight: Integer);

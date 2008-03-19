@@ -16,7 +16,7 @@ uses
 {$R *.res}
 
 begin
-  InstallTntSystemUpdates;
+  //InstallTntSystemUpdates;
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
   Application.CreateForm(TfrmMain, frmMain);
