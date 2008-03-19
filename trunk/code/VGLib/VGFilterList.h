@@ -1,5 +1,7 @@
 #pragma once
 
+#include "VGBaseObject.h"
+
 // {8E4FADF4-A761-49cd-B4AF-99FD531660F2}
 DEFINE_GUID(IID_IVGFilterList, 0x8e4fadf4, 0xa761, 0x49cd, 0xb4, 0xaf, 0x99, 0xfd, 0x53, 0x16, 0x60, 0xf2);
 
@@ -26,7 +28,7 @@ _COM_SMARTPTR_TYPEDEF(IVGFilterList, __uuidof(IVGFilterList));
 
 using namespace std;
 
-class CVGFilterList : public IVGFilterList
+class CVGFilterList : public CVGUnknownImpl<IVGFilterList, IID_IVGFilterList>
 {
 private:
 	volatile LONG m_cRef;
@@ -35,10 +37,6 @@ private:
 public:
 	CVGFilterList(void);
 	virtual ~CVGFilterList(void);
-	/* IUnknown  */
-	virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, __RPC__deref_out void __RPC_FAR *__RPC_FAR *ppvObject);
-	virtual ULONG STDMETHODCALLTYPE AddRef(void);
-	virtual ULONG STDMETHODCALLTYPE Release(void);
 	/* IVGFilterList */
 	virtual HRESULT STDMETHODCALLTYPE Add(IBaseFilter *pBF, LPCWSTR pName);
 	virtual HRESULT STDMETHODCALLTYPE Clear(void);

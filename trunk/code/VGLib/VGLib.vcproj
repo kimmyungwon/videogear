@@ -240,6 +240,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\VGBaseObject.h"
+				>
+			</File>
+			<File
 				RelativePath=".\VGFilterList.h"
 				>
 			</File>
