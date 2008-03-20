@@ -6,10 +6,10 @@ CEnumFilter::CEnumFilter( void )
 	m_iter = m_items.end();
 }
 
-void CEnumFilter::Add( const AMOVIESETUP_FILTER* pFilter )
+void CEnumFilter::Add( const CVGFilter& flt )
 {
-	m_items.insert(pFilter);
-	Reset();
+	m_items.insert(flt);
+	Reset();	
 }
 
 size_t CEnumFilter::GetCount( void )
@@ -27,7 +27,7 @@ HRESULT STDMETHODCALLTYPE CEnumFilter::Next( ULONG celt, GUID *rgelt, ULONG *pce
 	ULONG nDone = 0;
 	while (m_iter != m_items.end() && nDone < celt)
 	{
-		rgelt[nDone] = *(*m_iter)->clsID;
+		rgelt[nDone] = m_iter->clsID;
 		m_iter++;
 		nDone++;
 	}	
@@ -77,21 +77,48 @@ CVGFilterManager::CVGFilterManager(void)
 	
 	// 注册内部滤镜
 	for (int i=0; i<g_cTemplates; i++)
+		RegisterFilter(g_pTemplates[i]);
+	// 枚举系统滤镜
+	LPOLESTR lpszFilterCategory;
+	LONG lRet;
+	CRegKey regRoot, regItem;
+	DWORD nIdx = 0, nKeyNameLen, nFilterNameLen, nFilterDataSize;
+	CLSID clsID;
+	WCHAR szKeyName[MAX_PATH], szFilterName[MAX_FILTER_NAME];
+	REGFILTER2 *pFilterData;
+
+	StringFromCLSID(CLSID_LegacyAmFilterCategory, &lpszFilterCategory);
+	if (regRoot.Open(HKEY_CLASSES_ROOT, L"CLSID\\" + CStringW(lpszFilterCategory) + L"\\Instance") == ERROR_SUCCESS)
 	{
-		m_lookupFlt[*g_pTemplates[i].m_ClsID] = &g_pTemplates[i];
-		pMSF = g_pTemplates[i].m_pAMovieSetup_Filter;
-		for (UINT j=0; j<pMSF->nPins; j++)
+		while (regRoot.EnumKey(nIdx++, szKeyName, &(nKeyNameLen = MAX_PATH), NULL) == S_OK)
 		{
-			pMSP = &pMSF->lpPin[j];
-			if (pMSP->bOutput)
+			if (regItem.Open(regRoot.m_hKey, szKeyName) != ERROR_SUCCESS)
 				continue;
-			for (UINT k=0; k<pMSP->nMediaTypes; k++)
+			if (regItem.QueryGUIDValue(L"CLSID", clsID) != ERROR_SUCCESS)
+				continue;
+			if (regItem.QueryStringValue(L"FriendlyName", szFilterName, &(nFilterNameLen = MAX_FILTER_NAME)) != ERROR_SUCCESS)
+				continue;
+			nFilterDataSize = 10240;
+			pFilterData = (REGFILTER2*)malloc(nFilterDataSize);
+			while((lRet = regItem.QueryBinaryValue(L"FilterData", pFilterData, &nFilterDataSize)) != ERROR_SUCCESS)
 			{
-				pMSMT = &pMSP->lpMediaType[k];
-				(m_lookupMT[*pMSMT->clsMajorType]).insert(make_pair(*pMSMT->clsMinorType, &g_pTemplates[i]));
+				if (lRet != ERROR_MORE_DATA)
+					break;
+				pFilterData = (REGFILTER2*)realloc(pFilterData, nFilterDataSize * 2);
 			}
+			if (lRet == ERROR_SUCCESS)
+				switch (pFilterData->dwVersion)
+				{
+				case 1:
+					RegisterFilter(clsID, szFilterName, pFilterData->dwMerit, pFilterData->cPins, pFilterData->rgPins);
+					break;
+				case 2:
+					RegisterFilter(clsID, szFilterName, pFilterData->dwMerit, pFilterData->cPins2, pFilterData->rgPins2);
+				}			
+			free(pFilterData);
 		}
 	}
+	CoTaskMemFree(lpszFilterCategory);
 }
 
 CVGFilterManager::~CVGFilterManager(void)
@@ -114,8 +141,8 @@ HRESULT STDMETHODCALLTYPE CVGFilterManager::EnumMatchingFilters( IEnumGUID **ppE
 			if (pFT.first != itMaj->second.end() && pFT.second != itMaj->second.end())
 			{
 				for (guid2ft_t::const_iterator it=pFT.first; it!=pFT.second; it++)
-					if (it->second->m_pAMovieSetup_Filter->dwMerit >= dwMerit)
-						pEnum->Add(it->second->m_pAMovieSetup_Filter);
+					if (it->second.dwMerit >= dwMerit)
+						pEnum->Add(it->second);
 			}
 		 }
 	}
@@ -128,34 +155,11 @@ HRESULT STDMETHODCALLTYPE CVGFilterManager::EnumMatchingFilters( IEnumGUID **ppE
 
 			for (guid2ft_t::const_iterator itSub=itMaj->second.begin(); itSub!=itMaj->second.end(); itSub++)
 			{
-				if (MatchGUID(itSub->first, clsInSub) && itSub->second->m_pAMovieSetup_Filter->dwMerit >= dwMerit)
-					pEnum->Add(itSub->second->m_pAMovieSetup_Filter);
+				if (MatchGUID(itSub->first, clsInSub) && itSub->second.dwMerit >= dwMerit)
+					pEnum->Add(itSub->second);
 			}
 		}
 	}
-	// 枚举匹配的系统滤镜
-	/*if (m_pFM2 != NULL)
-	{
-		CComPtr<IEnumMoniker> pEnumMon;
-		GUID inTypes[] = {clsInMaj, clsInSub};
-		CComPtr<IMoniker> pMon;
-		CComPtr<IBaseFilter> pBF;
-		CLSID clsID;
-
-		if (SUCCEEDED(m_pFM2->EnumMatchingFilters(&pEnumMon, 0, bExactMatch, MERIT_NORMAL, TRUE, countof(inTypes) / 2, inTypes,
-			NULL, NULL, FALSE, FALSE, 0, NULL, NULL, NULL)))
-		{
-			while (pEnumMon->Next(1, &pMon, NULL) == S_OK)
-			{
-				if (SUCCEEDED(pMon->BindToObject(NULL, NULL, IID_IBaseFilter, (LPVOID*)&pBF)))
-				{
-					pBF->GetClassID(&clsID);
-				}
-				pBF.Release();
-				pMon.Release();
-			}
-		}
-	}*/
 
 	if (pEnum->GetCount() > 0)
 	{
@@ -178,4 +182,58 @@ HRESULT STDMETHODCALLTYPE CVGFilterManager::Initialize( void )
 	FAILED_RETURN(CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, (LPVOID*)&m_pGB));
 	FAILED_RETURN(CoCreateInstance(CLSID_FilterMapper2, NULL, CLSCTX_INPROC_SERVER, IID_IFilterMapper2, (LPVOID*)&m_pFM2));
 	return S_OK;
+}
+
+HRESULT CVGFilterManager::RegisterFilter( const CFactoryTemplate& templ )
+{	
+	return RegisterFilter(*templ.m_ClsID, templ.m_Name, templ.m_pAMovieSetup_Filter->dwMerit, 
+		templ.m_pAMovieSetup_Filter->nPins, templ.m_pAMovieSetup_Filter->lpPin);
+}
+
+HRESULT CVGFilterManager::RegisterFilter( REFCLSID clsID, LPCWSTR lpszName, DWORD dwMerit, ULONG nPins, 
+										 const REGFILTERPINS* lpPins, LPFNNewCOMObject lpfnNew )
+{
+	CheckPointer(lpPins, E_POINTER);
+	if (m_lookupFlt.find(clsID) != m_lookupFlt.end())
+		return ERROR_FILE_EXISTS;
+
+	CVGFilter flt(clsID, lpszName, dwMerit, lpfnNew);
+	const AMOVIESETUP_MEDIATYPE *pMSMT = NULL;
+
+	m_lookupFlt[clsID] = flt;
+	for (UINT i=0; i<nPins; i++)
+	{
+		if (lpPins[i].bOutput)
+			continue;
+		for (UINT j=0; j<lpPins[i].nMediaTypes; j++)
+		{
+			pMSMT = &lpPins[i].lpMediaType[j];
+			(m_lookupMT[*pMSMT->clsMajorType]).insert(make_pair(*pMSMT->clsMinorType, flt));
+		}
+	}	
+	return S_OK;	
+}
+
+HRESULT CVGFilterManager::RegisterFilter( REFCLSID clsID, LPCWSTR lpszName, DWORD dwMerit, ULONG nPins2, 
+										 const REGFILTERPINS2* lpPins2, LPFNNewCOMObject lpfnNew )
+{
+	CheckPointer(lpPins2, E_POINTER);
+	if (m_lookupFlt.find(clsID) != m_lookupFlt.end())
+		return ERROR_FILE_EXISTS;
+
+	CVGFilter flt(clsID, lpszName, dwMerit, lpfnNew);
+	const AMOVIESETUP_MEDIATYPE *pMSMT = NULL;
+
+	m_lookupFlt[clsID] = flt;
+	for (UINT i=0; i<nPins2; i++)
+	{
+		if (lpPins2[i].dwFlags & REG_PINFLAG_B_OUTPUT)
+			continue;
+		for (UINT j=0; j<lpPins2[i].nMediaTypes; j++)
+		{
+			pMSMT = &lpPins2[i].lpMediaType[j];
+			(m_lookupMT[*pMSMT->clsMajorType]).insert(make_pair(*pMSMT->clsMinorType, flt));
+		}
+	}	
+	return S_OK;		
 }
