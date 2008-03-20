@@ -70,6 +70,7 @@ protected:
 		LPFNNewCOMObject lpfnNew = NULL);
 	HRESULT RegisterFilter(REFCLSID clsID, LPCWSTR lpszName, DWORD dwMerit, ULONG nPins2, const REGFILTERPINS2* lpPins2,
 		LPFNNewCOMObject lpfnNew = NULL);
+	HRESULT RegisterFilter(REFCLSID clsID, LPCWSTR lpszName, char* pBuf, DWORD nSize);
 public:
 	CVGFilterManager(void);
 	virtual ~CVGFilterManager(void);

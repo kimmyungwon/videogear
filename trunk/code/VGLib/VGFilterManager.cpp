@@ -80,12 +80,11 @@ CVGFilterManager::CVGFilterManager(void)
 		RegisterFilter(g_pTemplates[i]);
 	// 枚举系统滤镜
 	LPOLESTR lpszFilterCategory;
-	LONG lRet;
 	CRegKey regRoot, regItem;
 	DWORD nIdx = 0, nKeyNameLen, nFilterNameLen, nFilterDataSize;
 	CLSID clsID;
 	WCHAR szKeyName[MAX_PATH], szFilterName[MAX_FILTER_NAME];
-	REGFILTER2 *pFilterData;
+	PBYTE pFilterData;
 
 	StringFromCLSID(CLSID_LegacyAmFilterCategory, &lpszFilterCategory);
 	if (regRoot.Open(HKEY_CLASSES_ROOT, L"CLSID\\" + CStringW(lpszFilterCategory) + L"\\Instance") == ERROR_SUCCESS)
@@ -98,24 +97,15 @@ CVGFilterManager::CVGFilterManager(void)
 				continue;
 			if (regItem.QueryStringValue(L"FriendlyName", szFilterName, &(nFilterNameLen = MAX_FILTER_NAME)) != ERROR_SUCCESS)
 				continue;
-			nFilterDataSize = 10240;
-			pFilterData = (REGFILTER2*)malloc(nFilterDataSize);
-			while((lRet = regItem.QueryBinaryValue(L"FilterData", pFilterData, &nFilterDataSize)) != ERROR_SUCCESS)
+			if (regItem.QueryBinaryValue(L"FilterData", NULL, &nFilterDataSize) == ERROR_SUCCESS)
 			{
-				if (lRet != ERROR_MORE_DATA)
-					break;
-				pFilterData = (REGFILTER2*)realloc(pFilterData, nFilterDataSize * 2);
-			}
-			if (lRet == ERROR_SUCCESS)
-				switch (pFilterData->dwVersion)
+				pFilterData = (PBYTE)malloc(nFilterDataSize);
+				if (regItem.QueryBinaryValue(L"FilterData", pFilterData, &nFilterDataSize) == ERROR_SUCCESS)
 				{
-				case 1:
-					RegisterFilter(clsID, szFilterName, pFilterData->dwMerit, pFilterData->cPins, pFilterData->rgPins);
-					break;
-				case 2:
-					RegisterFilter(clsID, szFilterName, pFilterData->dwMerit, pFilterData->cPins2, pFilterData->rgPins2);
-				}			
-			free(pFilterData);
+					RegisterFilter(clsID, szFilterName, (char*)pFilterData, nFilterDataSize);
+				}
+				free(pFilterData);
+			}			
 		}
 	}
 	CoTaskMemFree(lpszFilterCategory);
@@ -236,4 +226,60 @@ HRESULT CVGFilterManager::RegisterFilter( REFCLSID clsID, LPCWSTR lpszName, DWOR
 		}
 	}	
 	return S_OK;		
+}
+
+HRESULT CVGFilterManager::RegisterFilter( REFCLSID clsID, LPCWSTR lpszName, char* pBuf, DWORD nSize )
+{
+	// 参考了Igor Janos的GraphStudio中的部分代码
+	DWORD *b = (DWORD*)pBuf, dwVersion = b[0], dwMerit = b[1], *ps = b + 4;
+	int cpins1 = b[2], cpins2 = b[3];
+	CVGFilter flt(clsID, lpszName, dwMerit);
+	
+	for (int i=0; i<cpins1; i++) 
+	{
+		if ((char*)ps > (pBuf + nSize - 6*4)) break;
+
+		DWORD flags = ps[1], pindir;
+		pindir = (flags & 0x08 ? PINDIR_OUTPUT : PINDIR_INPUT);
+		int pintypes = ps[3];
+
+		// skip dummy data
+		ps += 6;
+		for (int j=0; j<pintypes; j++) 
+		{
+			// make sure we have at least 16 bytes available
+			if ((char*)ps > (pBuf + nSize - 16)) break;
+			
+			DWORD maj_offset = ps[2];
+			DWORD min_offset = ps[3];
+			if ((maj_offset + 16 <= nSize) && (min_offset + 16 <= nSize)) 
+			{
+				GUID g, major, minor;
+				BYTE *m = (BYTE*)(&pBuf[maj_offset]);
+				if ((char*)m > (pBuf+nSize - 16)) break;
+				g.Data1 = m[0] | (m[1] << 8) | (m[2] << 16) | (m[3] << 24);
+				g.Data2 = m[4] | (m[5] << 8);
+				g.Data3 = m[6] | (m[7] << 8);
+				memcpy(g.Data4, m+8, 8);
+				major = g;
+
+				m = (BYTE*)(&pBuf[min_offset]);
+				if ((char*)m > (pBuf+nSize - 16)) break;
+				g.Data1 = m[0] | (m[1] << 8) | (m[2] << 16) | (m[3] << 24);
+				g.Data2 = m[4] | (m[5] << 8);
+				g.Data3 = m[6] | (m[7] << 8);
+				memcpy(g.Data4, m+8, 8);
+				minor = g;
+
+				if (pindir == PINDIR_INPUT)
+				{
+					if (flt.dwMerit > MERIT_DO_NOT_USE)
+						flt.dwMerit /= 2;
+					(m_lookupMT[major]).insert(make_pair(minor, flt));
+				}
+			}
+		}
+	}
+
+	return S_OK;
 }
