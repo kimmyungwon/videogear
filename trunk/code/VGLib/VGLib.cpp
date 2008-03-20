@@ -60,11 +60,14 @@ BOOL CVGLibApp::InitInstance()
 {
 	CWinApp::InitInstance();
 
+	// 设置RM解码器的DLL搜索路径
 	TCHAR szPath[MAX_PATH];
 	GetModuleFileName(m_hInstance, szPath, MAX_PATH);
 	PathRemoveFileSpec(szPath);
 	PathAddBackslash(szPath);
 	g_strDrvPath = szPath;
+	// 初始化COM
+	CoInitialize(NULL);
 
 	return TRUE;
 }
@@ -266,8 +269,8 @@ HRESULT STDMETHODCALLTYPE VGCreatePlayer(IVGPlayer **ppvObject)
 {
 	CheckPointer(ppvObject, E_POINTER);
 
-	IVGPlayerPtr pPlayer = new CVGPlayer;
-	pPlayer->AddRef();
+	CComPtr<IVGPlayer> pPlayer = new CVGPlayer;
 	*ppvObject = pPlayer;
+	(*ppvObject)->AddRef();
 	return S_OK;
 }

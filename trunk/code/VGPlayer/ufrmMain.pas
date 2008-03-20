@@ -48,7 +48,7 @@ var
 
 implementation
 
-uses uVGLib;
+uses uVGLib, CnDebug;
 
 {$R *.dfm}
 
@@ -189,7 +189,12 @@ var
   pEnum: IEnumGUID;
 begin
   VGCreatePlayer(Player);
-  (Player as IVGFilterManager).EnumMatchingFilters(pEnum, False, MERIT_NORMAL, MEDIATYPE_Video, MEDIASUBTYPE_NULL);
+  Player.Initialize;
+  CnDebugger.StartDebugViewer;
+  CnDebugger.StartTimeMark(0);
+  (Player as IVGFilterManager).EnumMatchingFilters(pEnum, False,
+    MERIT_DO_NOT_USE, MEDIATYPE_Audio, MEDIASUBTYPE_NULL);
+  CnDebugger.StopTimeMark(0);
 end;
 
 procedure TfrmMain.SetVideoPanelSize(ANewWidth, ANewHeight: Integer);

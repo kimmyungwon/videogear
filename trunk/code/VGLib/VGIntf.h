@@ -15,7 +15,9 @@ DECLARE_INTERFACE_IID_(IVGFilterManager, IUnknown, "8BAC0406-06F0-4232-B6BB-87F9
 	virtual ULONG STDMETHODCALLTYPE AddRef(void) = 0;
 	virtual ULONG STDMETHODCALLTYPE Release(void) = 0;
 	// *** IVGFilterManager methods ***
-	virtual HRESULT STDMETHODCALLTYPE EnumMatchingFilters(IEnumGUID **ppEnum, BOOL bExactMatch, DWORD dwMerit, CLSID clsInMaj, CLSID clsInSub) = 0;	
+	virtual HRESULT STDMETHODCALLTYPE EnumMatchingFilters(IEnumGUID **ppEnum, BOOL bExactMatch, DWORD dwMerit, 
+														  CLSID clsInMaj, CLSID clsInSub) = 0;
+	virtual HRESULT STDMETHODCALLTYPE Initialize(void) = 0;
 };
 
 #undef  INTERFACE
@@ -27,11 +29,8 @@ DECLARE_INTERFACE_IID_(IVGPlayer, IUnknown, "14868E59-6444-4bca-9004-6C697E4E66E
 	virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, __RPC__deref_out void __RPC_FAR *__RPC_FAR *ppvObject) = 0;
 	virtual ULONG STDMETHODCALLTYPE AddRef(void) = 0;
 	virtual ULONG STDMETHODCALLTYPE Release(void) = 0;
+	// *** IVGPlayer methods ***
+	virtual HRESULT STDMETHODCALLTYPE Initialize(void) = 0;
 };
-
-#if defined(_COM_SMARTPTR_TYPEDEF)
-_COM_SMARTPTR_TYPEDEF(IVGFilterManager, __uuidof(IVGFilterManager));
-_COM_SMARTPTR_TYPEDEF(IVGPlayer, __uuidof(IVGPlayer));
-#endif
 
 

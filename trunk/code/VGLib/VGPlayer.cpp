@@ -15,9 +15,14 @@ HRESULT STDMETHODCALLTYPE CVGPlayer::QueryInterface( REFIID refiid, void **ppv )
 	if (refiid == IID_IVGFilterManager)
 	{
 		*ppv = m_pFM;
-		m_pFM->AddRef();
+		static_cast<IVGFilterManager*>(*ppv)->AddRef();
 		return S_OK;
 	}
 	else
 		return CVGUnknownImpl::QueryInterface(refiid, ppv);
+}
+
+HRESULT STDMETHODCALLTYPE CVGPlayer::Initialize( void )
+{
+	return m_pFM->Initialize();
 }

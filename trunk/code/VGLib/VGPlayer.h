@@ -7,10 +7,12 @@
 class CVGPlayer : public CVGUnknownImpl<IVGPlayer, IID_IVGPlayer>
 {
 private:
-	IVGFilterManagerPtr		m_pFM;	
+	CComPtr<IVGFilterManager>	m_pFM;
 public:
 	CVGPlayer(void);
 	virtual ~CVGPlayer(void);
+	/* CVGPlayer */
+	virtual HRESULT STDMETHODCALLTYPE Initialize(void);
 	/* IUnknown */
 	virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID refiid, void **ppv);
 };

@@ -34,11 +34,13 @@ type
   IVGFilterManager = interface(IUnknown)
   ['{8BAC0406-06F0-4232-B6BB-87F92DBC7945}']
     function EnumMatchingFilters(out ppEnum: IEnumGUID; bExactMatch: LongBool;
-      dwMerit: Cardinal; clsInMaj, clsInSub: TCLSID): HRESULT; stdcall; 
+      dwMerit: Cardinal; clsInMaj, clsInSub: TCLSID): HRESULT; stdcall;
+    function Initialize: HRESULT; stdcall;
   end;
 
   IVGPlayer = interface(IUnknown)
   ['{14868E59-6444-4bca-9004-6C697E4E66ED}']
+    function Initialize: HRESULT; stdcall;
   end;
 
   LPFNEnumFilterProc = procedure(pUser: Pointer; const clsID: PCLSID; lpszName: PWideChar;

@@ -1,5 +1,9 @@
 #pragma once
 
+#define FAILED_RETURN(expr)	if(FAILED(hr = (expr))) return hr
+
+//////////////////////////////////////////////////////////////////////////
+
 __inline bool MatchGUID(REFGUID a, REFGUID b)
 {
 	return InlineIsEqualGUID(a, b) || InlineIsEqualGUID(a, GUID_NULL) || InlineIsEqualGUID(b, GUID_NULL);
