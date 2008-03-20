@@ -177,7 +177,7 @@ HRESULT STDMETHODCALLTYPE CVGFilterManager::Initialize( void )
 HRESULT CVGFilterManager::RegisterFilter( const CFactoryTemplate& templ )
 {	
 	return RegisterFilter(*templ.m_ClsID, templ.m_Name, templ.m_pAMovieSetup_Filter->dwMerit, 
-		templ.m_pAMovieSetup_Filter->nPins, templ.m_pAMovieSetup_Filter->lpPin);
+		templ.m_pAMovieSetup_Filter->nPins, templ.m_pAMovieSetup_Filter->lpPin, templ.m_lpfnNew);
 }
 
 HRESULT CVGFilterManager::RegisterFilter( REFCLSID clsID, LPCWSTR lpszName, DWORD dwMerit, ULONG nPins, 
@@ -273,8 +273,6 @@ HRESULT CVGFilterManager::RegisterFilter( REFCLSID clsID, LPCWSTR lpszName, char
 
 				if (pindir == PINDIR_INPUT)
 				{
-					if (flt.dwMerit > MERIT_DO_NOT_USE)
-						flt.dwMerit /= 2;
 					(m_lookupMT[major]).insert(make_pair(minor, flt));
 				}
 			}

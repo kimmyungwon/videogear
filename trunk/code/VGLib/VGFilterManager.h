@@ -30,9 +30,19 @@ struct CVGFilter
 		CVGFilter(*_Templ->m_ClsID, _Templ->m_Name, _Templ->m_pAMovieSetup_Filter->dwMerit, _Templ->m_lpfnNew);
 	}
 
+	friend bool operator==(const CVGFilter& a, const CVGFilter& b)
+	{
+		return InlineIsEqualGUID(a.clsID, b.clsID) == TRUE;
+	}
+	
 	friend bool operator>(const CVGFilter& a, const CVGFilter& b)
 	{
-		return a.dwMerit > b.dwMerit;
+		if (a.lpfnNew != NULL && b.lpfnNew == NULL)
+			return true;
+		else if (a.lpfnNew == NULL && b.lpfnNew != NULL)
+			return false;
+		else
+			return a.dwMerit > b.dwMerit;
 	}
 };
 
