@@ -4,6 +4,15 @@
 
 //////////////////////////////////////////////////////////////////////////
 
+__inline CString GetErrorMsg(HRESULT hr)
+{
+	TCHAR szMsg[MAX_ERROR_TEXT_LEN];
+	AMGetErrorText(hr, szMsg, MAX_ERROR_TEXT_LEN);
+	return szMsg;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 __inline bool MatchGUID(REFGUID a, REFGUID b)
 {
 	return InlineIsEqualGUID(a, b) || InlineIsEqualGUID(a, GUID_NULL) || InlineIsEqualGUID(b, GUID_NULL);

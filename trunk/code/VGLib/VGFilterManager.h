@@ -105,7 +105,7 @@ private:
 	maj2subs_t					m_lookupMT;		// 输入Pin的MediaType到滤镜的映射
 	filter_lookup_t				m_lookupFlt;	// CLSID到滤镜的映射
 protected:
-	void RegisterSystemFilters(HKEY  clsCategory);
+	void RegisterSystemFilters(HKEY hkeyRoot, LPCWSTR lpszSubPath);
 	HRESULT RegisterFilter(const CFactoryTemplate& templ);
 	HRESULT RegisterFilter(REFCLSID clsID, LPCWSTR lpszName, DWORD dwMerit, ULONG nPins, const REGFILTERPINS* lpPins,
 		LPFNNewCOMObject lpfnNew = NULL);
@@ -113,6 +113,7 @@ protected:
 		LPFNNewCOMObject lpfnNew = NULL);
 	HRESULT RegisterFilter(REFCLSID clsID, LPCWSTR lpszName, char* pBuf, DWORD nSize);
 	/* 渲染 */
+	HRESULT ConnectDirect(IPin* pPinOut, IBaseFilter* pBFIn, const CMediaType& mt);
 	HRESULT ConnectDirect(IPin* pPinOut, const CVGFilter filterIn, const CMediaType& mt, IBaseFilter** pBF);
 	HRESULT EnumMatchingFilters(CVGFilters &ret, BOOL bExactMatch, DWORD dwMerit, 
 		CLSID clsInMaj, CLSID clsInSub) const;
@@ -125,6 +126,7 @@ public:
 	CVGFilterManager(void);
 	virtual ~CVGFilterManager(void);
 	/* IVGFilterManager */
+	virtual HRESULT STDMETHODCALLTYPE ClearGraph(void);
 	virtual HRESULT STDMETHODCALLTYPE EnumMatchingFilters(IEnumGUID **ppEnum, BOOL bExactMatch, DWORD dwMerit, 
 														  CLSID clsInMaj, CLSID clsInSub);
 	virtual HRESULT STDMETHODCALLTYPE Initialize(void);

@@ -143,26 +143,26 @@ var
   newItem: TTntMenuItem;
   I: Integer;
 begin
-  if FPlayer.Status in [vpsPlaying, vpsPaused] then
-  begin
-    mniFilters.Enabled := True;
-    mniFilters.Clear;
-    lstFilter := FPlayer.GetFilterList;
-    if lstFilter <> nil then
-    begin
-      for I := 0 to lstFilter.Count - 1 do
-      begin
-        newItem := TTntMenuItem.Create(Sender as TTntPopupMenu);
-        newItem.Caption := lstFilter[I];
-        mniFilters.Add(newItem);
-      end;
-      lstFilter.Free;
-    end;
-  end
-  else
-  begin
-    mniFilters.Enabled := False;
-  end;
+//  if FPlayer.Status in [vpsPlaying, vpsPaused] then
+//  begin
+//    mniFilters.Enabled := True;
+//    mniFilters.Clear;
+//    lstFilter := FPlayer.GetFilterList;
+//    if lstFilter <> nil then
+//    begin
+//      for I := 0 to lstFilter.Count - 1 do
+//      begin
+//        newItem := TTntMenuItem.Create(Sender as TTntPopupMenu);
+//        newItem.Caption := lstFilter[I];
+//        mniFilters.Add(newItem);
+//      end;
+//      lstFilter.Free;
+//    end;
+//  end
+//  else
+//  begin
+//    mniFilters.Enabled := False;
+//  end;
 end;
 
 procedure TfrmMain.pnlControlResize(Sender: TObject);
@@ -192,9 +192,10 @@ begin
   Player.Initialize;
   FM := (Player as IVGFilterManager);
   //CnDebugger.StartDebugViewer;
-  //CnDebugger.StartTimeMark(0);
+  CnDebugger.StartTimeMark(0);
   FM.RenderFile('E:\Downloads\[SumiSora&MoonMai][They_are_my_noble_Masters][11][GB][RV10].rmvb');
-  //CnDebugger.StopTimeMark(0);
+  FM.RenderFile('E:\Downloads\[SumiSora&MoonMai][They_are_my_noble_Masters][11][GB][RV10].rmvb');
+  CnDebugger.StopTimeMark(0);
 end;
 
 procedure TfrmMain.SetVideoPanelSize(ANewWidth, ANewHeight: Integer);

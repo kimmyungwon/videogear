@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, Classes, SysUtils, Controls, WideStrings, 
-  DirectShow9, uVGFilterManager;
+  DirectShow9, uVGLib;
 
 type
   TVGPlayerStatus = (vpsUninitialized, vpsInitialized, vpsStopped,
@@ -13,11 +13,13 @@ type
   TVGPlayerNotifyEvent = procedure(APlayer: TVGPlayer) of object;
   TVGPlayerStatusChanged = procedure(APlayer: TVGPlayer; AOldStatus, ANewStatus: TVGPlayerStatus) of object;
 
-  TVGPlayer = class(TVGFilterManager)
+  TVGPlayer = class
   private
     FStatus: TVGPlayerStatus;
     FVideoWnd: TWinControl;
     FVidWndProc: TWndMethod;
+    FFilterMan: IVGFilterManager;
+    FGB: IGraphBuilder;
     FMC: IMediaControl;
     FMS: IMediaSeeking;
     FVW: IVideoWindow;
@@ -41,7 +43,7 @@ type
     function Pause: HRESULT;
     function Play: HRESULT;
     function PlayOrPause: HRESULT;
-    function RenderFile(const AFileName: WideString): HRESULT; override;
+    function RenderFile(const AFileName: WideString): HRESULT;
     procedure SetPosition(const Value: Cardinal);
     procedure SetVolume(Value: Integer);
     function Stop: HRESULT;
@@ -146,7 +148,13 @@ begin
 end;
 
 function TVGPlayer.Init(AVideoWnd: TWinControl): HRESULT;
+var
+  pPlayer: IVGPlayer;
 begin
+  VGCreatePlayer(pPlayer);
+  pPlayer.Initialize;
+  FFilterMan := pPlayer as IVGFilterManager;
+  FGB := FFilterMan as IGraphBuilder;
   FVideoWnd := AVideoWnd;
   FVidWndProc := FVideoWnd.WindowProc;
   FVideoWnd.WindowProc := VidWndProc;
@@ -205,7 +213,7 @@ end;
 function TVGPlayer.RenderFile(const AFileName: WideString): HRESULT;
 begin
   Stop;
-  Result := inherited RenderFile(AFileName);
+  Result := FFilterMan.RenderFile(PWideChar(AFileName));
   if Succeeded(Result) then
   begin
     FGB.QueryInterface(IID_IMediaControl, FMC);
