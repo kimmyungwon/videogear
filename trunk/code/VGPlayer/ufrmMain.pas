@@ -186,15 +186,15 @@ end;
 procedure TfrmMain.pnlVideoDblClick(Sender: TObject);
 var
   Player: IVGPlayer;
-  pEnum: IEnumGUID;
+  FM: IVGFilterManager;
 begin
   VGCreatePlayer(Player);
   Player.Initialize;
-  CnDebugger.StartDebugViewer;
-  CnDebugger.StartTimeMark(0);
-  (Player as IVGFilterManager).EnumMatchingFilters(pEnum, False,
-    MERIT_DO_NOT_USE, MEDIATYPE_Audio, MEDIASUBTYPE_NULL);
-  CnDebugger.StopTimeMark(0);
+  FM := (Player as IVGFilterManager);
+  //CnDebugger.StartDebugViewer;
+  //CnDebugger.StartTimeMark(0);
+  FM.RenderFile('E:\Downloads\[SumiSora&MoonMai][They_are_my_noble_Masters][11][GB][RV10].rmvb');
+  //CnDebugger.StopTimeMark(0);
 end;
 
 procedure TfrmMain.SetVideoPanelSize(ANewWidth, ANewHeight: Integer);

@@ -36,6 +36,7 @@ type
     function EnumMatchingFilters(out ppEnum: IEnumGUID; bExactMatch: LongBool;
       dwMerit: Cardinal; clsInMaj, clsInSub: TCLSID): HRESULT; stdcall;
     function Initialize: HRESULT; stdcall;
+    function RenderFile(lpszFileName: PWideChar): HRESULT; stdcall;
   end;
 
   IVGPlayer = interface(IUnknown)

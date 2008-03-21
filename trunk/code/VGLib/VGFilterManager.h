@@ -30,6 +30,34 @@ struct CVGFilter
 		CVGFilter(*_Templ->m_ClsID, _Templ->m_Name, _Templ->m_pAMovieSetup_Filter->dwMerit, _Templ->m_lpfnNew);
 	}
 
+	HRESULT CreateInstance(LPUNKNOWN pUnkOuter, IBaseFilter** ppBF) const
+	{
+		CheckPointer(ppBF, E_POINTER);
+
+		HRESULT hr;
+		if (lpfnNew != NULL)
+		{
+			*ppBF = (CBaseFilter*)lpfnNew(pUnkOuter, &hr);
+			(*ppBF)->AddRef();
+			return hr;
+		}
+		else
+		{
+			FAILED_RETURN(CoCreateInstance(clsID, pUnkOuter, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (LPVOID*)ppBF));
+			(*ppBF)->AddRef();
+			return S_OK;
+		}
+	}
+
+	CVGFilter& operator=(const CVGFilter& r)
+	{
+		clsID = r.clsID;
+		strName = r.strName;
+		dwMerit = r.dwMerit;
+		lpfnNew = r.lpfnNew;
+		return *this;
+	}
+	
 	friend bool operator==(const CVGFilter& a, const CVGFilter& b)
 	{
 		return InlineIsEqualGUID(a.clsID, b.clsID) == TRUE;
@@ -46,11 +74,13 @@ struct CVGFilter
 	}
 };
 
+typedef set<CVGFilter, greater<CVGFilter> > CVGFilters;
+
 class CEnumFilter : public CVGUnknownImpl<IEnumGUID, IID_IEnumGUID>
 {
 private:
-	set<CVGFilter, greater<CVGFilter> >					m_items;
-	set<CVGFilter, greater<CVGFilter> >::const_iterator	m_iter;
+	CVGFilters					m_items;
+	CVGFilters::const_iterator	m_iter;
 public:
 	CEnumFilter(void);
 	void Add(const CVGFilter& flt);
@@ -75,12 +105,22 @@ private:
 	maj2subs_t					m_lookupMT;		// 输入Pin的MediaType到滤镜的映射
 	filter_lookup_t				m_lookupFlt;	// CLSID到滤镜的映射
 protected:
+	void RegisterSystemFilters(HKEY  clsCategory);
 	HRESULT RegisterFilter(const CFactoryTemplate& templ);
 	HRESULT RegisterFilter(REFCLSID clsID, LPCWSTR lpszName, DWORD dwMerit, ULONG nPins, const REGFILTERPINS* lpPins,
 		LPFNNewCOMObject lpfnNew = NULL);
 	HRESULT RegisterFilter(REFCLSID clsID, LPCWSTR lpszName, DWORD dwMerit, ULONG nPins2, const REGFILTERPINS2* lpPins2,
 		LPFNNewCOMObject lpfnNew = NULL);
 	HRESULT RegisterFilter(REFCLSID clsID, LPCWSTR lpszName, char* pBuf, DWORD nSize);
+	/* 渲染 */
+	HRESULT ConnectDirect(IPin* pPinOut, const CVGFilter filterIn, const CMediaType& mt, IBaseFilter** pBF);
+	HRESULT EnumMatchingFilters(CVGFilters &ret, BOOL bExactMatch, DWORD dwMerit, 
+		CLSID clsInMaj, CLSID clsInSub) const;
+	HRESULT RenderFilter(IBaseFilter* pBF);
+	HRESULT RenderPin(IPin* pPin);
+	/* 信息 */
+	PIN_DIRECTION GetPinDir(IPin* pPin);
+	bool IsPinConnected(IPin* pPin);
 public:
 	CVGFilterManager(void);
 	virtual ~CVGFilterManager(void);
@@ -89,4 +129,6 @@ public:
 														  CLSID clsInMaj, CLSID clsInSub);
 	virtual HRESULT STDMETHODCALLTYPE Initialize(void);
 	virtual HRESULT STDMETHODCALLTYPE RenderFile(LPCWSTR lpszFileName);
+	/* IUnknown */
+	virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID refiid, void **ppv);
 };

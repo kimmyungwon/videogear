@@ -18,6 +18,7 @@ DECLARE_INTERFACE_IID_(IVGFilterManager, IUnknown, "8BAC0406-06F0-4232-B6BB-87F9
 	virtual HRESULT STDMETHODCALLTYPE EnumMatchingFilters(IEnumGUID **ppEnum, BOOL bExactMatch, DWORD dwMerit, 
 														  CLSID clsInMaj, CLSID clsInSub) = 0;
 	virtual HRESULT STDMETHODCALLTYPE Initialize(void) = 0;
+	virtual HRESULT STDMETHODCALLTYPE RenderFile(LPCWSTR lpszFileName) = 0;
 };
 
 #undef  INTERFACE

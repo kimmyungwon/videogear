@@ -79,6 +79,33 @@ CVGFilterManager::CVGFilterManager(void)
 	for (int i=0; i<g_cTemplates; i++)
 		RegisterFilter(g_pTemplates[i]);
 	// 枚举系统滤镜
+	RegisterSystemFilters(CLSID_LegacyAmFilterCategory);
+	RegisterSystemFilters(CLSID_AudioRendererCategory);
+}
+
+CVGFilterManager::~CVGFilterManager(void)
+{
+}
+
+HRESULT STDMETHODCALLTYPE CVGFilterManager::QueryInterface( REFIID refiid, void **ppv )
+{
+	if (InlineIsEqualGUID(refiid, IID_IGraphBuilder))
+	{
+		if (m_pGB != NULL)
+		{
+			*ppv = m_pGB;
+			static_cast<IGraphBuilder*>(*ppv)->AddRef();
+			return S_OK;
+		}
+		else
+			return E_FAIL;
+	}
+	else
+		return CVGUnknownImpl::QueryInterface(refiid, ppv);
+}
+
+void CVGFilterManager::RegisterSystemFilters( REFCLSID clsCategory )
+{
 	LPOLESTR lpszFilterCategory;
 	CRegKey regRoot, regItem;
 	DWORD nIdx = 0, nKeyNameLen, nFilterNameLen, nFilterDataSize;
@@ -86,7 +113,7 @@ CVGFilterManager::CVGFilterManager(void)
 	WCHAR szKeyName[MAX_PATH], szFilterName[MAX_FILTER_NAME];
 	PBYTE pFilterData;
 
-	StringFromCLSID(CLSID_LegacyAmFilterCategory, &lpszFilterCategory);
+	StringFromCLSID(clsCategory, &lpszFilterCategory);
 	if (regRoot.Open(HKEY_CLASSES_ROOT, L"CLSID\\" + CStringW(lpszFilterCategory) + L"\\Instance") == ERROR_SUCCESS)
 	{
 		while (regRoot.EnumKey(nIdx++, szKeyName, &(nKeyNameLen = MAX_PATH), NULL) == S_OK)
@@ -111,30 +138,50 @@ CVGFilterManager::CVGFilterManager(void)
 	CoTaskMemFree(lpszFilterCategory);
 }
 
-CVGFilterManager::~CVGFilterManager(void)
-{
-}
 
 HRESULT STDMETHODCALLTYPE CVGFilterManager::EnumMatchingFilters( IEnumGUID **ppEnum, BOOL bExactMatch, DWORD dwMerit, 
 																CLSID clsInMaj, CLSID clsInSub )
 {
 	CheckPointer(ppEnum, E_POINTER);
 	
+	HRESULT hr;
+	CVGFilters ret;
 	CEnumFilter *pEnum = new CEnumFilter;
+	if (SUCCEEDED(hr = EnumMatchingFilters(ret, bExactMatch, dwMerit, clsInMaj, clsInSub)))
+	{
+		for (CVGFilters::const_iterator it=ret.begin(); it!=ret.end(); it++)
+			pEnum->Add(*it);
+		pEnum->AddRef();
+		*ppEnum = pEnum;
+		return S_OK;
+	}
+	else
+	{
+		delete pEnum;
+		*ppEnum = NULL;
+		return E_FAIL;
+	}
+}
+
+HRESULT CVGFilterManager::EnumMatchingFilters( CVGFilters &ret, BOOL bExactMatch, DWORD dwMerit, 
+											  CLSID clsInMaj, CLSID clsInSub ) const
+{
 	// 枚举匹配的内部滤镜
 	if (bExactMatch)
 	{
-		 maj2subs_t::const_iterator itMaj = m_lookupMT.find(clsInMaj);
-		 if (itMaj != m_lookupMT.end())
-		 {
+		maj2subs_t::const_iterator itMaj = m_lookupMT.find(clsInMaj);
+		if (itMaj != m_lookupMT.end())
+		{
 			guid2ft_itpair_t pFT = itMaj->second.equal_range(clsInSub);
 			if (pFT.first != itMaj->second.end() && pFT.second != itMaj->second.end())
 			{
 				for (guid2ft_t::const_iterator it=pFT.first; it!=pFT.second; it++)
 					if (it->second.dwMerit >= dwMerit)
-						pEnum->Add(it->second);
+					{
+						ret.insert(it->second);
+					}
 			}
-		 }
+		}
 	}
 	else	// 非精确匹配时GUID_NULL被看作通配符
 	{
@@ -146,23 +193,12 @@ HRESULT STDMETHODCALLTYPE CVGFilterManager::EnumMatchingFilters( IEnumGUID **ppE
 			for (guid2ft_t::const_iterator itSub=itMaj->second.begin(); itSub!=itMaj->second.end(); itSub++)
 			{
 				if (MatchGUID(itSub->first, clsInSub) && itSub->second.dwMerit >= dwMerit)
-					pEnum->Add(itSub->second);
+					ret.insert(itSub->second);
 			}
 		}
 	}
 
-	if (pEnum->GetCount() > 0)
-	{
-		pEnum->AddRef();
-		*ppEnum = pEnum;
-		return S_OK;
-	}
-	else
-	{
-		delete pEnum;
-		*ppEnum = NULL;
-		return E_FAIL;
-	}
+	return ret.size() > 0 ? S_OK : E_FAIL;
 }
 
 HRESULT STDMETHODCALLTYPE CVGFilterManager::Initialize( void )
@@ -230,11 +266,12 @@ HRESULT CVGFilterManager::RegisterFilter( REFCLSID clsID, LPCWSTR lpszName, DWOR
 
 HRESULT CVGFilterManager::RegisterFilter( REFCLSID clsID, LPCWSTR lpszName, char* pBuf, DWORD nSize )
 {
-	// 参考了Igor Janos的GraphStudio中的部分代码
+	// 参考了GraphStudio(Igor Janos)中的部分代码
 	DWORD *b = (DWORD*)pBuf, dwVersion = b[0], dwMerit = b[1], *ps = b + 4;
 	int cpins1 = b[2], cpins2 = b[3];
 	CVGFilter flt(clsID, lpszName, dwMerit);
 	
+	m_lookupFlt[clsID] = flt;
 	for (int i=0; i<cpins1; i++) 
 	{
 		if ((char*)ps > (pBuf + nSize - 6*4)) break;
@@ -282,8 +319,28 @@ HRESULT CVGFilterManager::RegisterFilter( REFCLSID clsID, LPCWSTR lpszName, char
 	return S_OK;
 }
 
+PIN_DIRECTION CVGFilterManager::GetPinDir( IPin* pPin )
+{
+	ASSERT(pPin != NULL);
+
+	PIN_DIRECTION pinDir;
+	pPin->QueryDirection(&pinDir);
+	return pinDir;
+}
+
+bool CVGFilterManager::IsPinConnected( IPin* pPin )
+{
+	ASSERT(pPin != NULL);
+
+	CComPtr<IPin> pConnectedPin;
+	pPin->ConnectedTo(&pConnectedPin);
+	return pConnectedPin != NULL;
+}
+
 HRESULT STDMETHODCALLTYPE CVGFilterManager::RenderFile( LPCWSTR lpszFileName )
 {
+	CheckPointer(m_pGB, E_POINTER);
+	
 	HRESULT hr;
 	CComPtr<IBaseFilter> pSF;
 	CComQIPtr<IFileSourceFilter> pFSF;
@@ -291,5 +348,94 @@ HRESULT STDMETHODCALLTYPE CVGFilterManager::RenderFile( LPCWSTR lpszFileName )
 	FAILED_RETURN(pSF.CoCreateInstance(CLSID_AsyncReader));
 	pFSF = pSF;
 	FAILED_RETURN(pFSF->Load(lpszFileName, NULL));
-	return S_OK;
+	FAILED_RETURN(m_pGB->AddFilter(pSF, lpszFileName));
+	return RenderFilter(pSF);
 }
+
+HRESULT CVGFilterManager::RenderFilter( IBaseFilter* pBF )
+{
+	CheckPointer(pBF, E_POINTER);
+
+	CComPtr<IEnumPins> pEnumPins;
+	CComPtr<IPin> pPin;
+	UINT nTotal = 0, nRendered = 0;
+
+	BeginEnumPins(pBF, pEnumPins, pPin)
+		if (GetPinDir(pPin) == PINDIR_OUTPUT && !IsPinConnected(pPin))
+		{
+			nTotal++;
+			if (SUCCEEDED(RenderPin(pPin)))
+				nRendered++;
+		}
+	EndEnumPins
+
+	if (nRendered > 0)
+		return nRendered == nTotal ? S_OK : S_FALSE;
+	else
+		return nTotal == 0 ? S_OK : E_FAIL;
+}
+
+HRESULT CVGFilterManager::RenderPin( IPin* pPin )
+{
+	CheckPointer(pPin, E_POINTER);
+	if (GetPinDir(pPin) == PINDIR_INPUT) return VFW_E_INVALID_DIRECTION;
+	if (IsPinConnected(pPin)) return VFW_E_ALREADY_CONNECTED;
+
+	CComPtr<IEnumGUID> pEnumGUID;
+	CVGFilters matcheds;
+	CComPtr<IBaseFilter> pMatched;
+	bool bRendered = false;
+
+	DbgLog((LOG_TRACE, 0, L"开始渲染\"%s\"\n", GetPinName(pPin)));
+	BeginEnumMediaTypes(pPin, pEnumMT, pmt)
+		if (FAILED(EnumMatchingFilters(matcheds, TRUE, MERIT_NORMAL, pmt->majortype, pmt->subtype)))
+			continue;
+
+		for (CVGFilters::const_iterator it=matcheds.begin(); it!=matcheds.end(); it++)
+		{
+			if (SUCCEEDED(ConnectDirect(pPin, *it, *pmt, &pMatched)) && SUCCEEDED(RenderFilter(pMatched)))
+			{
+				bRendered = true;
+				break;
+			}
+			pMatched.Release();
+		}
+
+		if (bRendered)
+			break;
+	EndEnumMediaTypes(pmt)
+
+	return bRendered ? S_OK : VFW_E_CANNOT_RENDER;
+}
+
+HRESULT CVGFilterManager::ConnectDirect( IPin* pPinOut, const CVGFilter filterIn, const CMediaType& mt, 
+										IBaseFilter** pBF )
+{
+	CheckPointer(pPinOut, E_POINTER);
+	CheckPointer(pBF, E_POINTER);
+	ASSERT(GetPinDir(pPinOut) == PINDIR_OUTPUT);
+	ASSERT(!IsPinConnected(pPinOut));
+
+	HRESULT hr;
+	CComPtr<IBaseFilter> pBFIn;
+
+	FAILED_RETURN(filterIn.CreateInstance(NULL, &pBFIn));
+	FAILED_RETURN(m_pGB->AddFilter(pBFIn, filterIn.strName));
+
+	BeginEnumPins(pBFIn, pEnumPins, pPinIn)
+		if (GetPinDir(pPinIn) == PINDIR_OUTPUT || IsPinConnected(pPinIn))
+			continue;
+		
+		if (SUCCEEDED(m_pGB->ConnectDirect(pPinOut, pPinIn, &mt)))
+		{
+			*pBF = pBFIn;
+			(*pBF)->AddRef();
+			return S_OK;
+		}
+	EndEnumPins
+
+	m_pGB->RemoveFilter(pBFIn);
+	*pBF = NULL;
+	return VFW_E_CANNOT_CONNECT;
+}
+

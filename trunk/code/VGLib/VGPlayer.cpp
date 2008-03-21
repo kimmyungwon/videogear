@@ -12,7 +12,7 @@ CVGPlayer::~CVGPlayer(void)
 
 HRESULT STDMETHODCALLTYPE CVGPlayer::QueryInterface( REFIID refiid, void **ppv )
 {
-	if (refiid == IID_IVGFilterManager)
+	if (InlineIsEqualGUID(refiid, IID_IVGFilterManager))
 	{
 		*ppv = m_pFM;
 		static_cast<IVGFilterManager*>(*ppv)->AddRef();
