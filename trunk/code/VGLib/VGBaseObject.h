@@ -1,5 +1,9 @@
 #pragma once
 
+#include <functional>
+
+using namespace std;
+
 #define FAILED_RETURN(expr)	if(FAILED(hr = (expr))) return hr
 
 //////////////////////////////////////////////////////////////////////////
@@ -70,3 +74,85 @@ public:
 		return lRef;
 	}
 };
+
+//////////////////////////////////////////////////////////////////////////
+
+struct CVGFilter
+{
+	CLSID clsID;
+	CStringW strName;
+	DWORD dwMerit;
+	UINT nPins;
+	LPFNNewCOMObject lpfnNew;
+
+	CVGFilter(void): clsID(GUID_NULL), strName(L""), dwMerit(0), lpfnNew(NULL)	{}
+
+	CVGFilter(REFCLSID _clsID, LPCWSTR _Name, DWORD _Merit, UINT _Pins, LPFNNewCOMObject _lpfnNew = NULL)
+		:clsID(_clsID), strName(_Name), dwMerit(_Merit), nPins(_Pins), lpfnNew(_lpfnNew)	{}
+
+	CVGFilter(const CFactoryTemplate* _Templ)
+	{
+		CVGFilter(*_Templ->m_ClsID, _Templ->m_Name, _Templ->m_pAMovieSetup_Filter->dwMerit, 
+			_Templ->m_pAMovieSetup_Filter->nPins, _Templ->m_lpfnNew);
+	}
+
+	HRESULT CreateInstance(LPUNKNOWN pUnkOuter, IBaseFilter** ppBF) const
+	{
+		CheckPointer(ppBF, E_POINTER);
+
+		HRESULT hr;
+		if (lpfnNew != NULL)
+		{
+			*ppBF = (CBaseFilter*)lpfnNew(pUnkOuter, &hr);
+			(*ppBF)->AddRef();
+			return hr;
+		}
+		else
+		{
+			FAILED_RETURN(CoCreateInstance(clsID, pUnkOuter, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (LPVOID*)ppBF));
+			(*ppBF)->AddRef();
+			return S_OK;
+		}
+	}
+
+	CVGFilter& operator=(const CVGFilter& r)
+	{
+		clsID = r.clsID;
+		strName = r.strName;
+		dwMerit = r.dwMerit;
+		lpfnNew = r.lpfnNew;
+		return *this;
+	}
+
+	friend bool operator==(const CVGFilter& a, const CVGFilter& b)
+	{
+		return InlineIsEqualGUID(a.clsID, b.clsID) == TRUE;
+	}
+};
+
+struct VGFilterComp_InternalFirst : public binary_function <CVGFilter, CVGFilter, bool> 
+{
+	bool operator()(const CVGFilter& _Left, const CVGFilter& _Right) const
+	{
+		if (_Left.lpfnNew != NULL && _Right.lpfnNew == NULL)
+			return true;
+		else if (_Left.lpfnNew == NULL && _Right.lpfnNew != NULL)
+			return false;
+		else
+			return _Left.dwMerit > _Right.dwMerit;
+	}
+};
+
+struct VGFilterComp : public binary_function <CVGFilter, CVGFilter, bool> 
+{
+	bool operator()(const CVGFilter& _Left, const CVGFilter& _Right) const
+	{
+		return _Left.dwMerit > _Right.dwMerit;
+	}
+};
+
+template<typename CompT>
+class CVGFiltersT : public set<CVGFilter, CompT>	{};
+
+typedef CVGFiltersT<VGFilterComp_InternalFirst> CVGFilters;	// 按Merit排列，内部滤镜优先
+typedef CVGFiltersT<VGFilterComp> CVGFiltersNIF;	// 只按Merit排列

@@ -1,75 +1,13 @@
 #include "StdAfx.h"
 #include "VGFilterManager.h"
 
-CEnumFilter::CEnumFilter( void )
-{
-	m_iter = m_items.end();
-}
-
-void CEnumFilter::Add( const CVGFilter& flt )
-{
-	m_items.insert(flt);
-	Reset();	
-}
-
-size_t CEnumFilter::GetCount( void )
-{
-	return m_items.size();
-}
-
-HRESULT STDMETHODCALLTYPE CEnumFilter::Next( ULONG celt, GUID *rgelt, ULONG *pceltFetched )
-{
-	CheckPointer(rgelt, E_POINTER);
-	ValidateReadWritePtr(rgelt, celt * sizeof(GUID));
-	if (m_iter == m_items.end())
-		return E_FAIL;
-
-	ULONG nDone = 0;
-	while (m_iter != m_items.end() && nDone < celt)
-	{
-		rgelt[nDone] = m_iter->clsID;
-		m_iter++;
-		nDone++;
-	}	
-	return nDone == celt ? S_OK : S_FALSE;
-}
-
-HRESULT STDMETHODCALLTYPE CEnumFilter::Skip( ULONG celt )
-{
-	if (m_iter == m_items.end())
-		return E_FAIL;
-
-	ULONG nDone = 0;
-	while (m_iter != m_items.end() && nDone < celt)
-	{
-		m_iter++;
-		nDone++;
-	}
-	return nDone == celt ? S_OK : S_FALSE;
-}
-
-HRESULT STDMETHODCALLTYPE CEnumFilter::Reset( void )
-{
-	m_iter = m_items.begin();
-	return S_OK;
-}
-
-HRESULT STDMETHODCALLTYPE CEnumFilter::Clone( IEnumGUID **ppenum )
-{
-	CEnumFilter *pEnum = new CEnumFilter;
-	pEnum->m_items = m_items;
-	pEnum->m_iter = m_iter;
-	pEnum->AddRef();
-	(*ppenum) = pEnum;
-	return S_OK;
-}
-
 //////////////////////////////////////////////////////////////////////////
 
 extern CFactoryTemplate *g_pTemplates;
 extern int g_cTemplates;
 
 CVGFilterManager::CVGFilterManager(void)
+	:m_bInternalFirst(true)
 {
 	const AMOVIESETUP_FILTER *pMSF = NULL;
 	const AMOVIESETUP_PIN *pMSP= NULL;
@@ -135,33 +73,9 @@ void CVGFilterManager::RegisterSystemFilters( HKEY hkeyRoot, LPCWSTR lpszSubPath
 	}
 }
 
-
-HRESULT STDMETHODCALLTYPE CVGFilterManager::EnumMatchingFilters( IEnumGUID **ppEnum, BOOL bExactMatch, DWORD dwMerit, 
-																CLSID clsInMaj, CLSID clsInSub )
-{
-	CheckPointer(ppEnum, E_POINTER);
-	
-	HRESULT hr;
-	CVGFilters ret;
-	CEnumFilter *pEnum = new CEnumFilter;
-	if (SUCCEEDED(hr = EnumMatchingFilters(ret, bExactMatch, dwMerit, clsInMaj, clsInSub)))
-	{
-		for (CVGFilters::const_iterator it=ret.begin(); it!=ret.end(); it++)
-			pEnum->Add(*it);
-		pEnum->AddRef();
-		*ppEnum = pEnum;
-		return S_OK;
-	}
-	else
-	{
-		delete pEnum;
-		*ppEnum = NULL;
-		return E_FAIL;
-	}
-}
-
-HRESULT CVGFilterManager::EnumMatchingFilters( CVGFilters &ret, BOOL bExactMatch, DWORD dwMerit, 
-											  CLSID clsInMaj, CLSID clsInSub ) const
+template<typename CompT>
+HRESULT CVGFilterManager::EnumMatchingFilters( CVGFiltersT<CompT> &ret, BOOL bExactMatch, DWORD dwMerit, 
+												CLSID clsInMaj, CLSID clsInSub ) const
 {
 	// 枚举匹配的内部滤镜
 	if (bExactMatch)
@@ -220,7 +134,7 @@ HRESULT CVGFilterManager::RegisterFilter( REFCLSID clsID, LPCWSTR lpszName, DWOR
 	if (m_lookupFlt.find(clsID) != m_lookupFlt.end())
 		return ERROR_FILE_EXISTS;
 
-	CVGFilter flt(clsID, lpszName, dwMerit, lpfnNew);
+	CVGFilter flt(clsID, lpszName, dwMerit, nPins, lpfnNew);
 	const AMOVIESETUP_MEDIATYPE *pMSMT = NULL;
 
 	m_lookupFlt[clsID] = flt;
@@ -231,7 +145,7 @@ HRESULT CVGFilterManager::RegisterFilter( REFCLSID clsID, LPCWSTR lpszName, DWOR
 		for (UINT j=0; j<lpPins[i].nMediaTypes; j++)
 		{
 			pMSMT = &lpPins[i].lpMediaType[j];
-			(m_lookupMT[*pMSMT->clsMajorType]).insert(make_pair(*pMSMT->clsMinorType, flt));
+			AddFilterToMediaTypeLookup(*pMSMT->clsMajorType, *pMSMT->clsMinorType, flt);
 		}
 	}	
 	return S_OK;	
@@ -244,7 +158,7 @@ HRESULT CVGFilterManager::RegisterFilter( REFCLSID clsID, LPCWSTR lpszName, DWOR
 	if (m_lookupFlt.find(clsID) != m_lookupFlt.end())
 		return ERROR_FILE_EXISTS;
 
-	CVGFilter flt(clsID, lpszName, dwMerit, lpfnNew);
+	CVGFilter flt(clsID, lpszName, dwMerit, nPins2, lpfnNew);
 	const AMOVIESETUP_MEDIATYPE *pMSMT = NULL;
 
 	m_lookupFlt[clsID] = flt;
@@ -255,7 +169,7 @@ HRESULT CVGFilterManager::RegisterFilter( REFCLSID clsID, LPCWSTR lpszName, DWOR
 		for (UINT j=0; j<lpPins2[i].nMediaTypes; j++)
 		{
 			pMSMT = &lpPins2[i].lpMediaType[j];
-			(m_lookupMT[*pMSMT->clsMajorType]).insert(make_pair(*pMSMT->clsMinorType, flt));
+			AddFilterToMediaTypeLookup(*pMSMT->clsMajorType, *pMSMT->clsMinorType, flt);
 		}
 	}	
 	return S_OK;		
@@ -266,7 +180,7 @@ HRESULT CVGFilterManager::RegisterFilter( REFCLSID clsID, LPCWSTR lpszName, char
 	// 参考了GraphStudio(Igor Janos)中的部分代码
 	DWORD *b = (DWORD*)pBuf, dwVersion = b[0], dwMerit = b[1], *ps = b + 4;
 	int cpins1 = b[2], cpins2 = b[3];
-	CVGFilter flt(clsID, lpszName, dwMerit);
+	CVGFilter flt(clsID, lpszName, dwMerit, cpins1);
 	
 	m_lookupFlt[clsID] = flt;
 	for (int i=0; i<cpins1; i++) 
@@ -306,9 +220,7 @@ HRESULT CVGFilterManager::RegisterFilter( REFCLSID clsID, LPCWSTR lpszName, char
 				minor = g;
 
 				if (pindir == PINDIR_INPUT)
-				{
-					(m_lookupMT[major]).insert(make_pair(minor, flt));
-				}
+					AddFilterToMediaTypeLookup(major, minor, flt);
 			}
 		}
 	}
@@ -397,7 +309,8 @@ HRESULT CVGFilterManager::RenderPin( IPin* pPin )
 	if (IsPinConnected(pPin)) return VFW_E_ALREADY_CONNECTED;
 
 	CComPtr<IEnumGUID> pEnumGUID;
-	CVGFilters matcheds;
+	CVGFilters matcheds; 
+	CVGFiltersNIF matchedsNIF;
 	CComPtr<IBaseFilter> pMatched;
 	bool bRendered = false;
 
@@ -406,7 +319,7 @@ HRESULT CVGFilterManager::RenderPin( IPin* pPin )
 	{
 		// 优先使用FilterGraph中已有的滤镜
 		BeginEnumFilters(m_pGB, pEnumFilters, pExists)
-			if (SUCCEEDED(ConnectDirect(pPin, pExists, *pmt)))
+			if (SUCCEEDED(ConnectDirect(pPin, pExists, *pmt)) && SUCCEEDED(RenderFilter(pExists)))
 			{
 				bRendered = true;
 				pMatched = pExists;
@@ -417,25 +330,43 @@ HRESULT CVGFilterManager::RenderPin( IPin* pPin )
 		if (bRendered)
 			break;
 		// 匹配新滤镜
-		if (FAILED(EnumMatchingFilters(matcheds, FALSE, MERIT_NORMAL, pmt->majortype, pmt->subtype)))
-			continue;
-		for (CVGFilters::const_iterator it=matcheds.begin(); it!=matcheds.end(); it++)
+		if (m_bInternalFirst)
 		{
-			if (SUCCEEDED(ConnectDirect(pPin, *it, *pmt, &pMatched)))
+			if (FAILED(EnumMatchingFilters(matcheds, FALSE, MERIT_NORMAL, pmt->majortype, pmt->subtype)))
+				continue;
+			for (CVGFilters::const_iterator it=matcheds.begin(); it!=matcheds.end(); it++)
 			{
-				bRendered = true;
-				DbgLog((LOG_TRACE, 0, L"成功渲染插针\"%s\"到\"%s\"", GetPinName(pPin), it->strName));
-				break;
+				if (SUCCEEDED(ConnectDirect(pPin, *it, *pmt, &pMatched)) && SUCCEEDED(RenderFilter(pMatched)))
+				{
+					bRendered = true;
+					DbgLog((LOG_TRACE, 0, L"成功渲染插针\"%s\"到\"%s\"", GetPinName(pPin), it->strName));
+					break;
+				}
+				pMatched.Release();
 			}
-			pMatched.Release();
 		}
+		else
+		{
+			if (FAILED(EnumMatchingFilters(matchedsNIF, FALSE, MERIT_NORMAL, pmt->majortype, pmt->subtype)))
+				continue;
+			for (CVGFiltersNIF::const_iterator it=matchedsNIF.begin(); it!=matchedsNIF.end(); it++)
+			{
+				if (SUCCEEDED(ConnectDirect(pPin, *it, *pmt, &pMatched)) && SUCCEEDED(RenderFilter(pMatched)))
+				{
+					bRendered = true;
+					DbgLog((LOG_TRACE, 0, L"成功渲染插针\"%s\"到\"%s\"", GetPinName(pPin), it->strName));
+					break;
+				}
+				pMatched.Release();
+			}
+		}	
 		if (bRendered)
 			break;
 	}
 	EndEnumMediaTypes(pmt)
 
 	if (bRendered)
-		return  RenderFilter(pMatched);
+		return S_OK;
 	else
 	{
 		DbgLog((LOG_TRACE, 0, L"渲染插针\"%s\"失败", GetPinName(pPin)));
@@ -518,4 +449,14 @@ HRESULT STDMETHODCALLTYPE CVGFilterManager::ClearGraph( void )
 	EndEnumFilters
 
 	return S_OK;
+}
+
+void STDMETHODCALLTYPE CVGFilterManager::SetInternalFirst( BOOL bInternalFirst )
+{
+	m_bInternalFirst = bInternalFirst == TRUE;
+}
+
+void CVGFilterManager::AddFilterToMediaTypeLookup( REFCLSID clsMajor, REFCLSID clsMinor, const CVGFilter& flt )
+{
+	(m_lookupMT[clsMajor]).insert(make_pair(clsMinor, flt));
 }

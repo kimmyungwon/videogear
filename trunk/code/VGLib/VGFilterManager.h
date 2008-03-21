@@ -13,83 +13,76 @@ struct guid_less : public binary_function <GUID, GUID, bool>
 	}
 };
 
-struct CVGFilter
-{
-	CLSID clsID;
-	CStringW strName;
-	DWORD dwMerit;
-	LPFNNewCOMObject lpfnNew;
-
-	CVGFilter(void): clsID(GUID_NULL), strName(L""), dwMerit(0), lpfnNew(NULL)	{}
-	
-	CVGFilter(REFCLSID _clsID, LPCWSTR _Name, DWORD _Merit, LPFNNewCOMObject _lpfnNew = NULL)
-		:clsID(_clsID), strName(_Name), dwMerit(_Merit), lpfnNew(_lpfnNew)	{}
-
-	CVGFilter(const CFactoryTemplate* _Templ)
-	{
-		CVGFilter(*_Templ->m_ClsID, _Templ->m_Name, _Templ->m_pAMovieSetup_Filter->dwMerit, _Templ->m_lpfnNew);
-	}
-
-	HRESULT CreateInstance(LPUNKNOWN pUnkOuter, IBaseFilter** ppBF) const
-	{
-		CheckPointer(ppBF, E_POINTER);
-
-		HRESULT hr;
-		if (lpfnNew != NULL)
-		{
-			*ppBF = (CBaseFilter*)lpfnNew(pUnkOuter, &hr);
-			(*ppBF)->AddRef();
-			return hr;
-		}
-		else
-		{
-			FAILED_RETURN(CoCreateInstance(clsID, pUnkOuter, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (LPVOID*)ppBF));
-			(*ppBF)->AddRef();
-			return S_OK;
-		}
-	}
-
-	CVGFilter& operator=(const CVGFilter& r)
-	{
-		clsID = r.clsID;
-		strName = r.strName;
-		dwMerit = r.dwMerit;
-		lpfnNew = r.lpfnNew;
-		return *this;
-	}
-	
-	friend bool operator==(const CVGFilter& a, const CVGFilter& b)
-	{
-		return InlineIsEqualGUID(a.clsID, b.clsID) == TRUE;
-	}
-	
-	friend bool operator>(const CVGFilter& a, const CVGFilter& b)
-	{
-		if (a.lpfnNew != NULL && b.lpfnNew == NULL)
-			return true;
-		else if (a.lpfnNew == NULL && b.lpfnNew != NULL)
-			return false;
-		else
-			return a.dwMerit > b.dwMerit;
-	}
-};
-
-typedef set<CVGFilter, greater<CVGFilter> > CVGFilters;
-
+template<typename CompT>
 class CEnumFilter : public CVGUnknownImpl<IEnumGUID, IID_IEnumGUID>
 {
 private:
-	CVGFilters					m_items;
-	CVGFilters::const_iterator	m_iter;
+	CVGFiltersT<CompT>							m_items;
+	typename CVGFiltersT<CompT>::const_iterator	m_iter;
 public:
-	CEnumFilter(void);
-	void Add(const CVGFilter& flt);
-	size_t GetCount(void);
+	CEnumFilter(void)
+	{
+		m_iter = m_items.end();
+	}
+
+	void Add(const CVGFilter& flt)
+	{
+		m_items.insert(flt);
+		Reset();	
+	}
+
+	size_t GetCount(void)
+	{
+		return m_items.size();
+	}
+
 	/* IEnumGUID */
-	virtual HRESULT STDMETHODCALLTYPE Next(ULONG celt, GUID *rgelt, ULONG *pceltFetched);
-	virtual HRESULT STDMETHODCALLTYPE Skip(ULONG celt);
-	virtual HRESULT STDMETHODCALLTYPE Reset(void);
-	virtual HRESULT STDMETHODCALLTYPE Clone(IEnumGUID **ppenum);
+	virtual HRESULT STDMETHODCALLTYPE Next(ULONG celt, GUID *rgelt, ULONG *pceltFetched)
+	{
+		CheckPointer(rgelt, E_POINTER);
+		ValidateReadWritePtr(rgelt, celt * sizeof(GUID));
+		if (m_iter == m_items.end())
+			return E_FAIL;
+
+		ULONG nDone = 0;
+		while (m_iter != m_items.end() && nDone < celt)
+		{
+			rgelt[nDone] = m_iter->clsID;
+			m_iter++;
+			nDone++;
+		}	
+		return nDone == celt ? S_OK : S_FALSE;
+	}
+
+	virtual HRESULT STDMETHODCALLTYPE Skip(ULONG celt)
+	{
+		if (m_iter == m_items.end())
+			return E_FAIL;
+
+		ULONG nDone = 0;
+		while (m_iter != m_items.end() && nDone < celt)
+		{
+			m_iter++;
+			nDone++;
+		}
+		return nDone == celt ? S_OK : S_FALSE;
+	}
+
+	virtual HRESULT STDMETHODCALLTYPE Reset(void)
+	{
+		m_iter = m_items.begin();
+		return S_OK;
+	}
+
+	virtual HRESULT STDMETHODCALLTYPE Clone(IEnumGUID **ppenum)
+	{
+		CEnumFilter *pEnum = new CEnumFilter;
+		pEnum->m_items = m_items;
+		pEnum->m_iter = m_iter;
+		pEnum->AddRef();
+		(*ppenum) = pEnum;
+		return S_OK;
+	}
 };
 
 class CVGFilterManager : public CVGUnknownImpl<IVGFilterManager, IID_IVGFilterManager>
@@ -104,7 +97,9 @@ private:
 	CComPtr<IFilterMapper2>		m_pFM2;
 	maj2subs_t					m_lookupMT;		// 输入Pin的MediaType到滤镜的映射
 	filter_lookup_t				m_lookupFlt;	// CLSID到滤镜的映射
+	bool						m_bInternalFirst;	// 决定内部滤镜是否优先
 protected:
+	void AddFilterToMediaTypeLookup(REFCLSID clsMajor, REFCLSID clsMinor, const CVGFilter& flt);
 	void RegisterSystemFilters(HKEY hkeyRoot, LPCWSTR lpszSubPath);
 	HRESULT RegisterFilter(const CFactoryTemplate& templ);
 	HRESULT RegisterFilter(REFCLSID clsID, LPCWSTR lpszName, DWORD dwMerit, ULONG nPins, const REGFILTERPINS* lpPins,
@@ -115,7 +110,8 @@ protected:
 	/* 渲染 */
 	HRESULT ConnectDirect(IPin* pPinOut, IBaseFilter* pBFIn, const CMediaType& mt);
 	HRESULT ConnectDirect(IPin* pPinOut, const CVGFilter filterIn, const CMediaType& mt, IBaseFilter** pBF);
-	HRESULT EnumMatchingFilters(CVGFilters &ret, BOOL bExactMatch, DWORD dwMerit, 
+	template<typename CompT>
+	HRESULT EnumMatchingFilters(CVGFiltersT<CompT> &ret, BOOL bExactMatch, DWORD dwMerit, 
 		CLSID clsInMaj, CLSID clsInSub) const;
 	HRESULT RenderFilter(IBaseFilter* pBF);
 	HRESULT RenderPin(IPin* pPin);
@@ -127,10 +123,9 @@ public:
 	virtual ~CVGFilterManager(void);
 	/* IVGFilterManager */
 	virtual HRESULT STDMETHODCALLTYPE ClearGraph(void);
-	virtual HRESULT STDMETHODCALLTYPE EnumMatchingFilters(IEnumGUID **ppEnum, BOOL bExactMatch, DWORD dwMerit, 
-														  CLSID clsInMaj, CLSID clsInSub);
 	virtual HRESULT STDMETHODCALLTYPE Initialize(void);
 	virtual HRESULT STDMETHODCALLTYPE RenderFile(LPCWSTR lpszFileName);
+	virtual void STDMETHODCALLTYPE SetInternalFirst(BOOL bInternalFirst);
 	/* IUnknown */
 	virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID refiid, void **ppv);
 };
