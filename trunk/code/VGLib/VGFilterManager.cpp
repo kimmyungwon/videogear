@@ -281,3 +281,15 @@ HRESULT CVGFilterManager::RegisterFilter( REFCLSID clsID, LPCWSTR lpszName, char
 
 	return S_OK;
 }
+
+HRESULT STDMETHODCALLTYPE CVGFilterManager::RenderFile( LPCWSTR lpszFileName )
+{
+	HRESULT hr;
+	CComPtr<IBaseFilter> pSF;
+	CComQIPtr<IFileSourceFilter> pFSF;
+
+	FAILED_RETURN(pSF.CoCreateInstance(CLSID_AsyncReader));
+	pFSF = pSF;
+	FAILED_RETURN(pFSF->Load(lpszFileName, NULL));
+	return S_OK;
+}

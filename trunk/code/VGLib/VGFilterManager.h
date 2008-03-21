@@ -88,4 +88,5 @@ public:
 	virtual HRESULT STDMETHODCALLTYPE EnumMatchingFilters(IEnumGUID **ppEnum, BOOL bExactMatch, DWORD dwMerit, 
 														  CLSID clsInMaj, CLSID clsInSub);
 	virtual HRESULT STDMETHODCALLTYPE Initialize(void);
+	virtual HRESULT STDMETHODCALLTYPE RenderFile(LPCWSTR lpszFileName);
 };

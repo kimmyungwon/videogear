@@ -41,6 +41,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <hash_set>
 #include <utility>
 #include <ObjBase.h>
 #include <dshow.h>
