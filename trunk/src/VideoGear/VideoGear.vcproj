@@ -52,6 +52,7 @@
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
 				DebugInformationFormat="4"
+				DisableSpecificWarnings="4099"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -213,6 +214,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\VGGraphBuilder.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\VideoGear.cpp"
 				>
 			</File>
@@ -240,6 +245,10 @@
 			</File>
 			<File
 				RelativePath=".\VGFilters.h"
+				>
+			</File>
+			<File
+				RelativePath=".\VGGraphBuilder.h"
 				>
 			</File>
 			<File

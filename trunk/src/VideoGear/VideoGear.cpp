@@ -59,5 +59,13 @@ BOOL CVideoGearApp::InitInstance()
 {
 	CWinApp::InitInstance();
 
+	CoInitialize(NULL);
 	return TRUE;
+}
+
+int CVideoGearApp::ExitInstance()
+{
+	CoUninitialize();
+
+	return CWinApp::ExitInstance();
 }

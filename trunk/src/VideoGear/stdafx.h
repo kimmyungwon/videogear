@@ -17,4 +17,7 @@
 
 
 #include <map>
+#include <DShow.h>
 #include <streams.h>
+
+#define CHECK(ret)	{if(FAILED(hr=(ret))) return hr; }
