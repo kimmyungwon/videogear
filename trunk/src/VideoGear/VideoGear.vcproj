@@ -148,6 +148,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="winmm.lib d3d9.lib strmbaseRU.lib filtersRU.lib basevideofilterRU.lib MPCVideoDecRU.lib"
 				LinkIncremental="1"
 				ModuleDefinitionFile=".\VideoGear.def"
 				GenerateDebugInformation="true"
