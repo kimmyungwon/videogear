@@ -58,7 +58,14 @@ HRESULT VGGraphBuilder::RenderFile( LPCWSTR _FileName )
 
 HRESULT VGGraphBuilder::ConnectDirect( CComPtr<IPin> _OutPin, CComPtr<IBaseFilter> _InFilter, const AM_MEDIA_TYPE* _MediaType )
 {
-	return E_NOTIMPL;
+	ASSERT(GetPinDir(_OutPin) == PINDIR_OUTPUT && !IsPinConnected(_OutPin));
+	BeginEnumPins(_InFilter, pEnumPins, pInPin)
+		if (GetPinDir(pInPin) != PINDIR_INPUT || IsPinConnected(pInPin))
+			continue;
+		if (m_pGB->ConnectDirect(_OutPin, pInPin, _MediaType) == S_OK)
+			return S_OK;
+	EndEnumPins
+	return VFW_E_CANNOT_CONNECT;
 }
 
 HRESULT VGGraphBuilder::FindMatchingFilters( const AM_MEDIA_TYPE* _InType, VGMatchingFilters& _Results )

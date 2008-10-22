@@ -43,8 +43,7 @@ END_MESSAGE_MAP()
 
 CVideoGearApp::CVideoGearApp()
 {
-	// TODO: 在此处添加构造代码，
-	// 将所有重要的初始化放置在 InitInstance 中
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF|_CRTDBG_LEAK_CHECK_DF);
 }
 
 
