@@ -5,7 +5,6 @@
 
 #include "../mpc-hc/src/filters/transform/mpcvideodec/MPCVideoDecFilter.h"
 #include "../mpc-hc/src/filters/transform/mpcvideodec/MPCAudioDecFilter.h"
-#include "../mpc-hc/src/dsutil/DSUtil.h"
 
 namespace MPCVideoDec
 {
@@ -45,18 +44,49 @@ namespace MPCVideoDec
 
 //////////////////////////////////////////////////////////////////////////
 
-VGFilters g_filters;	// 全局唯一对象
+VGFilters g_internalFilters;	// 全局唯一对象
 
 VGFilters::VGFilters(void)
 {		
-	RegisterFilters(MPCVideoDec::g_Templates,MPCVideoDec:: g_cTemplates);
+	RegisterTransformFilters(MPCVideoDec::g_Templates,MPCVideoDec:: g_cTemplates);
 }
 
 VGFilters::~VGFilters(void)
 {
 }
 
-void VGFilters::RegisterFilters( CFactoryTemplate* _Templates, int _Count )
+HRESULT VGFilters::FindMatchingFilters( const AM_MEDIA_TYPE* _InType, VGMatchingFilters& _Results )
+{
+	HRESULT hr;
+	VGMediaType mt;
+	pair<pinTypes_t::const_iterator, pinTypes_t::const_iterator> pii;
+	UINT nTotal = 0;
+	CUnknown* pUnk = NULL; 
+	CComPtr<IBaseFilter> pFilter;
+	
+	if (_InType == NULL)
+		return E_POINTER;
+	mt = _InType;
+	pii = m_pinTypes.equal_range(mt);
+	for (pinTypes_t::const_iterator it = pii.first; it != pii.second; ++it)
+	{
+		ASSERT(it->second != NULL && it->second->m_lpfnNew != NULL);
+		pUnk = it->second->m_lpfnNew(NULL, &hr);
+		if (hr != S_OK || pUnk == NULL)
+			continue;
+		if (pUnk->NonDelegatingQueryInterface(IID_IBaseFilter, (void**)&pFilter) != S_OK)
+		{
+			delete pUnk;
+			continue;
+		}
+		ASSERT(it->second->m_pAMovieSetup_Filter != NULL);
+		_Results.push_back(VGFilter(it->second->m_pAMovieSetup_Filter->strName, pFilter));
+		nTotal++;
+	}
+	return nTotal > 0 ? S_OK : E_FAIL;
+}
+
+void VGFilters::RegisterTransformFilters( CFactoryTemplate* _Templates, int _Count )
 {
 	CFactoryTemplate* pTempl = NULL;
 	const AMOVIESETUP_FILTER* pFilter = NULL; 
@@ -71,6 +101,8 @@ void VGFilters::RegisterFilters( CFactoryTemplate* _Templates, int _Count )
 		for (UINT iPin = 0; iPin < pFilter->nPins; ++iPin)
 		{
 			pPin = &pFilter->lpPin[iPin];
+			if (!pPin->bOutput)
+				continue;
 			for (UINT iMT = 0; iMT < pPin->nMediaTypes; ++iMT)
 			{
 				m_pinTypes.insert(make_pair(VGMediaType(*pPin->lpMediaType[iMT].clsMajorType, 
@@ -79,3 +111,4 @@ void VGFilters::RegisterFilters( CFactoryTemplate* _Templates, int _Count )
 		}
 	}	
 }
+

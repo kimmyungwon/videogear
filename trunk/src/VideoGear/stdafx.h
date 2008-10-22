@@ -15,9 +15,11 @@
 #include <afxwin.h>         // MFC 核心组件和标准组件
 #include <afxext.h>         // MFC 扩展
 
-
+#include <vector>
 #include <map>
+#include <shlwapi.h>
 #include <DShow.h>
 #include <streams.h>
+#include "../mpc-hc/src/dsutil/DSUtil.h"
 
 #define CHECK(ret)	{if(FAILED(hr=(ret))) return hr; }
