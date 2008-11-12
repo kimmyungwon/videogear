@@ -14,7 +14,7 @@ TfrmMain *frmMain;
 __fastcall TfrmMain::TfrmMain(TComponent* Owner)
 	: TForm(Owner)
 {
-	m_player.Initialize(WindowHandle);
+	m_player.Initialize(pnlVideo);
 }
 //---------------------------------------------------------------------------
 void __fastcall TfrmMain::FormClose(TObject *Sender, TCloseAction &Action)
@@ -23,7 +23,8 @@ void __fastcall TfrmMain::FormClose(TObject *Sender, TCloseAction &Action)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TfrmMain::FormDblClick(TObject *Sender)
+
+void __fastcall TfrmMain::pnlVideoDblClick(TObject *Sender)
 {
 	TElement elem;
 

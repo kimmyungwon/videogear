@@ -23,7 +23,7 @@ int __fastcall EventThreadProc(void* pParam)
 }
 
 TPlayer::TPlayer(void)
-: m_iState(stUninit), m_hVidWnd(NULL), m_hEventThread(NULL)
+: m_iState(stUninit), m_pVidWnd(NULL), m_hEventThread(NULL)
 {
 
 }
@@ -34,13 +34,16 @@ TPlayer::~TPlayer(void)
     	Uninitialize();
 }
 
-HRESULT TPlayer::Initialize(HWND hVidWnd)
+HRESULT TPlayer::Initialize(TWinControl* pVidWnd)
 {
 	UINT uiThreadId;
 
 	if (m_iState != stUninit)
-    	return E_UNEXPECTED;
-	m_hVidWnd = hVidWnd;
+		return E_UNEXPECTED;
+	assert(pVidWnd != NULL);
+	m_pVidWnd = pVidWnd;
+	m_pVidWndOldWndProc = m_pVidWnd->WindowProc;
+	m_pVidWnd->WindowProc = OnVidWndMsg;
 	m_pGB = (IGraphBuilder2*)new TFGManager;
 	m_pMC = m_pGB;
 	m_pME = m_pGB;
@@ -59,7 +62,8 @@ HRESULT TPlayer::Uninitialize(void)
 	m_hEventThread = NULL;
 	m_pME.Release();
 	m_pGB.Release();
-	m_hVidWnd = NULL;
+	m_pVidWnd->WindowProc = m_pVidWndOldWndProc;
+	m_pVidWnd = NULL;
 	return S_OK;
 }
 
@@ -79,6 +83,15 @@ void TPlayer::Play(void)
 	if (m_playlist.size() == 0 || m_playlist.cur_pos >= m_playlist.size()) return;
 	if (m_pGB->RenderFile(m_playlist[m_playlist.cur_pos].strPath.c_str(), NULL) != S_OK)
 		return;
+	m_pVW = m_pGB;
+	if (m_pVW != NULL)
+	{
+    	m_pVW->put_WindowStyle(WS_CHILD);
+		m_pVW->put_Owner((OAHWND)m_pVidWnd->Handle);
+		m_pVW->put_Left(0);
+        m_pVW->put_Top(0);
+        m_pVW->put_Visible(OATRUE);
+	}
 	if (m_pMC->Run() != S_OK) return;
 	m_iState = stPlaying;
 }
@@ -86,4 +99,15 @@ void TPlayer::Play(void)
 void TPlayer::OnGraphEvent(long lCode, LONG_PTR lParam1, LONG_PTR lParam2)
 {
 
+}
+
+void __fastcall TPlayer::OnVidWndMsg(TMessage &Message)
+{
+    assert(m_pVidWndOldWndProc != NULL);
+	m_pVidWndOldWndProc(Message);
+	if (m_pVW != NULL)
+	{
+		m_pVW->NotifyOwnerMessage((OAHWND)m_pVidWnd->Handle, Message.Msg,
+			Message.WParam, Message.LParam);
+    }
 }
