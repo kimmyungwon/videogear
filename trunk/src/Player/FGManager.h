@@ -21,6 +21,9 @@ public:
 	TFGManager(void);
 	virtual ~TFGManager(void);
 protected:
+	/* IUnknown */
+    STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
+
 	/* IFilterGraph */
 	STDMETHODIMP AddFilter(IBaseFilter *pFilter, LPCWSTR pName);
 	STDMETHODIMP RemoveFilter(IBaseFilter *pFilter);

@@ -38,7 +38,6 @@
 			<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1)'!=''">
-			<BCC_AllCodeguardOptions>true</BCC_AllCodeguardOptions>
 			<BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
 			<BCC_DisableOptimizations>true</BCC_DisableOptimizations>
 			<DCC_Optimize>false</DCC_Optimize>
@@ -64,35 +63,35 @@
 			<TASM_Debugging>None</TASM_Debugging>
 		</PropertyGroup>
 		<ItemGroup>
-			<ResFiles Include="VGear.res">
-				<BuildOrder>1</BuildOrder>
-			</ResFiles>
-			<CppCompile Include="ThreadUtils.cpp">
-				<DependentOn>ThreadUtils.h</DependentOn>
-				<BuildOrder>5</BuildOrder>
-			</CppCompile>
-			<CppCompile Include="Player.cpp">
-				<DependentOn>Player.h</DependentOn>
-				<BuildOrder>6</BuildOrder>
-			</CppCompile>
-			<CppCompile Include="VGear.cpp">
-				<BuildOrder>0</BuildOrder>
-			</CppCompile>
+			<None Include="ComBase.h">
+				<BuildOrder>4</BuildOrder>
+			</None>
 			<CppCompile Include="FGManager.cpp">
 				<DependentOn>FGManager.h</DependentOn>
 				<BuildOrder>3</BuildOrder>
 			</CppCompile>
-			<None Include="ComBase.h">
-				<BuildOrder>4</BuildOrder>
-			</None>
+			<CppCompile Include="HookUtils.cpp">
+				<DependentOn>HookUtils.h</DependentOn>
+				<BuildOrder>7</BuildOrder>
+			</CppCompile>
 			<CppCompile Include="FormMain.cpp">
 				<Form>frmMain</Form>
 				<DependentOn>FormMain.h</DependentOn>
 				<BuildOrder>2</BuildOrder>
 			</CppCompile>
-			<CppCompile Include="HookUtils.cpp">
-				<DependentOn>HookUtils.h</DependentOn>
-				<BuildOrder>7</BuildOrder>
+			<CppCompile Include="ThreadUtils.cpp">
+				<DependentOn>ThreadUtils.h</DependentOn>
+				<BuildOrder>5</BuildOrder>
+			</CppCompile>
+			<ResFiles Include="VGear.res">
+				<BuildOrder>1</BuildOrder>
+			</ResFiles>
+			<CppCompile Include="VGear.cpp">
+				<BuildOrder>0</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="Player.cpp">
+				<DependentOn>Player.h</DependentOn>
+				<BuildOrder>6</BuildOrder>
 			</CppCompile>
 			<FormResources Include="FormMain.dfm"/>
 			<BuildConfiguration Include="Base">

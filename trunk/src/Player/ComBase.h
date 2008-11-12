@@ -15,7 +15,7 @@ public:
 	TUnknown(void): m_lRef(0)	{}
 	virtual ~TUnknown(void)		{}
 
-	virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvObject)
+	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject)
 	{
 		if (riid == __uuidof(BaseT))
 		{
@@ -31,14 +31,14 @@ public:
         	return E_NOINTERFACE;
 	}
 
-	virtual ULONG STDMETHODCALLTYPE AddRef(void)
+	STDMETHODIMP_(ULONG) STDMETHODCALLTYPE AddRef(void)
 	{
 		LONG lRef = InterlockedIncrement(&m_lRef);
 		assert(lRef > 0);
 		return ourmax((ULONG)lRef, 1ul);
 	}
 
-	virtual ULONG STDMETHODCALLTYPE Release(void)
+	STDMETHODIMP_(ULONG) STDMETHODCALLTYPE Release(void)
 	{
     	LONG lRef = InterlockedDecrement(&m_lRef);
 		assert(lRef >= 0);

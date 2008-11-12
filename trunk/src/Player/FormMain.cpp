@@ -11,26 +11,25 @@
 TfrmMain *frmMain;
 //---------------------------------------------------------------------------
 
-void __stdcall MySleep(DWORD)
-{
-    ShowMessage(L"MySleep!");
-}
-
 __fastcall TfrmMain::TfrmMain(TComponent* Owner)
 	: TForm(Owner)
 {
-	//m_player.Initialize(WindowHandle);
-
-	void (__stdcall *RealSleep)(DWORD) = Sleep;
-
-	HookAPI((void*&)RealSleep, MySleep);
-	Sleep(200);
-	RealSleep(2000);
+	m_player.Initialize(WindowHandle);
 }
 //---------------------------------------------------------------------------
 void __fastcall TfrmMain::FormClose(TObject *Sender, TCloseAction &Action)
 {
-	//m_player.Uninitialize();
+	m_player.Uninitialize();
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TfrmMain::FormDblClick(TObject *Sender)
+{
+	TElement elem;
+
+	elem.strPath = L"e:\\test.avi";
+	m_player.AddToPlaylist(elem);
+	m_player.Play();
 }
 //---------------------------------------------------------------------------
 

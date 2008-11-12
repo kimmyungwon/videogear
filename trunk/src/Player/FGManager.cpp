@@ -21,6 +21,17 @@ TFGManager::~TFGManager(void)
 
 }
 
+/* IUnknown */
+STDMETHODIMP TFGManager::QueryInterface(REFIID riid, void **ppvObject)
+{
+	if (TUnknown<IFilterGraph2>::QueryInterface(riid, ppvObject) == S_OK)
+		return S_OK;
+	else if (m_pUnkInner != NULL)
+		return m_pUnkInner->QueryInterface(riid, ppvObject);
+	else
+    	return E_NOINTERFACE;
+}
+
 /* IFilterGraph */
 STDMETHODIMP TFGManager::AddFilter(IBaseFilter *pFilter, LPCWSTR pName)
 {
