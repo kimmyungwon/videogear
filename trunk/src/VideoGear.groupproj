@@ -1,0 +1,36 @@
+﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		<PropertyGroup>
+			<ProjectGuid>{B6C15D95-AF7B-4FE9-9378-3196100FC284}</ProjectGuid>
+		</PropertyGroup>
+		<ItemGroup>
+			<Projects Include="Player\VGear.cbproj">
+				<Dependencies/>
+			</Projects>
+		</ItemGroup>
+		<ProjectExtensions>
+			<Borland.Personality>Default.Personality.12</Borland.Personality>
+			<Borland.ProjectType/>
+			<BorlandProject>
+				<Default.Personality/>
+			</BorlandProject>
+		</ProjectExtensions>
+		<Target Name="VGear">
+			<MSBuild Projects="Player\VGear.cbproj"/>
+		</Target>
+		<Target Name="VGear:Clean">
+			<MSBuild Targets="Clean" Projects="Player\VGear.cbproj"/>
+		</Target>
+		<Target Name="VGear:Make">
+			<MSBuild Targets="Make" Projects="Player\VGear.cbproj"/>
+		</Target>
+		<Target Name="Build">
+			<CallTarget Targets="VGear"/>
+		</Target>
+		<Target Name="Clean">
+			<CallTarget Targets="VGear:Clean"/>
+		</Target>
+		<Target Name="Make">
+			<CallTarget Targets="VGear:Make"/>
+		</Target>
+		<Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+	</Project>
