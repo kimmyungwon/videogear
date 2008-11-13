@@ -205,6 +205,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\PlayerConfig.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.cpp"
 				>
 				<FileConfiguration
@@ -248,6 +252,10 @@
 			</File>
 			<File
 				RelativePath=".\Player.h"
+				>
+			</File>
+			<File
+				RelativePath=".\PlayerConfig.h"
 				>
 			</File>
 			<File

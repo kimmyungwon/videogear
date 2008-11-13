@@ -34,7 +34,7 @@ DWORD WINAPI GraphEventProc( LPVOID lpParam )
 //////////////////////////////////////////////////////////////////////////
 
 CPlayer::CPlayer(void)
-: m_lRef(0), m_hMsgWnd(NULL), m_hVidWnd(NULL), m_playerState(PS_UNINITIALIZED), m_videoRenderer(VR_DEFAULT)
+: m_lRef(0), m_hMsgWnd(NULL), m_hVidWnd(NULL), m_playerState(PS_UNINITIALIZED)
 {
 }
 
@@ -73,7 +73,7 @@ STDMETHODIMP CPlayer::Initialize( __in HWND hVidWnd, __in_opt HWND hMsgWnd )
 	// 开始FilterGraph事件处理线程
 	m_hEventThread = CreateThread(NULL, 0, GraphEventProc, (LPVOID)this, 0, NULL);
 
-	set_State(PS_STOPPED);
+	set_State(PS_IDLE);
 	return S_OK;
 }
 
@@ -102,18 +102,29 @@ STDMETHODIMP CPlayer::Uninitialize( void )
 STDMETHODIMP CPlayer::OpenUrl( __in LPCWSTR lpcwstrUrl )
 {
 	HRESULT hr;
+	CRect rctVid;
 	
-	if (m_pGB == NULL) return E_UNEXPECTED;
-	switch (get_State())
-	{
-	case PS_UNINITIALIZED:	return E_UNEXPECTED;
-	case PS_PLAYING:
-	case PS_PAUSE:
-		FAILED_RET(Stop());
-		break;
-	}
+	if (get_State() == PS_UNINITIALIZED || m_pGB == NULL) return E_UNEXPECTED;
+	FAILED_RET(Stop());
+	if (get_State() != PS_IDLE) return E_UNEXPECTED;
+	set_State(PS_RENDERING);
 	FAILED_RET(m_pGB->RenderFile(lpcwstrUrl, NULL));
-	set_State(PS_PAUSE);
+	set_State(PS_STOPPED);
+
+	switch (gAppCfg.get_VideoOutputMode())
+	{
+	case VR_VMR9Windowed:
+	case VR_VMR9Renderless:
+		return E_NOTIMPL;
+	default:
+		FAILED_RET(m_pGB.QueryInterface(&m_pVW));
+		FAILED_RET(m_pVW->put_Owner((OAHWND)m_hVidWnd));
+		FAILED_RET(m_pVW->put_WindowStyle(WS_CHILD | WS_CLIPSIBLINGS));
+		GetClientRect(m_hVidWnd, &rctVid);
+		FAILED_RET(m_pVW->SetWindowPosition(0, 0, rctVid.Width(), rctVid.Height()));
+		FAILED_RET(m_pVW->put_Visible(OATRUE));
+	}
+
 	return S_OK;
 }
 
@@ -124,7 +135,9 @@ STDMETHODIMP CPlayer::Play( void )
 	if (m_pGB == NULL || m_pMC == NULL) return E_UNEXPECTED;
 	switch (get_State())
 	{
-	case PS_UNINITIALIZED:	return E_UNEXPECTED;
+	case PS_UNINITIALIZED:	
+	case PS_IDLE:
+		return E_UNEXPECTED;
 	case PS_PLAYING:	return S_FALSE;
 	}
 	FAILED_RET(m_pMC->Run());
@@ -145,27 +158,19 @@ STDMETHODIMP CPlayer::Stop( void )
 	switch (get_State())
 	{
 	case PS_UNINITIALIZED:	return E_UNEXPECTED;
-	case PS_STOPPED:	return S_FALSE;
+	case PS_IDLE:	return S_FALSE;
 	}
 	FAILED_RET(m_pMC->Stop());
 	FAILED_RET(m_pGB->Clear());
-	set_State(PS_STOPPED);
+	set_State(PS_IDLE);
 	return S_OK;
 }	
 
 STDMETHODIMP_(ULONG) CPlayer::get_State( void )
 {
+	CAutoLock cAutoLock(this);
+	
 	return m_playerState;
-}
-
-STDMETHODIMP_(ULONG) CPlayer::get_VideoRenderer( void )
-{
-	return m_videoRenderer;
-}
-
-STDMETHODIMP CPlayer::set_VideoRenderer( __in ULONG ulVal )
-{
-	return E_NOTIMPL;
 }
 
 /* IUnknown */
@@ -209,5 +214,7 @@ LRESULT CPlayer::OnVidWndMsg( UINT uMsg, WPARAM wParam, LPARAM lParam )
 
 void CPlayer::set_State( __in ULONG ulVal )
 {
+	CAutoLock cAutoLock(this);
+	
 	m_playerState = ulVal;
 }

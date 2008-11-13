@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "Core.h"
 #include "Player.h"
+#include "PlayerConfig.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -76,5 +77,13 @@ STDAPI VGCreatePlayer(__deref_out void **ppvObj)
 	pPlayer = (IPlayer*)new CPlayer;
 	pPlayer->AddRef();
 	*ppvObj = (void*)pPlayer;
+	return S_OK;
+}
+
+STDAPI VGGetConfig(__deref_out void **ppvObj)
+{
+	CheckPointer(ppvObj, E_POINTER);
+
+	*ppvObj = (void*)&gAppCfg;
 	return S_OK;
 }

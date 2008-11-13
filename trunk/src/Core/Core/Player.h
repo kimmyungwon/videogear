@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IPlayer.h"
+#include "PlayerConfig.h"
 #include "FGManager.h"
 
 class CPlayer
@@ -40,9 +41,9 @@ private:
 	HWND		m_hVidWnd;		// 视频窗口
 	WNDPROC		m_pfVWOrdProc;	// 视频窗口的原有消息处理函数
 	ULONG		m_playerState;	// 播放器状态
-	ULONG		m_videoRenderer;// 渲染方式
 	HANDLE		m_hEventThread;	// FilterGraph消息处理线程
 	CComPtr<IGraphBuilder2>		m_pGB;
 	CComQIPtr<IMediaControl>	m_pMC;
 	CComQIPtr<IMediaEvent>		m_pME;
+	CComQIPtr<IVideoWindow>		m_pVW;
 };
