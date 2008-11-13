@@ -83,7 +83,7 @@ VS_VERSION_INFO VERSIONINFO
 BEGIN
     BLOCK "StringFileInfo"
     BEGIN
-        BLOCK "080403a8"
+        BLOCK "080404b0"
         BEGIN
             VALUE "CompanyName", "Iceworld"
             VALUE "FileDescription", "VideoGear Core Library"
@@ -97,7 +97,7 @@ BEGIN
     END
     BLOCK "VarFileInfo"
     BEGIN
-        VALUE "Translation", 0x804, 936
+        VALUE "Translation", 0x804, 1200
     END
 END
 

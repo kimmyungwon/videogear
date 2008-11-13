@@ -1,8 +1,6 @@
 #include "StdAfx.h"
 #include "FGManager.h"
-
-#define QI(i) (riid == __uuidof(i)) ? GetInterface((i*)this, ppvObj) :
-#define QI2(i) (riid == IID_##i) ? GetInterface((i*)this, ppvObj) :
+#include "Utils.h"
 
 CFGManager::CFGManager( __in_opt LPCTSTR pName, __in_opt LPUNKNOWN pUnk )
 : CUnknown(pName, pUnk)
@@ -25,6 +23,7 @@ STDMETHODIMP CFGManager::NonDelegatingQueryInterface( REFIID riid, __deref_out v
 	CheckPointer(ppvObj, E_POINTER);
 
 	return	QI(IGraphBuilder2)
+			QI(IGraphBuilderDeadEnd)
 			QI(IFilterGraph2)
 			QI(IGraphBuilder)
 			QI(IFilterGraph)
@@ -198,4 +197,33 @@ STDMETHODIMP CFGManager::RenderEx( __in IPin *pPinOut, __in DWORD dwFlags, __res
 	CAutoLock cAutoLock(this);
 
 	return CComQIPtr<IFilterGraph2>(m_pUnkInner)->RenderEx(pPinOut, dwFlags, pvContext);
+}
+
+/* IGraphBuilder2 */
+STDMETHODIMP CFGManager::Clear( void )
+{
+	if (m_pUnkInner == NULL) return E_UNEXPECTED;
+
+	HRESULT hr;
+	CAutoLock cAutoLock(this);
+	
+	BeginEnumFilters(CComQIPtr<IFilterGraph2>(m_pUnkInner), pEnumFilters, pFilter)
+		BeginEnumPins(pFilter, pEnumPins, pPin)
+			FAILED_RET(Disconnect(pPin));
+		EndEnumPins
+		FAILED_RET(RemoveFilter(pFilter));
+	EndEnumFilters
+
+	return S_OK;
+}
+
+/* IGraphBuilderDeadEnd */
+STDMETHODIMP_(size_t) CFGManager::GetCount( void )	
+{
+	return 0;
+}
+
+STDMETHODIMP CFGManager::GetDeadEnd( __in size_t iIndex, __out AM_MEDIA_TYPE** ppMTs, __out size_t cMTs )	
+{
+	return E_NOTIMPL;
 }

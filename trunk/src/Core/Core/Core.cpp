@@ -58,6 +58,8 @@ CCoreApp theApp;
 
 BOOL CCoreApp::InitInstance()
 {
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF|_CRTDBG_LEAK_CHECK_DF);
+	
 	CWinApp::InitInstance();
 
 	return TRUE;

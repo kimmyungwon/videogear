@@ -262,6 +262,10 @@
 				RelativePath=".\targetver.h"
 				>
 			</File>
+			<File
+				RelativePath=".\Utils.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="资源文件"

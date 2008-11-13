@@ -5,6 +5,7 @@
 class CFGManager
 	: public CUnknown
 	, public IGraphBuilder2
+	, public IGraphBuilderDeadEnd
 	, public CCritSec
 {
 public:
@@ -41,6 +42,13 @@ protected:
 		__out IBaseFilter **ppFilter);
 	STDMETHODIMP ReconnectEx(__in IPin *ppin, __in_opt const AM_MEDIA_TYPE *pmt);
 	STDMETHODIMP RenderEx(__in IPin *pPinOut, __in DWORD dwFlags, __reserved DWORD *pvContext);
+
+	/* IGraphBuilder2 */
+	STDMETHODIMP Clear(void);
+
+	/* IGraphBuilderDeadEnd */
+	STDMETHODIMP_(size_t) GetCount(void);
+	STDMETHODIMP GetDeadEnd(__in size_t iIndex, __out AM_MEDIA_TYPE** ppMTs, __out size_t cMTs);
 private:
 	CComPtr<IUnknown>	m_pUnkInner;
 	CComPtr<IFilterMapper2>	m_pFM;
