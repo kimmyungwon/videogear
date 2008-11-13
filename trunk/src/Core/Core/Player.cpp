@@ -36,6 +36,7 @@ STDMETHODIMP CPlayer::Initialize( __in HWND hVidWnd )
 	if (mapWndToPlayer.find(hVidWnd) != mapWndToPlayer.end()) return E_INVALIDARG;
 
 	m_hVidWnd = hVidWnd;
+	mapWndToPlayer.insert(make_pair(m_hVidWnd, this));
 	m_pfVWOrdProc = (WNDPROC)GetWindowLong(m_hVidWnd, GWL_WNDPROC);
 	SetWindowLong(m_hVidWnd, GWL_WNDPROC, (LONG)&VidWndMsgProc);
 	m_pGB = (IGraphBuilder2*)new CFGManager(NULL, (IPlayer*)this);
@@ -93,6 +94,12 @@ void CPlayer::Uninitialize( void )
 	m_pME.Release();
 	//TODO: Í£Ö¹²¥·Å
 	m_pGB.Release();
+	
+	SetWindowLong(m_hVidWnd, GWL_WNDPROC, (LONG)m_pfVWOrdProc);
+	map<HWND, CPlayer*>::const_iterator itPlayer = mapWndToPlayer.find(m_hVidWnd);
+	if (itPlayer != mapWndToPlayer.end())
+		mapWndToPlayer.erase(itPlayer);
+
 	set_State(psUninitialized);
 }
 
