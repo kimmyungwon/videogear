@@ -2,11 +2,34 @@
 #include "Player.h"
 
 CPlayer::CPlayer(void)
+: m_lRef(0), m_hVidWnd(NULL), m_playerState(psUninitialized), m_videoRenderer(vrDefault)
 {
 }
 
 CPlayer::~CPlayer(void)
 {
+}
+
+/* IPlayer */
+
+STDMETHODIMP CPlayer::Initialize( __in HWND hVidWnd )
+{
+	return E_NOTIMPL;
+}
+
+STDMETHODIMP_(PlayerState) CPlayer::get_State( void )
+{
+	return m_playerState;
+}
+
+STDMETHODIMP_(VideoRenderer) CPlayer::get_VideoRenderer( void )
+{
+	return m_videoRenderer;
+}
+
+STDMETHODIMP CPlayer::set_VideoRenderer( __in VideoRenderer vr )
+{
+	return E_NOTIMPL;
 }
 
 /* IUnknown */
@@ -35,3 +58,4 @@ STDMETHODIMP_(ULONG) CPlayer::Release()
 	else
 		return max((ULONG)lRef, 1ul);
 }
+
