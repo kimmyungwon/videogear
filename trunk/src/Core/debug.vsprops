@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="gb2312"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="debug"
+	OutputDirectory="$(SolutionDir)..\..\binD"
+	IntermediateDirectory="$(SolutionDir)..\..\tmpD\$(ProjectName)"
+	InheritedPropertySheets="$(SolutionDir)common.vsprops"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		RuntimeLibrary="1"
+	/>
+</VisualStudioPropertySheet>
