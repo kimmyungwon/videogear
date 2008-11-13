@@ -72,9 +72,9 @@ STDAPI VGCreatePlayer(__deref_out void **ppvObj)
 {
 	CheckPointer(ppvObj, E_POINTER);
 
-	IPlayer *pPlayer;
+	CPlayer *pPlayer;
 
-	pPlayer = (IPlayer*)new CPlayer;
+	pPlayer = new CPlayer;
 	pPlayer->AddRef();
 	*ppvObj = (void*)pPlayer;
 	return S_OK;

@@ -3,8 +3,7 @@
 #include "IGraphBuilder2.h"
 
 class CFGManager
-	: public CUnknown
-	, public IGraphBuilder2
+	: public IGraphBuilder2
 	, public IGraphBuilderDeadEnd
 	, public CCritSec
 {
@@ -12,9 +11,10 @@ public:
 	CFGManager(__in_opt LPCTSTR pName, __in_opt LPUNKNOWN pUnk);
 	~CFGManager(void);
 
-	DECLARE_IUNKNOWN;
-	/* INonDelegatingUnknown */
-	STDMETHODIMP NonDelegatingQueryInterface(REFIID riid, __deref_out void **ppvObj);
+	/* IUnknown */
+	STDMETHODIMP QueryInterface(REFIID riid, __deref_out void **ppvObj);
+	STDMETHODIMP_(ULONG) AddRef();
+	STDMETHODIMP_(ULONG) Release();
 protected:
 
 	/* IFilterGraph */
@@ -50,6 +50,7 @@ protected:
 	STDMETHODIMP_(size_t) GetCount(void);
 	STDMETHODIMP GetDeadEnd(__in size_t iIndex, __out AM_MEDIA_TYPE** ppMTs, __out size_t cMTs);
 private:
+	LONG	m_lRef;
 	CComPtr<IUnknown>	m_pUnkInner;
 	CComPtr<IFilterMapper2>	m_pFM;
 };

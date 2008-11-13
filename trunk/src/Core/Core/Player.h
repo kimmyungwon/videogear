@@ -12,7 +12,7 @@ class CPlayer
 	friend DWORD WINAPI GraphEventProc(LPVOID);
 public:
 	CPlayer(void);
-	~CPlayer(void);
+	virtual ~CPlayer(void);
 
 	/* IPlayer */
 	STDMETHODIMP Initialize(__in HWND hVidWnd, __in_opt HWND hMsgWnd);
@@ -42,8 +42,8 @@ private:
 	WNDPROC		m_pfVWOrdProc;	// 视频窗口的原有消息处理函数
 	ULONG		m_playerState;	// 播放器状态
 	HANDLE		m_hEventThread;	// FilterGraph消息处理线程
-	CComPtr<IGraphBuilder2>		m_pGB;
-	CComQIPtr<IMediaControl>	m_pMC;
-	CComQIPtr<IMediaEvent>		m_pME;
-	CComQIPtr<IVideoWindow>		m_pVW;
+	CComPtr<IGraphBuilder2>	m_pGB;
+	CComPtr<IMediaControl>	m_pMC;
+	CComPtr<IMediaEvent>	m_pME;
+	CComPtr<IVideoWindow>	m_pVW;
 };

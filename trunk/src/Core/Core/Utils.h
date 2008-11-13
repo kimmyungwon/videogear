@@ -1,6 +1,6 @@
 #pragma once
 
-#define FAILED_RET(cond)	{ if(FAILED(hr = (cond))) return hr; }
+#define JIF(cond)	{ if(FAILED(hr = (cond))) return hr; }
 
 #define BeginEnumFilters(pFilterGraph, pEnumFilters, pBaseFilter) \
 	{CComPtr<IEnumFilters> pEnumFilters; \
@@ -53,3 +53,5 @@
 
 #define QI(i) (riid == __uuidof(i)) ? GetInterface((i*)this, ppvObj) :
 #define QI2(i) (riid == IID_##i) ? GetInterface((i*)this, ppvObj) :
+
+HRESULT FindVideoRenderer(IFilterGraph *pFG, IBaseFilter **ppRenderer);

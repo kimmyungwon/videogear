@@ -3,9 +3,9 @@
 #include "Utils.h"
 
 CFGManager::CFGManager( __in_opt LPCTSTR pName, __in_opt LPUNKNOWN pUnk )
-: CUnknown(pName, pUnk)
+: m_lRef(0)
 {
-	m_pUnkInner.CoCreateInstance(CLSID_FilterGraph, GetOwner());
+	m_pUnkInner.CoCreateInstance(CLSID_FilterGraph, pUnk);
 	m_pFM.CoCreateInstance(CLSID_FilterMapper2);
 }
 
@@ -16,9 +16,9 @@ CFGManager::~CFGManager(void)
 	m_pUnkInner.Release();
 }
 
-/* INonDelegatingUnknown */
+/* IUnknown */
 
-STDMETHODIMP CFGManager::NonDelegatingQueryInterface( REFIID riid, __deref_out void **ppvObj )
+STDMETHODIMP CFGManager::QueryInterface( REFIID riid, __deref_out void **ppvObj )
 {
 	CheckPointer(ppvObj, E_POINTER);
 
@@ -27,8 +27,28 @@ STDMETHODIMP CFGManager::NonDelegatingQueryInterface( REFIID riid, __deref_out v
 			QI(IFilterGraph2)
 			QI(IGraphBuilder)
 			QI(IFilterGraph)
-			(m_pUnkInner != NULL && m_pUnkInner->QueryInterface(riid, ppvObj) == S_OK) ? S_OK :
-			__super::NonDelegatingQueryInterface(riid, ppvObj);
+			(m_pUnkInner != NULL && riid != IID_IUnknown && m_pUnkInner->QueryInterface(riid, ppvObj) == S_OK) ? S_OK :
+			E_NOINTERFACE;
+}
+
+STDMETHODIMP_(ULONG) CFGManager::AddRef()
+{
+	LONG lRef = InterlockedIncrement(&m_lRef);
+	ASSERT(lRef > 0);
+	return max((ULONG)lRef, 1ul);
+}
+
+STDMETHODIMP_(ULONG) CFGManager::Release()
+{
+	LONG lRef = InterlockedDecrement(&m_lRef);
+	ASSERT(lRef >= 0);
+	if (lRef == 0)
+	{
+		delete this;
+		return 0ul;
+	}
+	else
+		return max((ULONG)lRef, 1ul);
 }
 
 /* IFilterGraph */
@@ -209,9 +229,9 @@ STDMETHODIMP CFGManager::Clear( void )
 	
 	BeginEnumFilters(CComQIPtr<IFilterGraph2>(m_pUnkInner), pEnumFilters, pFilter)
 		BeginEnumPins(pFilter, pEnumPins, pPin)
-			FAILED_RET(Disconnect(pPin));
+			JIF(Disconnect(pPin));
 		EndEnumPins
-		FAILED_RET(RemoveFilter(pFilter));
+		JIF(RemoveFilter(pFilter));
 	EndEnumFilters
 
 	return S_OK;

@@ -67,9 +67,9 @@ STDMETHODIMP CPlayer::Initialize( __in HWND hVidWnd, __in_opt HWND hMsgWnd )
 	m_pfVWOrdProc = (WNDPROC)GetWindowLong(m_hVidWnd, GWL_WNDPROC);
 	SetWindowLong(m_hVidWnd, GWL_WNDPROC, (LONG)&VidWndMsgProc);
 	// 创建DShow组件
-	m_pGB = (IGraphBuilder2*)new CFGManager(NULL, (IPlayer*)this);
-	FAILED_RET(m_pGB.QueryInterface(&m_pME));
-	FAILED_RET(m_pGB.QueryInterface(&m_pMC));
+	m_pGB = (IGraphBuilder2*)new CFGManager(L"CFGManager", NULL);
+	JIF(m_pGB.QueryInterface(&m_pME));
+	JIF(m_pGB.QueryInterface(&m_pMC));
 	// 开始FilterGraph事件处理线程
 	m_hEventThread = CreateThread(NULL, 0, GraphEventProc, (LPVOID)this, 0, NULL);
 
@@ -82,12 +82,13 @@ STDMETHODIMP CPlayer::Uninitialize( void )
 	HRESULT hr;
 	
 	if (get_State() == PS_UNINITIALIZED) return S_FALSE;
-	FAILED_RET(Stop());
+	JIF(Stop());
 	// 停止FilterGraph消息线程
 	TerminateThread(m_hEventThread, 0);
 	WaitForSingleObject(m_hEventThread, INFINITE);
 	// 释放DShow资源
 	m_pME.Release();
+	m_pMC.Release();
 	m_pGB.Release();
 	// 恢复视频窗口的原有消息处理
 	SetWindowLong(m_hVidWnd, GWL_WNDPROC, (LONG)m_pfVWOrdProc);
@@ -102,13 +103,14 @@ STDMETHODIMP CPlayer::Uninitialize( void )
 STDMETHODIMP CPlayer::OpenUrl( __in LPCWSTR lpcwstrUrl )
 {
 	HRESULT hr;
+	CComPtr<IBaseFilter> pRenderer;
 	CRect rctVid;
 	
 	if (get_State() == PS_UNINITIALIZED || m_pGB == NULL) return E_UNEXPECTED;
-	FAILED_RET(Stop());
+	JIF(Stop());
 	if (get_State() != PS_IDLE) return E_UNEXPECTED;
 	set_State(PS_RENDERING);
-	FAILED_RET(m_pGB->RenderFile(lpcwstrUrl, NULL));
+	JIF(m_pGB->RenderFile(lpcwstrUrl, NULL));
 	set_State(PS_STOPPED);
 
 	switch (gAppCfg.get_VideoOutputMode())
@@ -117,12 +119,13 @@ STDMETHODIMP CPlayer::OpenUrl( __in LPCWSTR lpcwstrUrl )
 	case VR_VMR9Renderless:
 		return E_NOTIMPL;
 	default:
-		FAILED_RET(m_pGB.QueryInterface(&m_pVW));
-		FAILED_RET(m_pVW->put_Owner((OAHWND)m_hVidWnd));
-		FAILED_RET(m_pVW->put_WindowStyle(WS_CHILD | WS_CLIPSIBLINGS));
+		JIF(FindVideoRenderer(m_pGB, &pRenderer));
+		JIF(m_pGB.QueryInterface(&m_pVW));
+		JIF(m_pVW->put_WindowStyle(WS_CHILD | WS_CLIPSIBLINGS));
+		JIF(m_pVW->put_Owner((OAHWND)m_hVidWnd));
 		GetClientRect(m_hVidWnd, &rctVid);
-		FAILED_RET(m_pVW->SetWindowPosition(0, 0, rctVid.Width(), rctVid.Height()));
-		FAILED_RET(m_pVW->put_Visible(OATRUE));
+		JIF(m_pVW->SetWindowPosition(0, 0, rctVid.Width(), rctVid.Height()));
+		JIF(m_pVW->put_Visible(OATRUE));
 	}
 
 	return S_OK;
@@ -140,7 +143,7 @@ STDMETHODIMP CPlayer::Play( void )
 		return E_UNEXPECTED;
 	case PS_PLAYING:	return S_FALSE;
 	}
-	FAILED_RET(m_pMC->Run());
+	JIF(m_pMC->Run());
 	set_State(PS_PLAYING);
 	return S_OK;
 }
@@ -160,8 +163,14 @@ STDMETHODIMP CPlayer::Stop( void )
 	case PS_UNINITIALIZED:	return E_UNEXPECTED;
 	case PS_IDLE:	return S_FALSE;
 	}
-	FAILED_RET(m_pMC->Stop());
-	FAILED_RET(m_pGB->Clear());
+	JIF(m_pMC->Stop());
+	if (m_pVW != NULL)
+	{
+		m_pVW->put_Visible(OAFALSE);
+		m_pVW->put_Owner((OAHWND)NULL);
+		m_pVW.Release();
+	}
+	JIF(m_pGB->Clear());
 	set_State(PS_IDLE);
 	return S_OK;
 }	
@@ -183,8 +192,9 @@ STDMETHODIMP CPlayer::QueryInterface( REFIID riid, __deref_out void **ppvObj )
 }
 
 STDMETHODIMP_(ULONG) CPlayer::AddRef()
-{
+{	
 	LONG lRef = InterlockedIncrement(&m_lRef);
+	TRACE("CPlayer::AddRef() = %d\n", lRef);
 	ASSERT(lRef > 0);
 	return max((ULONG)lRef, 1ul);
 }
@@ -192,6 +202,7 @@ STDMETHODIMP_(ULONG) CPlayer::AddRef()
 STDMETHODIMP_(ULONG) CPlayer::Release()
 {
 	LONG lRef = InterlockedDecrement(&m_lRef);
+	TRACE("CPlayer::Release() = %d\n", lRef);
 	ASSERT(lRef >= 0);
 	if (lRef == 0)
 	{
