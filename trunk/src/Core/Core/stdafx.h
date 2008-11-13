@@ -16,5 +16,6 @@
 #include <afxext.h>         // MFC À©Õ¹
 
 #include <streams.h>
+#include <map>
 
 
