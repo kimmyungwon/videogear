@@ -34,7 +34,7 @@ DWORD WINAPI GraphEventProc( LPVOID lpParam )
 //////////////////////////////////////////////////////////////////////////
 
 CPlayer::CPlayer(void)
-: m_lRef(0), m_hVidWnd(NULL), m_playerState(PS_UNINITIALIZED), m_videoRenderer(VR_DEFAULT)
+: m_lRef(0), m_hMsgWnd(NULL), m_hVidWnd(NULL), m_playerState(PS_UNINITIALIZED), m_videoRenderer(VR_DEFAULT)
 {
 }
 
@@ -44,9 +44,16 @@ CPlayer::~CPlayer(void)
 		Uninitialize();
 }
 
+void CPlayer::SendPlayerMessage( UINT uCode, void *pParam, bool bWait /*= false*/ )
+{
+	if (m_hMsgWnd != NULL)
+		if (bWait) ::SendMessage(m_hMsgWnd, WM_VGPLAYER, (WPARAM)uCode, (LPARAM)pParam);
+		else PostMessage(m_hMsgWnd, WM_VGPLAYER, (WPARAM)uCode, (LPARAM)pParam);
+}
+
 /* IPlayer */
 
-STDMETHODIMP CPlayer::Initialize( __in HWND hVidWnd )
+STDMETHODIMP CPlayer::Initialize( __in HWND hVidWnd, __in_opt HWND hMsgWnd )
 {
 	HRESULT hr;
 	
@@ -54,6 +61,7 @@ STDMETHODIMP CPlayer::Initialize( __in HWND hVidWnd )
 	if (hVidWnd == NULL) return E_INVALIDARG;
 	if (mapWndToPlayer.find(hVidWnd) != mapWndToPlayer.end()) return E_INVALIDARG;
 	// 截获视频窗口的消息
+	m_hMsgWnd = hMsgWnd;
 	m_hVidWnd = hVidWnd;
 	mapWndToPlayer.insert(make_pair(m_hVidWnd, this));
 	m_pfVWOrdProc = (WNDPROC)GetWindowLong(m_hVidWnd, GWL_WNDPROC);

@@ -1,5 +1,7 @@
 #pragma once
 
+#define WM_VGPLAYER	(WM_APP + 0x100)
+
 enum 
 {
 	PS_UNINITIALIZED,
@@ -22,7 +24,7 @@ enum
 [uuid("588BC08D-103A-4fce-B23D-E4DC8B2EC3C6")]
 interface IPlayer : IUnknown
 {
-	STDMETHOD(Initialize)(__in HWND hVidWnd) PURE;
+	STDMETHOD(Initialize)(__in HWND hVidWnd, __in_opt HWND hMsgWnd) PURE;
 	STDMETHOD(Uninitialize)(void) PURE;
 	STDMETHOD(OpenUrl)(__in LPCWSTR lpcwstrUrl) PURE;
 	STDMETHOD(Play)(void) PURE;
