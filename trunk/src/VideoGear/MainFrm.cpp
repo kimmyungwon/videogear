@@ -18,6 +18,7 @@ IMPLEMENT_DYNAMIC(CMainFrame, CFrameWnd)
 BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_WM_CREATE()
 	ON_WM_SETFOCUS()
+	ON_COMMAND(ID_CTRL_PLAYPAUSE, &CMainFrame::OnCtrlPlaypause)
 END_MESSAGE_MAP()
 
 // CMainFrame 构造/析构
@@ -91,9 +92,14 @@ void CMainFrame::OnSetFocus(CWnd* /*pOldWnd*/)
 BOOL CMainFrame::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo)
 {
 	// 让视图第一次尝试该命令
-	if (m_wndView.OnCmdMsg(nID, nCode, pExtra, pHandlerInfo))
+	if (m_pnlCtrl.OnCmdMsg(nID, nCode, pExtra, pHandlerInfo))
 		return TRUE;
 
 	// 否则，执行默认处理
 	return CFrameWnd::OnCmdMsg(nID, nCode, pExtra, pHandlerInfo);
+}
+
+void CMainFrame::OnCtrlPlaypause()
+{
+	TRACE0("OnCtrlPlaypause\n");
 }

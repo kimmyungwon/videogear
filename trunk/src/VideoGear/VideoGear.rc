@@ -78,21 +78,10 @@ IDR_MAINFRAME           ICON                    "res\\VideoGear.ico"
 
 IDR_MAINFRAME MENU 
 BEGIN
-    POPUP "文件(&F)"
+    POPUP "控制"
     BEGIN
-        MENUITEM "退出(&X)",                      ID_APP_EXIT
-    END
-    POPUP "编辑(&E)"
-    BEGIN
-        MENUITEM "撤消(&U)\tCtrl+Z",              ID_EDIT_UNDO
-        MENUITEM SEPARATOR
-        MENUITEM "剪切(&T)\tCtrl+X",              ID_EDIT_CUT
-        MENUITEM "复制(&C)\tCtrl+C",              ID_EDIT_COPY
-        MENUITEM "粘贴(&P)\tCtrl+V",              ID_EDIT_PASTE
-    END
-    POPUP "帮助(&H)"
-    BEGIN
-        MENUITEM "关于 VideoGear(&A)...",         ID_APP_ABOUT
+        MENUITEM "播放/暂停",                       ID_CTRL_PLAYPAUSE
+        MENUITEM "停止",                          ID_CTRL_STOP
     END
 END
 
@@ -105,15 +94,15 @@ END
 IDR_MAINFRAME ACCELERATORS 
 BEGIN
     "C",            ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
-    "V",            ID_EDIT_PASTE,          VIRTKEY, CONTROL, NOINVERT
-    VK_BACK,        ID_EDIT_UNDO,           VIRTKEY, ALT, NOINVERT
+    VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
     VK_DELETE,      ID_EDIT_CUT,            VIRTKEY, SHIFT, NOINVERT
+    "X",            ID_EDIT_CUT,            VIRTKEY, CONTROL, NOINVERT
+    "V",            ID_EDIT_PASTE,          VIRTKEY, CONTROL, NOINVERT
+    VK_INSERT,      ID_EDIT_PASTE,          VIRTKEY, SHIFT, NOINVERT
+    VK_BACK,        ID_EDIT_UNDO,           VIRTKEY, ALT, NOINVERT
+    "Z",            ID_EDIT_UNDO,           VIRTKEY, CONTROL, NOINVERT
     VK_F6,          ID_NEXT_PANE,           VIRTKEY, NOINVERT
     VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT, NOINVERT
-    VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
-    VK_INSERT,      ID_EDIT_PASTE,          VIRTKEY, SHIFT, NOINVERT
-    "X",            ID_EDIT_CUT,            VIRTKEY, CONTROL, NOINVERT
-    "Z",            ID_EDIT_UNDO,           VIRTKEY, CONTROL, NOINVERT
 END
 
 
@@ -131,15 +120,6 @@ BEGIN
     LTEXT           "VideoGear，1.0 版",IDC_STATIC,42,14,114,8,SS_NOPREFIX
     LTEXT           "Copyright (C) 2008",IDC_STATIC,42,26,114,8
     DEFPUSHBUTTON   "确定",IDOK,113,41,50,14,WS_GROUP
-END
-
-IDD_CONTROLBAR DIALOGEX 0, 0, 330, 18
-STYLE DS_SETFONT | WS_CHILD
-FONT 9, "宋体", 400, 0, 0x0
-BEGIN
-    PUSHBUTTON      "Button1",CBC_PLAYPAUSE,0,0,50,14,BS_ICON | BS_FLAT
-    PUSHBUTTON      "Button2",CBC_STOP,60,0,50,14,BS_ICON | BS_FLAT
-    CONTROL         "",CBC_SLIDER,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,107,0,100,15
 END
 
 
@@ -200,6 +180,13 @@ BEGIN
 END
 #endif    // APSTUDIO_INVOKED
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_CONTROLBAR          BITMAP                  "res\\toolbar1.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
