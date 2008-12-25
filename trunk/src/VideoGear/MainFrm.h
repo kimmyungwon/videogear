@@ -5,6 +5,7 @@
 #pragma once
 #include "ChildView.h"
 #include "VGCtrlBar.h"
+#include "FilterManager.h"
 
 class CMainFrame : public CFrameWnd
 {
@@ -36,6 +37,9 @@ public:
 protected:
 	CVGCtrlBar	m_pnlCtrl;
 	CChildView	m_wndView;
+
+private:
+	CFilterManager	m_fm;
 
 // 生成的消息映射函数
 protected:

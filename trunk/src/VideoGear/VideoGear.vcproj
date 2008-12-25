@@ -44,6 +44,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="..\BaseClasses"
 				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -176,6 +177,10 @@
 		</Configuration>
 	</Configurations>
 	<References>
+		<ProjectReference
+			ReferencedProjectIdentifier="{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}"
+			RelativePathToProject=".\BaseClasses\baseclasses.vcproj"
+		/>
 	</References>
 	<Files>
 		<Filter
@@ -185,6 +190,10 @@
 			>
 			<File
 				RelativePath=".\ChildView.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\FilterManager.cpp"
 				>
 			</File>
 			<File
@@ -227,6 +236,14 @@
 			>
 			<File
 				RelativePath=".\ChildView.h"
+				>
+			</File>
+			<File
+				RelativePath=".\FilterManager.h"
+				>
+			</File>
+			<File
+				RelativePath=".\IGraphBuilder2.h"
 				>
 			</File>
 			<File

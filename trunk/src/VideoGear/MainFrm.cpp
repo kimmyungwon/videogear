@@ -91,11 +91,7 @@ void CMainFrame::OnSetFocus(CWnd* /*pOldWnd*/)
 
 BOOL CMainFrame::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo)
 {
-	// 让视图第一次尝试该命令
-	if (m_pnlCtrl.OnCmdMsg(nID, nCode, pExtra, pHandlerInfo))
-		return TRUE;
-
-	// 否则，执行默认处理
+	// 执行默认处理
 	return CFrameWnd::OnCmdMsg(nID, nCode, pExtra, pHandlerInfo);
 }
 
