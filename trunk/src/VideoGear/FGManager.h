@@ -3,14 +3,15 @@
 #include "IGraphBuilder2.h"
 
 class CFilterManager : public CUnknown
-					 , protected IGraphBuilder2
+					 , public IGraphBuilder2
+					 , public CCritSec
 {
 	DECLARE_IUNKNOWN
 public:
-	CFilterManager(void);
+	CFilterManager(HRESULT *hr = NULL);
 	virtual ~CFilterManager(void);
 protected:
-	/* IGraphBuilder2 */
+	/* IFilterGraph2 */
 	virtual HRESULT STDMETHODCALLTYPE AddSourceFilterForMoniker(IMoniker *pMoniker, 
 		IBindCtx *pCtx, LPCWSTR lpcwstrFilterName, IBaseFilter **ppFilter);
 	virtual HRESULT STDMETHODCALLTYPE ReconnectEx(IPin *ppin, const AM_MEDIA_TYPE *pmt);
@@ -33,4 +34,10 @@ protected:
 	virtual HRESULT STDMETHODCALLTYPE Reconnect(IPin *ppin);
 	virtual HRESULT STDMETHODCALLTYPE Disconnect(IPin *ppin);
 	virtual HRESULT STDMETHODCALLTYPE SetDefaultSyncSource(void);
+	/* INonDelegatingUnknown */
+	/*STDMETHODIMP NonDelegatingQueryInterface(THIS_ REFIID, LPVOID *);
+	STDMETHODIMP_(ULONG) NonDelegatingAddRef(THIS);
+	STDMETHODIMP_(ULONG) NonDelegatingRelease(THIS);*/
+private:
+	CComPtr<IFilterGraph2>	m_pFG;
 };

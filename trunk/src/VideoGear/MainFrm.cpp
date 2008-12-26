@@ -18,6 +18,7 @@ IMPLEMENT_DYNAMIC(CMainFrame, CFrameWnd)
 BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_WM_CREATE()
 	ON_WM_SETFOCUS()
+	ON_COMMAND(ID_FILE_QOPEN, &CMainFrame::OnFileQOpen)
 	ON_COMMAND(ID_CTRL_PLAYPAUSE, &CMainFrame::OnCtrlPlaypause)
 END_MESSAGE_MAP()
 
@@ -48,6 +49,14 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (!m_pnlCtrl.Create(this))
 	{
 		TRACE0("未能创建控制条\n");
+		return -1;
+	}
+
+	HRESULT hr;
+	
+	if (FAILED(hr = m_player.Initialize(GetSafeHwnd())))
+	{
+		TRACE0("未能创建播放器\n");
 		return -1;
 	}
 
@@ -95,7 +104,24 @@ BOOL CMainFrame::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO*
 	return CFrameWnd::OnCmdMsg(nID, nCode, pExtra, pHandlerInfo);
 }
 
+void CMainFrame::OnFileQOpen()
+{
+	CFileDialog dlgOpen(TRUE, NULL, NULL, OFN_ALLOWMULTISELECT|OFN_EXPLORER|OFN_FILEMUSTEXIST, L"所有文件|*.*",
+		this, 0, TRUE);
+	if (dlgOpen.DoModal() == IDOK)
+	{
+		CString strPath;
+		POSITION pos = dlgOpen.GetStartPosition();
+		while (pos != NULL)
+		{
+			strPath = dlgOpen.GetNextPathName(pos);
+		}
+	}
+}
+
 void CMainFrame::OnCtrlPlaypause()
 {
 	TRACE0("OnCtrlPlaypause\n");
 }
+
+

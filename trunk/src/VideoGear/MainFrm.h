@@ -5,7 +5,7 @@
 #pragma once
 #include "ChildView.h"
 #include "VGCtrlBar.h"
-#include "FilterManager.h"
+#include "VGPlayer.h"
 
 class CMainFrame : public CFrameWnd
 {
@@ -39,7 +39,7 @@ protected:
 	CChildView	m_wndView;
 
 private:
-	CFilterManager	m_fm;
+	CVGPlayer	m_player;
 
 // 生成的消息映射函数
 protected:
@@ -48,6 +48,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 public:
+	afx_msg void OnFileQOpen();
 	afx_msg void OnCtrlPlaypause();
 };
 
