@@ -42,14 +42,12 @@ private:
 	CVGPlayer	m_player;
 
 // 生成的消息映射函数
+	DECLARE_MESSAGE_MAP()
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnSetFocus(CWnd *pOldWnd);
-	DECLARE_MESSAGE_MAP()
-
-public:
+	afx_msg LRESULT OnPlayerMsg(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnFileQOpen();
-	afx_msg void OnCtrlPlaypause();
 };
 
 

@@ -31,16 +31,22 @@ private:
 	UINT_PTR	m_ulNextElem;
 };
 
+#define WM_VGPLAYER	WM_APP + 0x100
+
+enum {
+	VGM_STATE_CHANGED
+};
+
 class CVGPlayer
 {
 	friend DWORD WINAPI RenderProc(LPVOID);
 public:
 	enum {
-		statusUninitialized,
-		statusIdle,
-		statusOpening,
-		statusPlaying,
-		statusPaused
+		stateUninitialized,
+		stateIdle,
+		stateOpening,
+		statePlaying,
+		statePaused
 	};
 
 	CVGPlayer(void);
@@ -52,8 +58,12 @@ public:
 protected:
 	void Clear(void);
 	void DoPlay(void);
+	UINT GetState(void);
+	void SetState(WORD wStatus);
+	void SendNotify(UINT nMsg, int nParam = 0);
 private:
-	UINT			m_nStatus;
+	WORD			m_wStatus;
+	HWND			m_hwndOwner;
 	CComPtr<IGraphBuilder2>	m_pGB;
 	CComPtr<IMediaControl>	m_pMC;
 	CVGPlaylist		m_playlist;

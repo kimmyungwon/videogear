@@ -20,7 +20,7 @@ struct VGCtrlBarItem
 };
 
 static VGCtrlBarItem g_items[] = {
-	{ID_CTRL_PLAYPAUSE, TBBS_BUTTON, 0},
+	{ID_CTRL_PLAY, TBBS_BUTTON, 0},
 	{ID_CTRL_STOP, TBBS_BUTTON, 2},
 	{ID_SEPARATOR, TBBS_SEPARATOR, -1},
 	{ID_SEPARATOR, TBBS_SEPARATOR, -1}
@@ -50,10 +50,42 @@ BOOL CVGCtrlBar::Create( CWnd* pParentWnd )
 	return TRUE;
 }
 
+void CVGCtrlBar::PlayerStateChanged( WORD wNewState )
+{
+	switch (wNewState)
+	{
+	case CVGPlayer::stateIdle:
+		SetButtonInfo(CBC_PLAYPAUSE, ID_CTRL_PLAY, g_items[CBC_PLAYPAUSE].nStyle, 0);	
+		EnableButton(CBC_STOP, FALSE);
+		break;
+	case CVGPlayer::statePlaying:
+		SetButtonInfo(CBC_PLAYPAUSE, ID_CTRL_PAUSE, g_items[CBC_PLAYPAUSE].nStyle, 1);
+		EnableButton(CBC_STOP, TRUE);
+		break;
+	case CVGPlayer::statePaused:
+		SetButtonInfo(CBC_PLAYPAUSE, ID_CTRL_PLAY, g_items[CBC_PLAYPAUSE].nStyle, 0);	
+		EnableButton(CBC_STOP, TRUE);
+		break;
+	}
+}
+
+void CVGCtrlBar::EnableButton( int nIndex, bool bEnabled )
+{
+	UINT nStyle = GetButtonStyle(nIndex);
+	if (bEnabled)
+		SetButtonStyle(nIndex, nStyle & ~TBBS_DISABLED);
+	else
+		SetButtonStyle(nIndex, nStyle | TBBS_DISABLED);
+}
+
+void CVGCtrlBar::OnUpdateCmdUI(CFrameWnd* pTarget, BOOL bDisableIfNoHandler)
+{
+	__super::OnUpdateCmdUI(pTarget, FALSE);
+}
+
 BEGIN_MESSAGE_MAP(CVGCtrlBar, CToolBar)
 	ON_WM_SIZE()	
 	ON_WM_HSCROLL()
-	ON_COMMAND(ID_CTRL_PLAYPAUSE, &CVGCtrlBar::OnPlaypause)
 END_MESSAGE_MAP()
 
 void CVGCtrlBar::OnSize(UINT nType, int cx, int cy)
@@ -92,7 +124,3 @@ void CVGCtrlBar::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 	}
 }
 
-void CVGCtrlBar::OnPlaypause( void )
-{
-	SetButtonInfo(CBC_PLAYPAUSE, g_items[CBC_PLAYPAUSE].nID, g_items[CBC_PLAYPAUSE].nStyle, 1);
-}

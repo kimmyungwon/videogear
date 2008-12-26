@@ -86,7 +86,8 @@ BEGIN
     END
     POPUP "¿ØÖÆ"
     BEGIN
-        MENUITEM "²¥·Å/ÔÝÍ£",                       ID_CTRL_PLAYPAUSE
+        MENUITEM "²¥·Å",                          ID_CTRL_PLAY
+        MENUITEM "ÔÝÍ£",                          ID_CTRL_PAUSE
         MENUITEM "Í£Ö¹",                          ID_CTRL_STOP
     END
 END

@@ -97,7 +97,7 @@ void CVGPlaylist::SetNextIndex( UINT_PTR ulIndex )
 //////////////////////////////////////////////////////////////////////////
 
 CVGPlayer::CVGPlayer(void)
-: m_nStatus(statusUninitialized), m_hRenderThrd(NULL)
+: m_wStatus(stateUninitialized), m_hRenderThrd(NULL)
 {
 }
 
@@ -117,21 +117,22 @@ HRESULT CVGPlayer::Initialize( HWND hwnd )
 {
 	HRESULT hr;
 	
-	if (m_nStatus != statusUninitialized)
+	if (GetState() != stateUninitialized)
 		return E_UNEXPECTED;
+	m_hwndOwner = hwnd;
 	// ³õÊ¼»¯DShow
 	m_pGB = new CFilterManager(&hr);
 	JIF(hr);
 	JIF(m_pGB.QueryInterface(&m_pMC));
-	m_nStatus = statusIdle;
+	SetState(stateIdle);
 	return S_OK;
 }
 
 HRESULT CVGPlayer::Stop( void )
 {
-	if (m_nStatus == statusUninitialized)
+	if (GetState() == stateUninitialized)
 		return E_UNEXPECTED;
-	if (m_nStatus == statusOpening)
+	if (GetState() == stateOpening)
 	{
 		m_pGB->Abort();
 		if (m_hRenderThrd != NULL)
@@ -139,15 +140,15 @@ HRESULT CVGPlayer::Stop( void )
 			TerminateThread(m_hRenderThrd, 0);
 			m_hRenderThrd = NULL;
 		}
-		m_nStatus = statusIdle;
+		SetState(stateIdle);
 		Clear();
 	}
-	else if (m_nStatus == statusPlaying || m_nStatus == statusPaused)
+	else if (GetState() == statePlaying || GetState() == statePaused)
 	{
 		HRESULT hr;
 		
 		JIF(m_pMC->Stop());
-		m_nStatus = statusIdle;
+		SetState(stateIdle);
 		Clear();
 	}
 	return S_OK;
@@ -177,7 +178,7 @@ HRESULT CVGPlayer::Play( UINT_PTR ulIndex )
 
 void CVGPlayer::Clear( void )
 {
-	ASSERT(m_nStatus == statusIdle);
+	ASSERT(GetState() == stateIdle);
 	BeginEnumFilters(m_pGB, pEnumFilters, pFilter)
 		BeginEnumPins(pFilter, pEnumPins, pPin)
 			if (m_pGB->IsPinConnected(pPin) != S_OK)
@@ -194,9 +195,25 @@ void CVGPlayer::DoPlay( void )
 	ASSERT(pElem != NULL);
 	if (FAILED(m_pGB->RenderFile(pElem->strPath, NULL)))
 		return;
-	m_nStatus = statusPaused;
+	SetState(statePaused);
 	m_pMC->Run();
-	m_nStatus = statusPlaying;
+	SetState(statePlaying);
+}
+
+UINT CVGPlayer::GetState( void )
+{
+	return m_wStatus;
+}
+
+void CVGPlayer::SetState( WORD wStatus )
+{
+	m_wStatus = wStatus;
+	SendNotify(VGM_STATE_CHANGED, (int)m_wStatus);
+}
+
+void CVGPlayer::SendNotify( UINT nMsg, int iParam )
+{
+	SendMessage(m_hwndOwner, WM_VGPLAYER, nMsg, iParam); 
 }
 
 

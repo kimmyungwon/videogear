@@ -18,8 +18,8 @@ IMPLEMENT_DYNAMIC(CMainFrame, CFrameWnd)
 BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_WM_CREATE()
 	ON_WM_SETFOCUS()
+	ON_MESSAGE(WM_VGPLAYER, &CMainFrame::OnPlayerMsg)
 	ON_COMMAND(ID_FILE_QOPEN, &CMainFrame::OnFileQOpen)
-	ON_COMMAND(ID_CTRL_PLAYPAUSE, &CMainFrame::OnCtrlPlaypause)
 END_MESSAGE_MAP()
 
 // CMainFrame ¹¹Ôì/Îö¹¹
@@ -125,9 +125,13 @@ void CMainFrame::OnFileQOpen()
 	}
 }
 
-void CMainFrame::OnCtrlPlaypause()
+LRESULT CMainFrame::OnPlayerMsg( WPARAM wParam, LPARAM lParam )
 {
-	TRACE0("OnCtrlPlaypause\n");
+	switch (wParam)
+	{
+	case VGM_STATE_CHANGED:
+		m_pnlCtrl.PlayerStateChanged((WORD)lParam);
+		break;
+	}
+	return 0;
 }
-
-
