@@ -2,6 +2,23 @@
 
 #include "IGraphBuilder2.h"
 
+using namespace boost;
+
+struct VGPlaylistElement
+{
+	CString strPath;
+};
+
+class CVGPlaylist : public CCritSec
+{
+public:
+
+private:
+	typedef ptr_vector<VGPlaylistElement> elements_t;
+
+	elements_t	m_elements;
+};
+
 class CVGPlayer
 {
 public:
@@ -12,6 +29,5 @@ protected:
 	void Clear(void);
 private:
 	CComPtr<IGraphBuilder2>	m_pGB;
-	HANDLE					m_hIOCP;
-	HANDLE					m_hMsgThrd;
+	CVGPlaylist				m_playlist;
 };
