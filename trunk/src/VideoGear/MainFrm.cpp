@@ -111,11 +111,17 @@ void CMainFrame::OnFileQOpen()
 	if (dlgOpen.DoModal() == IDOK)
 	{
 		CString strPath;
-		POSITION pos = dlgOpen.GetStartPosition();
+		POSITION pos;
+		
+		m_player.Stop();
+		m_player.GetPlaylist().Clear();
+		pos = dlgOpen.GetStartPosition();
 		while (pos != NULL)
 		{
 			strPath = dlgOpen.GetNextPathName(pos);
+			m_player.GetPlaylist().Add(strPath);
 		}
+		m_player.Play(0);
 	}
 }
 

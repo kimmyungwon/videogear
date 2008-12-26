@@ -43,5 +43,8 @@
 #endif
 #endif
 
+#include <initguid.h>
 #include <streams.h>
+#include <functional>
 #include <boost/ptr_container/ptr_vector.hpp>
+#include <boost/thread.hpp>

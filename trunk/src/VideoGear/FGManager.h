@@ -11,33 +11,31 @@ public:
 	CFilterManager(HRESULT *hr = NULL);
 	virtual ~CFilterManager(void);
 protected:
+	/* IGraphBuilder2 */
+	STDMETHODIMP IsPinConnected(IPin *ppin);
 	/* IFilterGraph2 */
-	virtual HRESULT STDMETHODCALLTYPE AddSourceFilterForMoniker(IMoniker *pMoniker, 
-		IBindCtx *pCtx, LPCWSTR lpcwstrFilterName, IBaseFilter **ppFilter);
-	virtual HRESULT STDMETHODCALLTYPE ReconnectEx(IPin *ppin, const AM_MEDIA_TYPE *pmt);
-	virtual HRESULT STDMETHODCALLTYPE RenderEx(IPin *pPinOut, DWORD dwFlags, DWORD *pvContext);
+	STDMETHODIMP AddSourceFilterForMoniker(IMoniker *pMoniker, IBindCtx *pCtx, LPCWSTR lpcwstrFilterName, IBaseFilter **ppFilter);
+	STDMETHODIMP ReconnectEx(IPin *ppin, const AM_MEDIA_TYPE *pmt);
+	STDMETHODIMP RenderEx(IPin *pPinOut, DWORD dwFlags, DWORD *pvContext);
 	/* IGraphBuilder */
-	virtual HRESULT STDMETHODCALLTYPE Connect(IPin *ppinOut, IPin *ppinIn);
-	virtual HRESULT STDMETHODCALLTYPE Render(IPin *ppinOut);
-	virtual HRESULT STDMETHODCALLTYPE RenderFile(LPCWSTR lpcwstrFile, LPCWSTR lpcwstrPlayList);
-	virtual HRESULT STDMETHODCALLTYPE AddSourceFilter(LPCWSTR lpcwstrFileName, LPCWSTR lpcwstrFilterName,
-		IBaseFilter **ppFilter);
-	virtual HRESULT STDMETHODCALLTYPE SetLogFile(DWORD_PTR hFile);
-	virtual HRESULT STDMETHODCALLTYPE Abort(void);
-	virtual HRESULT STDMETHODCALLTYPE ShouldOperationContinue(void);
+	STDMETHODIMP Connect(IPin *ppinOut, IPin *ppinIn);
+	STDMETHODIMP Render(IPin *ppinOut);
+	STDMETHODIMP RenderFile(LPCWSTR lpcwstrFile, LPCWSTR lpcwstrPlayList);
+	STDMETHODIMP AddSourceFilter(LPCWSTR lpcwstrFileName, LPCWSTR lpcwstrFilterName, IBaseFilter **ppFilter);
+	STDMETHODIMP SetLogFile(DWORD_PTR hFile);
+	STDMETHODIMP Abort(void);
+	STDMETHODIMP ShouldOperationContinue(void);
 	/* IFilterGraph */
-	virtual HRESULT STDMETHODCALLTYPE AddFilter(IBaseFilter *pFilter, LPCWSTR pName);
-	virtual HRESULT STDMETHODCALLTYPE RemoveFilter(IBaseFilter *pFilter);
-	virtual HRESULT STDMETHODCALLTYPE EnumFilters(IEnumFilters **ppEnum);
-	virtual HRESULT STDMETHODCALLTYPE FindFilterByName(LPCWSTR pName, IBaseFilter **ppFilter);
-	virtual HRESULT STDMETHODCALLTYPE ConnectDirect(IPin *ppinOut, IPin *ppinIn, const AM_MEDIA_TYPE *pmt);
-	virtual HRESULT STDMETHODCALLTYPE Reconnect(IPin *ppin);
-	virtual HRESULT STDMETHODCALLTYPE Disconnect(IPin *ppin);
-	virtual HRESULT STDMETHODCALLTYPE SetDefaultSyncSource(void);
+	STDMETHODIMP AddFilter(IBaseFilter *pFilter, LPCWSTR pName);
+	STDMETHODIMP RemoveFilter(IBaseFilter *pFilter);
+	STDMETHODIMP EnumFilters(IEnumFilters **ppEnum);
+	STDMETHODIMP FindFilterByName(LPCWSTR pName, IBaseFilter **ppFilter);
+	STDMETHODIMP ConnectDirect(IPin *ppinOut, IPin *ppinIn, const AM_MEDIA_TYPE *pmt);
+	STDMETHODIMP Reconnect(IPin *ppin);
+	STDMETHODIMP Disconnect(IPin *ppin);
+	STDMETHODIMP SetDefaultSyncSource(void);
 	/* INonDelegatingUnknown */
-	/*STDMETHODIMP NonDelegatingQueryInterface(THIS_ REFIID, LPVOID *);
-	STDMETHODIMP_(ULONG) NonDelegatingAddRef(THIS);
-	STDMETHODIMP_(ULONG) NonDelegatingRelease(THIS);*/
+	STDMETHODIMP NonDelegatingQueryInterface(REFIID riid, void ** ppv);
 private:
 	CComPtr<IFilterGraph2>	m_pFG;
 };
