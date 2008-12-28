@@ -32,8 +32,6 @@ BEGIN_MESSAGE_MAP(CChildView, CWnd)
 	ON_WM_ERASEBKGND()
 END_MESSAGE_MAP()
 
-
-
 // CChildView 消息处理程序
 
 BOOL CChildView::PreCreateWindow(CREATESTRUCT& cs) 

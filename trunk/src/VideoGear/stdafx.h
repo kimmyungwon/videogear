@@ -42,6 +42,7 @@
 #endif
 #endif
 
+#include <atlbase.h>
 #include <InitGuid.h>
 #include <streams.h>
 #include <vector>
