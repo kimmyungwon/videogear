@@ -19,7 +19,6 @@
 
 // 关闭 MFC 对某些常见但经常可放心忽略的警告消息的隐藏
 #define _AFX_ALL_WARNINGS
-
 #include <afxwin.h>         // MFC 核心组件和标准组件
 #include <afxext.h>         // MFC 扩展
 #include <afxdisp.h>        // MFC 自动化类
@@ -43,8 +42,6 @@
 #endif
 #endif
 
-#include <initguid.h>
+#include <InitGuid.h>
 #include <streams.h>
-#include <functional>
-#include <boost/ptr_container/ptr_vector.hpp>
-#include <boost/thread.hpp>
+

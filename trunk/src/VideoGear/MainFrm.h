@@ -4,8 +4,6 @@
 
 #pragma once
 #include "ChildView.h"
-#include "VGCtrlBar.h"
-#include "VGPlayer.h"
 
 class CMainFrame : public CFrameWnd
 {
@@ -34,20 +32,14 @@ public:
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 
-protected:
-	CVGCtrlBar	m_pnlCtrl;
-	CChildView	m_wndView;
-
-private:
-	CVGPlayer	m_player;
+	CChildView    m_wndView;
 
 // 生成的消息映射函数
-	DECLARE_MESSAGE_MAP()
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnSetFocus(CWnd *pOldWnd);
-	afx_msg LRESULT OnPlayerMsg(WPARAM wParam, LPARAM lParam);
-	afx_msg void OnFileQOpen();
+	DECLARE_MESSAGE_MAP()
+
 };
 
 

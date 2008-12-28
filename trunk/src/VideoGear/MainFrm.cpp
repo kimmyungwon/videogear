@@ -18,8 +18,6 @@ IMPLEMENT_DYNAMIC(CMainFrame, CFrameWnd)
 BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_WM_CREATE()
 	ON_WM_SETFOCUS()
-	ON_MESSAGE(WM_VGPLAYER, &CMainFrame::OnPlayerMsg)
-	ON_COMMAND(ID_FILE_QOPEN, &CMainFrame::OnFileQOpen)
 END_MESSAGE_MAP()
 
 // CMainFrame 构造/析构
@@ -45,21 +43,6 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		TRACE0("未能创建视图窗口\n");
 		return -1;
 	}
-
-	if (!m_pnlCtrl.Create(this))
-	{
-		TRACE0("未能创建控制条\n");
-		return -1;
-	}
-
-	HRESULT hr;
-	
-	if (FAILED(hr = m_player.Initialize(GetSafeHwnd())))
-	{
-		TRACE0("未能创建播放器\n");
-		return -1;
-	}
-
 	return 0;
 }
 
@@ -100,38 +83,10 @@ void CMainFrame::OnSetFocus(CWnd* /*pOldWnd*/)
 
 BOOL CMainFrame::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo)
 {
-	// 执行默认处理
+	// 让视图第一次尝试该命令
+	if (m_wndView.OnCmdMsg(nID, nCode, pExtra, pHandlerInfo))
+		return TRUE;
+
+	// 否则，执行默认处理
 	return CFrameWnd::OnCmdMsg(nID, nCode, pExtra, pHandlerInfo);
-}
-
-void CMainFrame::OnFileQOpen()
-{
-	CFileDialog dlgOpen(TRUE, NULL, NULL, OFN_ALLOWMULTISELECT|OFN_EXPLORER|OFN_FILEMUSTEXIST, L"所有文件|*.*",
-		this, 0, TRUE);
-	if (dlgOpen.DoModal() == IDOK)
-	{
-		CString strPath;
-		POSITION pos;
-		
-		m_player.Stop();
-		m_player.GetPlaylist().Clear();
-		pos = dlgOpen.GetStartPosition();
-		while (pos != NULL)
-		{
-			strPath = dlgOpen.GetNextPathName(pos);
-			m_player.GetPlaylist().Add(strPath);
-		}
-		m_player.Play(0);
-	}
-}
-
-LRESULT CMainFrame::OnPlayerMsg( WPARAM wParam, LPARAM lParam )
-{
-	switch (wParam)
-	{
-	case VGM_STATE_CHANGED:
-		m_pnlCtrl.PlayerStateChanged((WORD)lParam);
-		break;
-	}
-	return 0;
 }
