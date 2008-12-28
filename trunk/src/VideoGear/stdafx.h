@@ -44,4 +44,5 @@
 
 #include <InitGuid.h>
 #include <streams.h>
+#include <vector>
 

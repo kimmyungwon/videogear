@@ -1,7 +1,7 @@
 #include "StdAfx.h"
 #include "FGManager.h"
 
-CFilterManager::CFilterManager(HRESULT *hr)
+CFGManager::CFGManager(HRESULT *hr)
 : CUnknown(L"CFilterManager", NULL)
 {
 	if (hr != NULL)
@@ -10,13 +10,13 @@ CFilterManager::CFilterManager(HRESULT *hr)
 		m_pFG.CoCreateInstance(CLSID_FilterGraph);
 }
 
-CFilterManager::~CFilterManager(void)
+CFGManager::~CFGManager(void)
 {
 	m_pFG = NULL;
 }
 
 /* IGraphBuilder2 */
-STDMETHODIMP CFilterManager::IsPinConnected(IPin *ppin)
+STDMETHODIMP CFGManager::IsPinConnected(IPin *ppin)
 {
 	CheckPointer(ppin, E_POINTER);
 
@@ -26,99 +26,99 @@ STDMETHODIMP CFilterManager::IsPinConnected(IPin *ppin)
 }
 
 /* IFilterGraph2 */
-STDMETHODIMP CFilterManager::AddSourceFilterForMoniker(IMoniker *pMoniker, IBindCtx *pCtx, LPCWSTR lpcwstrFilterName, IBaseFilter **ppFilter) 
+STDMETHODIMP CFGManager::AddSourceFilterForMoniker(IMoniker *pMoniker, IBindCtx *pCtx, LPCWSTR lpcwstrFilterName, IBaseFilter **ppFilter) 
 {
 	return m_pFG->AddSourceFilterForMoniker(pMoniker, pCtx, lpcwstrFilterName, ppFilter);
 }
 
-STDMETHODIMP CFilterManager::ReconnectEx(IPin *ppin, const AM_MEDIA_TYPE *pmt) 
+STDMETHODIMP CFGManager::ReconnectEx(IPin *ppin, const AM_MEDIA_TYPE *pmt) 
 {
 	return m_pFG->ReconnectEx(ppin, pmt);
 }
 
-STDMETHODIMP CFilterManager::RenderEx(IPin *pPinOut, DWORD dwFlags, DWORD *pvContext) 
+STDMETHODIMP CFGManager::RenderEx(IPin *pPinOut, DWORD dwFlags, DWORD *pvContext) 
 {
 	return m_pFG->RenderEx(pPinOut, dwFlags, pvContext);
 }
 
 /* IGraphBuilder */
-STDMETHODIMP CFilterManager::Connect(IPin *ppinOut, IPin *ppinIn) 
+STDMETHODIMP CFGManager::Connect(IPin *ppinOut, IPin *ppinIn) 
 {
 	return m_pFG->Connect(ppinOut, ppinIn);
 }
 
-STDMETHODIMP CFilterManager::Render(IPin *ppinOut) 
+STDMETHODIMP CFGManager::Render(IPin *ppinOut) 
 {
 	return m_pFG->Render(ppinOut);
 }
 
-STDMETHODIMP CFilterManager::RenderFile(LPCWSTR lpcwstrFile, LPCWSTR lpcwstrPlayList) 
+STDMETHODIMP CFGManager::RenderFile(LPCWSTR lpcwstrFile, LPCWSTR lpcwstrPlayList) 
 {
 	return m_pFG->RenderFile(lpcwstrFile, lpcwstrPlayList);
 }
 
-STDMETHODIMP CFilterManager::AddSourceFilter(LPCWSTR lpcwstrFileName, LPCWSTR lpcwstrFilterName, IBaseFilter **ppFilter) 
+STDMETHODIMP CFGManager::AddSourceFilter(LPCWSTR lpcwstrFileName, LPCWSTR lpcwstrFilterName, IBaseFilter **ppFilter) 
 {
 	return m_pFG->AddSourceFilter(lpcwstrFileName, lpcwstrFilterName, ppFilter);
 }
 
-STDMETHODIMP CFilterManager::SetLogFile(DWORD_PTR hFile) 
+STDMETHODIMP CFGManager::SetLogFile(DWORD_PTR hFile) 
 {
 	return m_pFG->SetLogFile(hFile);
 }
 
-STDMETHODIMP CFilterManager::Abort(void) 
+STDMETHODIMP CFGManager::Abort(void) 
 {
 	return m_pFG->Abort();
 }
 
-STDMETHODIMP CFilterManager::ShouldOperationContinue(void) 
+STDMETHODIMP CFGManager::ShouldOperationContinue(void) 
 {
 	return m_pFG->ShouldOperationContinue();
 }
 
 /* IFilterGraph */
-STDMETHODIMP CFilterManager::AddFilter(IBaseFilter *pFilter, LPCWSTR pName) 
+STDMETHODIMP CFGManager::AddFilter(IBaseFilter *pFilter, LPCWSTR pName) 
 {
 	return m_pFG->AddFilter(pFilter, pName);
 }
 
-STDMETHODIMP CFilterManager::RemoveFilter(IBaseFilter *pFilter) 
+STDMETHODIMP CFGManager::RemoveFilter(IBaseFilter *pFilter) 
 {
 	return m_pFG->RemoveFilter(pFilter);
 }
 
-STDMETHODIMP CFilterManager::EnumFilters(IEnumFilters **ppEnum) 
+STDMETHODIMP CFGManager::EnumFilters(IEnumFilters **ppEnum) 
 {
 	return m_pFG->EnumFilters(ppEnum);
 }
 
-STDMETHODIMP CFilterManager::FindFilterByName(LPCWSTR pName, IBaseFilter **ppFilter) 
+STDMETHODIMP CFGManager::FindFilterByName(LPCWSTR pName, IBaseFilter **ppFilter) 
 {
 	return m_pFG->FindFilterByName(pName, ppFilter);
 }
 
-STDMETHODIMP CFilterManager::ConnectDirect(IPin *ppinOut, IPin *ppinIn, const AM_MEDIA_TYPE *pmt) 
+STDMETHODIMP CFGManager::ConnectDirect(IPin *ppinOut, IPin *ppinIn, const AM_MEDIA_TYPE *pmt) 
 {
 	return m_pFG->ConnectDirect(ppinOut, ppinIn, pmt);
 }
 
-STDMETHODIMP CFilterManager::Reconnect(IPin *ppin) 
+STDMETHODIMP CFGManager::Reconnect(IPin *ppin) 
 {
 	return m_pFG->Reconnect(ppin);
 }
 
-STDMETHODIMP CFilterManager::Disconnect(IPin *ppin) 
+STDMETHODIMP CFGManager::Disconnect(IPin *ppin) 
 {
 	return m_pFG->Disconnect(ppin);
 }
 
-STDMETHODIMP CFilterManager::SetDefaultSyncSource(void) 
+STDMETHODIMP CFGManager::SetDefaultSyncSource(void) 
 {
 	return m_pFG->SetDefaultSyncSource();
 }
 
-STDMETHODIMP CFilterManager::NonDelegatingQueryInterface( REFIID riid, void ** ppv )
+STDMETHODIMP CFGManager::NonDelegatingQueryInterface( REFIID riid, void ** ppv )
 {
 	if (riid == IID_IGraphBuilder2)
 	{

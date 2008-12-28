@@ -33,7 +33,7 @@ CMainFrame::~CMainFrame()
 
 int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
-	if (CFrameWnd::OnCreate(lpCreateStruct) == -1)
+	if (__super::OnCreate(lpCreateStruct) == -1)
 		return -1;
 
 	// 创建一个视图以占用框架的工作区
@@ -43,17 +43,25 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		TRACE0("未能创建视图窗口\n");
 		return -1;
 	}
+
+	if (FAILED(m_player.Initialize(GetSafeHwnd(), m_wndView.GetSafeHwnd())))
+	{
+		TRACE0("未能创建播放器\n");
+		return -1;
+	}
+	m_wndView.SetPlayer(&m_player);
+
 	return 0;
 }
 
 BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs)
 {
-	if( !CFrameWnd::PreCreateWindow(cs) )
+	if( !__super::PreCreateWindow(cs) )
 		return FALSE;
 	// TODO: 在此处通过修改
 	//  CREATESTRUCT cs 来修改窗口类或样式
 
-	cs.dwExStyle &= ~WS_EX_CLIENTEDGE;
+	//cs.dwExStyle &= ~WS_EX_CLIENTEDGE;
 	cs.lpszClass = AfxRegisterWndClass(0);
 	return TRUE;
 }
@@ -63,12 +71,12 @@ BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs)
 #ifdef _DEBUG
 void CMainFrame::AssertValid() const
 {
-	CFrameWnd::AssertValid();
+	__super::AssertValid();
 }
 
 void CMainFrame::Dump(CDumpContext& dc) const
 {
-	CFrameWnd::Dump(dc);
+	__super::Dump(dc);
 }
 #endif //_DEBUG
 
@@ -88,5 +96,5 @@ BOOL CMainFrame::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO*
 		return TRUE;
 
 	// 否则，执行默认处理
-	return CFrameWnd::OnCmdMsg(nID, nCode, pExtra, pHandlerInfo);
+	return __super::OnCmdMsg(nID, nCode, pExtra, pHandlerInfo);
 }

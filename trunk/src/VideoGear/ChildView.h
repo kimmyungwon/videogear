@@ -4,33 +4,26 @@
 
 
 #pragma once
-
+#include "Player.h"
 
 // CChildView 窗口
 
 class CChildView : public CWnd
 {
-// 构造
 public:
 	CChildView();
-
-// 属性
-public:
-
-// 操作
-public:
-
-// 重写
-	protected:
-	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
-
-// 实现
-public:
 	virtual ~CChildView();
+public:
+	void SetPlayer(CPlayer* pPlayer);
+protected:
+	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
+private:
+	CPlayer*	m_pPlayer;
 
-	// 生成的消息映射函数
+// 生成的消息映射函数
+	DECLARE_MESSAGE_MAP()
 protected:
 	afx_msg void OnPaint();
-	DECLARE_MESSAGE_MAP()
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 };
 

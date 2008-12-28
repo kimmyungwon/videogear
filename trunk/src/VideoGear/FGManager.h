@@ -2,14 +2,14 @@
 
 #include "IGraphBuilder2.h"
 
-class CFilterManager : public CUnknown
+class CFGManager : public CUnknown
 					 , public IGraphBuilder2
 					 , public CCritSec
 {
 	DECLARE_IUNKNOWN
 public:
-	CFilterManager(HRESULT *hr = NULL);
-	virtual ~CFilterManager(void);
+	CFGManager(HRESULT *hr = NULL);
+	virtual ~CFGManager(void);
 protected:
 	/* IGraphBuilder2 */
 	STDMETHODIMP IsPinConnected(IPin *ppin);

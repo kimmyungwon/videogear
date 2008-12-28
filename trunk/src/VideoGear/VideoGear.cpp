@@ -24,9 +24,9 @@ END_MESSAGE_MAP()
 
 CVideoGearApp::CVideoGearApp()
 {
-
-	// TODO: 在此处添加构造代码，
-	// 将所有重要的初始化放置在 InitInstance 中
+#ifdef _DEBUG
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif // _DEBUG
 }
 
 // 唯一的一个 CVideoGearApp 对象
@@ -73,14 +73,14 @@ BOOL CVideoGearApp::InitInstance()
 		return FALSE;
 	m_pMainWnd = pFrame;
 	// 创建并加载框架及其资源
-	pFrame->LoadFrame(IDR_MAINFRAME,
+	if (!pFrame->LoadFrame(IDR_MAINFRAME,
 		WS_OVERLAPPEDWINDOW | FWS_ADDTOTITLE, NULL,
-		NULL);
-
-
-
-
-
+		NULL))
+	{
+		delete m_pMainWnd;
+		m_pMainWnd = NULL;
+		return FALSE;
+	}
 
 	// 唯一的一个窗口已初始化，因此显示它并对其进行更新
 	pFrame->ShowWindow(SW_SHOW);

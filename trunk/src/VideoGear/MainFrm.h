@@ -4,6 +4,7 @@
 
 #pragma once
 #include "ChildView.h"
+#include "Player.h"
 
 class CMainFrame : public CFrameWnd
 {
@@ -32,14 +33,15 @@ public:
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 
-	CChildView    m_wndView;
+private:
+	CChildView	m_wndView;
+	CPlayer		m_player;
 
 // 生成的消息映射函数
+	DECLARE_MESSAGE_MAP()
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnSetFocus(CWnd *pOldWnd);
-	DECLARE_MESSAGE_MAP()
-
 };
 
 
