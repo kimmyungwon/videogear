@@ -6,6 +6,7 @@
 #include "Player.h"
 #include "FGManager.h"
 #include "DSUtils.h"
+#include "AppSetting.h"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -133,25 +134,85 @@ HRESULT CPlayer::GetVideoPosition( LPRECT lpRect )
 
 HRESULT CPlayer::UpdateVideoPosition( const LPRECT lpRect )
 {
+	CAppSetting& s = AfxGetAppSetting();
 	HRESULT hr;
-	LONG nDstW, nDstH, nVidW, nVidH, nARW, nARH, nNewW, nNewH, nNewL, nNewT;
+	LONG nDstW, nDstH, nVidW, nVidH, nARW, nARH, nGCD, nNewW, nNewH, nNewL, nNewT;
+	CRect rctWnd;
 	
 	if (!IsMediaLoaded() || m_pWC == NULL)	
 		return E_UNEXPECTED;
-	nDstW = lpRect->right - lpRect->left;
-	nDstH = lpRect->bottom - lpRect->top;
-	JIF(m_pWC->GetNativeVideoSize(&nVidW, &nVidH, &nARW, &nARH));
-	if (nVidW != 0 && nVidH != 0)
+	// 调整视频和窗口大小
+	JIF(m_pWC->GetNativeVideoSize(&nVidW, &nVidH, &nARW, &nARH));	
+	if (nVidW > 0 && nVidH > 0)
 	{
-		if (nDstW / (double)nDstH >= nVidW / (double)nVidH)
+		// 按指定的宽高比计算视频大小
+		switch (s.GetVideoAspectRatioMode())
 		{
-			nNewH = nDstH;
-			nNewW = nNewH * nVidW / nVidH;
+		case VARM_VIDEO:
+			// 使用上面GetNativeVideoSize获取到的宽高比
+			break;
+		case VARM_SCREEN:
+			nARW = GetSystemMetrics(SM_CXSCREEN);
+			nARH = GetSystemMetrics(SM_CYSCREEN);
+			nGCD = GetGCD(nARW, nARH);
+			nARW /= nGCD;
+			nARH /= nGCD;
+			nVidW = nVidH * nARW / nARH;
+			break;
+		case VARM_KEEP_4x3:
+			nARW = 4;
+			nARH = 3;
+			nVidW = nVidH * nARW / nARH;
+			break;
+		case VARM_KEEP_16x9:
+			nARW = 16;
+			nARH = 9;
+			nVidW = nVidH * nARW / nARH;
+			break;
+		default:
+			ASSERT(false);
+			break;
+		}
+		// 按指定的初始大小缩放视频
+		if (s.GetInitialVideoSize() == IVS_DONTCARE)
+		{
+			nDstW = lpRect->right - lpRect->left;
+			nDstH = lpRect->bottom - lpRect->top;
+			if (nDstW / (double)nDstH >= nARW / (double)nARH)
+			{
+				nNewH = nDstH;
+				nNewW = nNewH * nARW / nARH;
+			}
+			else
+			{
+				nNewW = nDstW;
+				nNewH = nNewW * nARH / nARW;
+			}
 		}
 		else
 		{
-			nNewW = nDstW;
-			nNewH = nNewW * nVidH / nVidW; 
+			switch (s.GetInitialVideoSize())
+			{
+			case IVS_ZOOM50:
+				nNewW = nVidW / 2;
+				nNewH = nVidH / 2;
+				break;
+			case IVS_ZOOM100:
+				nNewW = nVidW;
+				nNewH = nVidH;
+				break;
+			case IVS_ZOOM200:
+				nNewW = nVidW * 2;
+				nNewH = nVidH * 2;
+				break;
+			default:
+				ASSERT(false);
+				break;
+			}
+			SendNotify(PN_VIDEOWINDOW_NEED_RESIZE, (LPARAM)(LPSIZE)&CSize(nNewW, nNewH));
+			GetClientRect(m_hwndVid, &rctWnd);
+			nDstW = rctWnd.Width();
+			nDstH = rctWnd.Height();
 		}
 		nNewL = (nDstW - nNewW) / 2;
 		nNewT = (nDstH - nNewH) / 2;
@@ -282,6 +343,10 @@ void CPlayer::HandleGraphEvent( void )
 	}
 }
 
+void CPlayer::SendNotify( UINT nMsg, LPARAM lParam )
+{
+	SendMessage(m_hwndMsg, WM_PLAYER_NOTIFY, nMsg, lParam);
+}
 
 
 

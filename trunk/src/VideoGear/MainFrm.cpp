@@ -103,6 +103,16 @@ BOOL CMainFrame::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO*
 
 LRESULT CMainFrame::OnPlayerNotify( WPARAM wParam, LPARAM lParam )
 {
+	switch (wParam)
+	{
+	case PN_VIDEOWINDOW_NEED_RESIZE:
+		{
+			CRect rect(CPoint(0, 0), *(LPSIZE)lParam);
+			AdjustWindowRectEx(&rect, GetStyle(), TRUE, GetExStyle());
+			SetWindowPos(NULL, 0, 0, rect.Width(), rect.Height(), SWP_NOMOVE|SWP_NOZORDER);
+		}
+		break;
+	}
 	return 0;
 }
 

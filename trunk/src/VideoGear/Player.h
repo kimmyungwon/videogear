@@ -19,6 +19,10 @@ struct OpenFileData : OpenMediaData
 
 #define WM_PLAYER_NOTIFY	WM_APP + 0x100
 
+enum {
+	PN_VIDEOWINDOW_NEED_RESIZE
+};
+
 class CPlayer : public CObject
 {
 	friend DWORD WINAPI GraphEventProc(LPVOID);
@@ -57,6 +61,7 @@ private:
 	HRESULT OpenFilePrivate(const CString& strFile);
 	// 消息处理
 	void HandleGraphEvent(void);
+	void SendNotify(UINT nMsg, LPARAM lParam);
 private:
 	UINT	m_nState;
 	HWND	m_hwndMsg, m_hwndVid;

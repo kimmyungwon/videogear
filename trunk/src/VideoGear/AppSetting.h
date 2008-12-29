@@ -10,12 +10,18 @@
 
 #define INIT_PROPPERTY(name,value)	m_prop##name = (value);
 
-enum VGInitialVideoSize
-{
+enum {
 	IVS_DONTCARE = 0,
 	IVS_ZOOM50,
 	IVS_ZOOM100,
 	IVS_ZOOM200
+};
+
+enum {
+	VARM_VIDEO = 0,
+	VARM_SCREEN,
+	VARM_KEEP_4x3,
+	VARM_KEEP_16x9
 };
 
 class CAppSetting : public CCritSec
@@ -23,7 +29,8 @@ class CAppSetting : public CCritSec
 public:
 	CAppSetting(void);
 	virtual ~CAppSetting(void);
-	DEFINE_PROPERTY(VGInitialVideoSize, InitialVideoSize)
+	DEFINE_PROPERTY(UINT, InitialVideoSize)
+	DEFINE_PROPERTY(UINT, VideoAspectRatioMode)
 };
 
-CAppSetting* AfxGetAppSetting(void);
+CAppSetting& AfxGetAppSetting(void);
