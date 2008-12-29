@@ -42,6 +42,7 @@ public:
 	HRESULT Stop(void);
 	// 视频控制
 	HRESULT RepaintVideo(CDC* pDC);
+	HRESULT GetVideoPosition(LPRECT lpRect);
 	HRESULT UpdateVideoPosition(const LPRECT lpRect);
 private:
 	// 滤镜处理

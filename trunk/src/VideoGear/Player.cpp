@@ -107,6 +107,13 @@ HRESULT CPlayer::RepaintVideo( CDC* pDC )
 	return m_pWC->RepaintVideo(m_hwndVid, pDC->GetSafeHdc());
 }
 
+HRESULT CPlayer::GetVideoPosition( LPRECT lpRect )
+{
+	if (!IsMediaLoaded() || m_pWC == NULL)	
+		return E_UNEXPECTED;
+	return m_pWC->GetVideoPosition(NULL, lpRect);
+}
+
 HRESULT CPlayer::UpdateVideoPosition( const LPRECT lpRect )
 {
 	HRESULT hr;
@@ -245,6 +252,7 @@ void CPlayer::HandleGraphEvent( void )
 	}*/
 	m_pME->FreeEventParams(nEventCode, nParam1, nParam2);
 }
+
 
 
 
