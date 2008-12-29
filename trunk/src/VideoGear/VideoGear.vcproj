@@ -198,6 +198,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DSUtils.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\FGManager.cpp"
 				>
 			</File>
@@ -245,6 +249,10 @@
 			</File>
 			<File
 				RelativePath=".\ChildView.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DSUtils.h"
 				>
 			</File>
 			<File

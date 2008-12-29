@@ -5,6 +5,7 @@
 #include "VideoGear.h"
 #include "Player.h"
 #include "FGManager.h"
+#include "DSUtils.h"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -71,6 +72,21 @@ HRESULT CPlayer::OpenMedia( CAutoPtr<OpenMediaData> pOMD )
 	return OpenMediaPrivate(pOMD);
 }
 
+HRESULT CPlayer::OpenNext( void )
+{
+	if (m_pOMD == NULL)
+		return E_UNEXPECTED;
+	Stop();
+	if (OpenFileData* pOFD = dynamic_cast<OpenFileData*>(m_pOMD.m_p))
+	{
+		ASSERT(pOFD->gFiles.size() > 0);
+		pOFD->nIndex = (pOFD->nIndex + 1) % pOFD->gFiles.size();
+		return OpenFilePrivate(pOFD->gFiles[pOFD->nIndex]);
+	}
+	else
+		return E_INVALIDARG;
+}
+
 HRESULT CPlayer::Play( void )
 {
 	if (!IsMediaLoaded())
@@ -89,11 +105,12 @@ HRESULT CPlayer::Stop( void )
 	case STATE_OPENNING:
 		ASSERT(false);
 		break;
+	case STATE_STOPPED:
 	case STATE_PLAYING:
 	case STATE_PAUSE:
 		JIF(m_pMC->Stop());
 		ClearGraph();
-		m_nState = STATE_IDLE;
+		m_nState = STATE_STOPPED;
 		break;
 	}
 	return S_OK;
@@ -124,19 +141,22 @@ HRESULT CPlayer::UpdateVideoPosition( const LPRECT lpRect )
 	nDstW = lpRect->right - lpRect->left;
 	nDstH = lpRect->bottom - lpRect->top;
 	JIF(m_pWC->GetNativeVideoSize(&nVidW, &nVidH, &nARW, &nARH));
-	if (nDstW / (double)nDstH >= nVidW / (double)nVidH)
+	if (nVidW != 0 && nVidH != 0)
 	{
-		nNewH = nDstH;
-		nNewW = nNewH * nVidW / nVidH;
+		if (nDstW / (double)nDstH >= nVidW / (double)nVidH)
+		{
+			nNewH = nDstH;
+			nNewW = nNewH * nVidW / nVidH;
+		}
+		else
+		{
+			nNewW = nDstW;
+			nNewH = nNewW * nVidH / nVidW; 
+		}
+		nNewL = (nDstW - nNewW) / 2;
+		nNewT = (nDstH - nNewH) / 2;
+		JIF(m_pWC->SetVideoPosition(NULL, CRect(nNewL, nNewT, nNewL + nNewW, nNewT + nNewH)));
 	}
-	else
-	{
-		nNewW = nDstW;
-		nNewH = nNewW * nVidH / nVidW; 
-	}
-	nNewL = (nDstW - nNewW) / 2;
-	nNewT = (nDstH - nNewH) / 2;
-	JIF(m_pWC->SetVideoPosition(NULL, CRect(nNewL, nNewT, nNewL + nNewW, nNewT + nNewH)));
 	return S_OK;
 }
 
@@ -144,11 +164,11 @@ void CPlayer::ClearGraph( void )
 {
 	m_pWC.Release();
 	BeginEnumFilters(m_pGraph, pEnumFilters, pFilter)
-		BeginEnumPins(pFilter, pEnumPins, pPin)
-			if (m_pGraph->IsPinConnected(pPin) == S_OK)
-				m_pGraph->Disconnect(pPin);
-		EndEnumPins
-		m_pGraph->RemoveFilter(pFilter.Detach());
+	{
+		TRACE1("Removing %s\n", GetFilterName(pFilter));
+		m_pGraph->RemoveFilter(pFilter);
+		pEnumFilters->Reset();
+	}
 	EndEnumFilters
 }
 
@@ -168,10 +188,10 @@ HRESULT CPlayer::RenderStreams( IBaseFilter* pSource )
 	JIF(pVMR.QueryInterface(&pWC));
 	JIF(pWC->SetAspectRatioMode(VMR_ARMODE_NONE));
 	JIF(pWC->SetVideoClippingWindow(m_hwndVid));
-	JIF(m_pGraph->AddFilter(pVMR, NULL));
+	JIF(m_pGraph->AddFilter(pVMR, _T("Video Mixing Renderer")));
 	// ≥ı ºªØDSound
 	JIF(pDSound.CoCreateInstance(CLSID_DSoundRender, NULL, CLSCTX_INPROC_SERVER));
-	JIF(m_pGraph->AddFilter(pDSound, NULL));
+	JIF(m_pGraph->AddFilter(pDSound, _T("Default DirectSound Renderer")));
 	// ‰÷»æ
 	nTotal = nRendered = 0;
 	BeginEnumPins(pSource, pEnumPins, pPin)
@@ -213,10 +233,12 @@ HRESULT CPlayer::OpenMediaPrivate( CAutoPtr<OpenMediaData> pOMD )
 
 	HRESULT hr;
 
-	if (m_nState == STATE_OPENNING || m_nState == STATE_PLAYING || m_nState == STATE_PAUSE)
-		Stop();
+	Stop();
 	if (m_pOMD != NULL)
+	{
 		m_pOMD.Free();
+		m_nState = STATE_IDLE;
+	}
 	m_nState = STATE_OPENNING;
 	if (OpenFileData* pOFD = dynamic_cast<OpenFileData*>(pOMD.m_p))
 	{
@@ -245,13 +267,21 @@ void CPlayer::HandleGraphEvent( void )
 	long nEventCode;
 	LONG_PTR nParam1, nParam2;
 
-	m_pME->GetEvent(&nEventCode, &nParam1, &nParam2, INFINITE);
-	/*switch (nEventCode)
+	while (m_pME->GetEvent(&nEventCode, &nParam1, &nParam2, INFINITE) == S_OK)
 	{
-
-	}*/
-	m_pME->FreeEventParams(nEventCode, nParam1, nParam2);
+		TRACE1("EventCode = %d\n", nEventCode);
+		switch (nEventCode)
+		{
+		case EC_COMPLETE:
+			m_nState = STATE_STOPPED;
+			OpenNext();
+			Play();
+			break;
+		}
+		m_pME->FreeEventParams(nEventCode, nParam1, nParam2);
+	}
 }
+
 
 
 

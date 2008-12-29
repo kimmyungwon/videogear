@@ -18,6 +18,7 @@ IMPLEMENT_DYNAMIC(CMainFrame, CFrameWnd)
 BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_WM_CREATE()
 	ON_WM_SETFOCUS()
+	ON_MESSAGE(WM_PLAYER_NOTIFY, &CMainFrame::OnPlayerNotify)
 	ON_COMMAND(ID_FILE_QOPEN, &CMainFrame::OnFileQOpen)
 END_MESSAGE_MAP()
 
@@ -100,10 +101,23 @@ BOOL CMainFrame::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO*
 	return __super::OnCmdMsg(nID, nCode, pExtra, pHandlerInfo);
 }
 
+LRESULT CMainFrame::OnPlayerNotify( WPARAM wParam, LPARAM lParam )
+{
+	return 0;
+}
+
 void CMainFrame::OnFileQOpen( void )
 {
-	CAutoPtr<OpenFileData> pOFD(new OpenFileData);
-	pOFD->gFiles.push_back(_T("C:\\Windows\\clock.avi"));
-	if (SUCCEEDED(m_player.OpenMedia(pOFD)))
-		m_player.Play();
+	CFileDialog dlgOpen(TRUE, NULL, NULL, OFN_EXPLORER|OFN_FILEMUSTEXIST|OFN_ALLOWMULTISELECT, NULL, this);
+	if (dlgOpen.DoModal() == IDOK)
+	{
+		CAutoPtr<OpenFileData> pOFD(new OpenFileData);
+		POSITION pos = dlgOpen.GetStartPosition();
+		while (pos != NULL)
+		{
+			pOFD->gFiles.push_back(dlgOpen.GetNextPathName(pos));
+		}
+		if (SUCCEEDED(m_player.OpenMedia(pOFD)))
+			m_player.Play();
+	}
 }

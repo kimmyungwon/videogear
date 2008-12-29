@@ -17,6 +17,8 @@ struct OpenFileData : OpenMediaData
 	OpenFileData(void): nIndex(0)	{}
 };
 
+#define WM_PLAYER_NOTIFY	WM_APP + 0x100
+
 class CPlayer : public CObject
 {
 	friend DWORD WINAPI GraphEventProc(LPVOID);
@@ -24,6 +26,7 @@ public:
 	enum {
 		STATE_UNKNOWN = 0,
 		STATE_IDLE,
+		STATE_STOPPED,
 		STATE_OPENNING,
 		STATE_PLAYING,
 		STATE_PAUSE
@@ -37,6 +40,7 @@ public:
 	BOOL IsMediaLoaded(void);
 	// 打开媒体
 	HRESULT OpenMedia(CAutoPtr<OpenMediaData> pOMD);
+	HRESULT OpenNext(void);
 	// 基本控制
 	HRESULT Play(void);
 	HRESULT Stop(void);

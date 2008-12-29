@@ -52,32 +52,21 @@ void CChildView::OnPaint()
 	CPaintDC dc(this); // 用于绘制的设备上下文
 	
 	if (m_pPlayer != NULL && m_pPlayer->IsMediaLoaded())
-	{
-		CRect rctWnd;
-		
-		GetClientRect(&rctWnd);
-		dc.FillSolidRect(&rctWnd, 0);
 		m_pPlayer->RepaintVideo(&dc);
-	}
 }
 
 
 BOOL CChildView::OnEraseBkgnd(CDC* pDC)
 {
+	CRect rctVid, rect;
+	
 	if (m_pPlayer != NULL && m_pPlayer->IsMediaLoaded())
 	{
-		CRect rctVid;
-		
 		m_pPlayer->GetVideoPosition(&rctVid);
 		pDC->ExcludeClipRect(&rctVid);
-	}
-	else
-	{
-		CRect rect;
-		
-		GetClientRect(&rect);
-		pDC->FillSolidRect(&rect, 0);
-	}
+	}		
+	GetClientRect(&rect);
+	pDC->FillSolidRect(&rect, 0);
 	return TRUE;
 }
 

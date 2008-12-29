@@ -42,6 +42,7 @@ private:
 private:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnSetFocus(CWnd *pOldWnd);
+	afx_msg LRESULT OnPlayerNotify(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnFileQOpen(void);
 };
 
