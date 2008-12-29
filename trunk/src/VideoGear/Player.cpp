@@ -109,13 +109,33 @@ HRESULT CPlayer::RepaintVideo( CDC* pDC )
 
 HRESULT CPlayer::UpdateVideoPosition( const LPRECT lpRect )
 {
+	HRESULT hr;
+	LONG nDstW, nDstH, nVidW, nVidH, nARW, nARH, nNewW, nNewH, nNewL, nNewT;
+	
 	if (!IsMediaLoaded() || m_pWC == NULL)	
 		return E_UNEXPECTED;
-	return m_pWC->SetVideoPosition(NULL, lpRect);
+	nDstW = lpRect->right - lpRect->left;
+	nDstH = lpRect->bottom - lpRect->top;
+	JIF(m_pWC->GetNativeVideoSize(&nVidW, &nVidH, &nARW, &nARH));
+	if (nDstW / (double)nDstH >= nVidW / (double)nVidH)
+	{
+		nNewH = nDstH;
+		nNewW = nNewH * nVidW / nVidH;
+	}
+	else
+	{
+		nNewW = nDstW;
+		nNewH = nNewW * nVidH / nVidW; 
+	}
+	nNewL = (nDstW - nNewW) / 2;
+	nNewT = (nDstH - nNewH) / 2;
+	JIF(m_pWC->SetVideoPosition(NULL, CRect(nNewL, nNewT, nNewL + nNewW, nNewT + nNewH)));
+	return S_OK;
 }
 
 void CPlayer::ClearGraph( void )
 {
+	m_pWC.Release();
 	BeginEnumFilters(m_pGraph, pEnumFilters, pFilter)
 		BeginEnumPins(pFilter, pEnumPins, pPin)
 			if (m_pGraph->IsPinConnected(pPin) == S_OK)
@@ -128,24 +148,20 @@ void CPlayer::ClearGraph( void )
 HRESULT CPlayer::RenderStreams( IBaseFilter* pSource )
 {
 	HRESULT hr;
-	CRect rctWnd;
 	CComPtr<IBaseFilter> pVMR;
 	CComPtr<IVMRFilterConfig> pConfig;
 	CComPtr<IVMRWindowlessControl> pWC;
 	CComPtr<IBaseFilter> pDSound;
 	UINT nTotal, nRendered;
 
-	GetClientRect(m_hwndVid, &rctWnd);
 	// 初始化VMR Windowless
 	JIF(pVMR.CoCreateInstance(CLSID_VideoMixingRenderer, NULL, CLSCTX_INPROC_SERVER));
 	JIF(pVMR.QueryInterface(&pConfig));
 	JIF(pConfig->SetRenderingMode(VMRMode_Windowless));
 	JIF(pVMR.QueryInterface(&pWC));
+	JIF(pWC->SetAspectRatioMode(VMR_ARMODE_NONE));
 	JIF(pWC->SetVideoClippingWindow(m_hwndVid));
-	JIF(pWC->SetAspectRatioMode(VMR_ARMODE_LETTER_BOX));
-	JIF(pWC->SetVideoPosition(NULL, &rctWnd));
 	JIF(m_pGraph->AddFilter(pVMR, NULL));
-	m_pWC = pWC;
 	// 初始化DSound
 	JIF(pDSound.CoCreateInstance(CLSID_DSoundRender, NULL, CLSCTX_INPROC_SERVER));
 	JIF(m_pGraph->AddFilter(pDSound, NULL));
@@ -173,7 +189,14 @@ HRESULT CPlayer::RenderStreams( IBaseFilter* pSource )
 	else
 		hr = S_OK;
 	if (SUCCEEDED(hr))
+	{
+		CRect rctWnd;
+				
 		m_nState = STATE_PAUSE;
+		m_pWC = pWC;
+		GetClientRect(m_hwndVid, &rctWnd);
+		UpdateVideoPosition(&rctWnd);		
+	}
 	return hr;	
 }
 

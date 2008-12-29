@@ -24,9 +24,6 @@ END_MESSAGE_MAP()
 
 CVideoGearApp::CVideoGearApp()
 {
-#ifdef _DEBUG
-	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-#endif // _DEBUG
 }
 
 // 唯一的一个 CVideoGearApp 对象
