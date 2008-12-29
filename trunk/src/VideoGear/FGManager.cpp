@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "FGManager.h"
+#include "VideoGear.h"
 
 CFGManager::CFGManager(HRESULT *hr)
 : CUnknown(L"CFilterManager", NULL)
@@ -23,6 +24,17 @@ STDMETHODIMP CFGManager::IsPinConnected(IPin *ppin)
 	CComPtr<IPin> ppinTo;
 
 	return SUCCEEDED(ppin->ConnectedTo(&ppinTo)) && (ppinTo != NULL) ? S_OK : S_FALSE;
+}
+
+STDMETHODIMP CFGManager::IsPinDirection( IPin *ppin, PIN_DIRECTION dir )
+{
+	CheckPointer(ppin, E_POINTER);
+
+	HRESULT hr;
+	PIN_DIRECTION pindir;
+
+	JIF(ppin->QueryDirection(&pindir));
+	return pindir == dir ? S_OK : S_FALSE;
 }
 
 /* IFilterGraph2 */
@@ -133,3 +145,4 @@ STDMETHODIMP CFGManager::NonDelegatingQueryInterface( REFIID riid, void ** ppv )
 			return E_NOINTERFACE;
 	}
 }
+

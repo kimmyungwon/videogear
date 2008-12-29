@@ -6,7 +6,7 @@ using namespace std;
 
 struct OpenMediaData
 {
-	virtual ~OpenMediaData(void);
+	virtual ~OpenMediaData(void)	{}
 };
 
 struct OpenFileData : OpenMediaData
@@ -31,16 +31,23 @@ public:
 public:
 	CPlayer();
 	virtual ~CPlayer();
-	// 初始化
+	// 初始化和状态
 	HRESULT Initialize(HWND hwndMsg, HWND hwndVid);
+	UINT GetState(void);
+	BOOL IsMediaLoaded(void);
 	// 打开媒体
 	HRESULT OpenMedia(CAutoPtr<OpenMediaData> pOMD);
 	// 基本控制
+	HRESULT Play(void);
 	HRESULT Stop(void);
+	// 视频控制
+	HRESULT RepaintVideo(CDC* pDC);
+	HRESULT UpdateVideoPosition(const LPRECT lpRect);
 private:
 	// 滤镜处理
-	void TearDownGraph(void);
+	void ClearGraph(void);
 	// 打开媒体
+	HRESULT RenderStreams(IBaseFilter* pSource);
 	HRESULT OpenMediaPrivate(CAutoPtr<OpenMediaData> pOMD);
 	HRESULT OpenFilePrivate(const CString& strFile);
 	// 消息处理

@@ -6,45 +6,6 @@
 #include "Player.h"
 #include "FGManager.h"
 
-#define JIF(ret)	{ if(FAILED(hr = (ret))) return hr; }
-
-#define BeginEnumFilters(pFilterGraph, pEnumFilters, pBaseFilter) \
-	{CComPtr<IEnumFilters> pEnumFilters; \
-	if(pFilterGraph && SUCCEEDED(pFilterGraph->EnumFilters(&pEnumFilters))) \
-	{ \
-	for(CComPtr<IBaseFilter> pBaseFilter; S_OK == pEnumFilters->Next(1, &pBaseFilter, 0); pBaseFilter = NULL) \
-		{ \
-
-#define EndEnumFilters }}}
-
-#define BeginEnumCachedFilters(pGraphConfig, pEnumFilters, pBaseFilter) \
-	{CComPtr<IEnumFilters> pEnumFilters; \
-	if(pGraphConfig && SUCCEEDED(pGraphConfig->EnumCacheFilter(&pEnumFilters))) \
-	{ \
-	for(CComPtr<IBaseFilter> pBaseFilter; S_OK == pEnumFilters->Next(1, &pBaseFilter, 0); pBaseFilter = NULL) \
-		{ \
-
-#define EndEnumCachedFilters }}}
-
-#define BeginEnumPins(pBaseFilter, pEnumPins, pPin) \
-	{CComPtr<IEnumPins> pEnumPins; \
-	if(pBaseFilter && SUCCEEDED(pBaseFilter->EnumPins(&pEnumPins))) \
-	{ \
-	for(CComPtr<IPin> pPin; S_OK == pEnumPins->Next(1, &pPin, 0); pPin = NULL) \
-		{ \
-
-#define EndEnumPins }}}
-
-#define BeginEnumMediaTypes(pPin, pEnumMediaTypes, pMediaType) \
-	{CComPtr<IEnumMediaTypes> pEnumMediaTypes; \
-	if(pPin && SUCCEEDED(pPin->EnumMediaTypes(&pEnumMediaTypes))) \
-	{ \
-	AM_MEDIA_TYPE* pMediaType = NULL; \
-	for(; S_OK == pEnumMediaTypes->Next(1, &pMediaType, NULL); DeleteMediaType(pMediaType), pMediaType = NULL) \
-		{ \
-
-#define EndEnumMediaTypes(pMediaType) } if(pMediaType) DeleteMediaType(pMediaType); }}
-
 //////////////////////////////////////////////////////////////////////////
 
 DWORD WINAPI GraphEventProc( LPVOID lpParameter )
@@ -95,9 +56,26 @@ HRESULT CPlayer::Initialize( HWND hwndMsg, HWND hwndVid )
 	return S_OK;
 }
 
+UINT CPlayer::GetState( void )
+{
+	return m_nState;
+}
+
+BOOL CPlayer::IsMediaLoaded( void )
+{
+	return m_nState == STATE_PLAYING || m_nState == STATE_PAUSE;
+}
+
 HRESULT CPlayer::OpenMedia( CAutoPtr<OpenMediaData> pOMD )
 {
 	return OpenMediaPrivate(pOMD);
+}
+
+HRESULT CPlayer::Play( void )
+{
+	if (!IsMediaLoaded())
+		return E_UNEXPECTED;
+	return m_pMC->Run();
 }
 
 HRESULT CPlayer::Stop( void )
@@ -114,14 +92,29 @@ HRESULT CPlayer::Stop( void )
 	case STATE_PLAYING:
 	case STATE_PAUSE:
 		JIF(m_pMC->Stop());
-		TearDownGraph();
+		ClearGraph();
 		m_nState = STATE_IDLE;
 		break;
 	}
 	return S_OK;
 }
 
-void CPlayer::TearDownGraph( void )
+HRESULT CPlayer::RepaintVideo( CDC* pDC )
+{
+	CheckPointer(pDC, E_POINTER);
+	if (!IsMediaLoaded())
+		return E_UNEXPECTED;
+	return m_pWC->RepaintVideo(m_hwndVid, pDC->GetSafeHdc());
+}
+
+HRESULT CPlayer::UpdateVideoPosition( const LPRECT lpRect )
+{
+	if (!IsMediaLoaded() || m_pWC == NULL)	
+		return E_UNEXPECTED;
+	return m_pWC->SetVideoPosition(NULL, lpRect);
+}
+
+void CPlayer::ClearGraph( void )
 {
 	BeginEnumFilters(m_pGraph, pEnumFilters, pFilter)
 		BeginEnumPins(pFilter, pEnumPins, pPin)
@@ -130,6 +123,58 @@ void CPlayer::TearDownGraph( void )
 		EndEnumPins
 		m_pGraph->RemoveFilter(pFilter.Detach());
 	EndEnumFilters
+}
+
+HRESULT CPlayer::RenderStreams( IBaseFilter* pSource )
+{
+	HRESULT hr;
+	CRect rctWnd;
+	CComPtr<IBaseFilter> pVMR;
+	CComPtr<IVMRFilterConfig> pConfig;
+	CComPtr<IVMRWindowlessControl> pWC;
+	CComPtr<IBaseFilter> pDSound;
+	UINT nTotal, nRendered;
+
+	GetClientRect(m_hwndVid, &rctWnd);
+	// 初始化VMR Windowless
+	JIF(pVMR.CoCreateInstance(CLSID_VideoMixingRenderer, NULL, CLSCTX_INPROC_SERVER));
+	JIF(pVMR.QueryInterface(&pConfig));
+	JIF(pConfig->SetRenderingMode(VMRMode_Windowless));
+	JIF(pVMR.QueryInterface(&pWC));
+	JIF(pWC->SetVideoClippingWindow(m_hwndVid));
+	JIF(pWC->SetAspectRatioMode(VMR_ARMODE_LETTER_BOX));
+	JIF(pWC->SetVideoPosition(NULL, &rctWnd));
+	JIF(m_pGraph->AddFilter(pVMR, NULL));
+	m_pWC = pWC;
+	// 初始化DSound
+	JIF(pDSound.CoCreateInstance(CLSID_DSoundRender, NULL, CLSCTX_INPROC_SERVER));
+	JIF(m_pGraph->AddFilter(pDSound, NULL));
+	// 渲染
+	nTotal = nRendered = 0;
+	BeginEnumPins(pSource, pEnumPins, pPin)
+		ASSERT(m_pGraph->IsPinConnected(pPin) == S_FALSE);
+		if (m_pGraph->IsPinDirection(pPin, PINDIR_OUTPUT) != S_OK)
+			continue;
+		nTotal++;
+		if (SUCCEEDED(m_pGraph->RenderEx(pPin, AM_RENDEREX_RENDERTOEXISTINGRENDERERS, NULL)))
+			nRendered++;
+	EndEnumPins
+
+	if (nTotal > 0)
+	{
+		if (nRendered == nTotal)
+			hr = S_OK;
+		else if (nRendered > 0)
+			hr = S_FALSE;
+		else
+			hr = VFW_E_CANNOT_RENDER;
+
+	}
+	else
+		hr = S_OK;
+	if (SUCCEEDED(hr))
+		m_nState = STATE_PAUSE;
+	return hr;	
 }
 
 HRESULT CPlayer::OpenMediaPrivate( CAutoPtr<OpenMediaData> pOMD )
@@ -142,6 +187,7 @@ HRESULT CPlayer::OpenMediaPrivate( CAutoPtr<OpenMediaData> pOMD )
 		Stop();
 	if (m_pOMD != NULL)
 		m_pOMD.Free();
+	m_nState = STATE_OPENNING;
 	if (OpenFileData* pOFD = dynamic_cast<OpenFileData*>(pOMD.m_p))
 	{
 		if (pOFD->nIndex < pOFD->gFiles.size())
@@ -156,18 +202,10 @@ HRESULT CPlayer::OpenMediaPrivate( CAutoPtr<OpenMediaData> pOMD )
 HRESULT CPlayer::OpenFilePrivate( const CString& strFile )
 {
 	HRESULT hr;
-	CComPtr<IBaseFilter> pVMR;
-	CComPtr<IVMRFilterConfig> pConfig;
-	CComPtr<IVMRWindowlessControl> pWC;
+	CComPtr<IBaseFilter> pSource;
 
-	JIF(pVMR.CoCreateInstance(CLSID_VideoMixingRenderer, NULL, CLSCTX_INPROC_SERVER));
-	JIF(pVMR.QueryInterface(&pConfig));
-	JIF(pVMR.QueryInterface(&pWC));
-	JIF(pConfig->SetRenderingMode(VMRMode_Windowless));
-	JIF(pWC->SetVideoClippingWindow(m_hwndVid));
-	m_pWC = pWC;
-	m_nState = STATE_PAUSE;
-	return S_OK;
+	JIF(m_pGraph->AddSourceFilter(strFile, NULL, &pSource));
+	return RenderStreams(pSource);
 }
 
 void CPlayer::HandleGraphEvent( void )
@@ -184,6 +222,11 @@ void CPlayer::HandleGraphEvent( void )
 	}*/
 	m_pME->FreeEventParams(nEventCode, nParam1, nParam2);
 }
+
+
+
+
+
 
 
 

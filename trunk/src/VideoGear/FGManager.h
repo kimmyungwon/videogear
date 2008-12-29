@@ -13,6 +13,7 @@ public:
 protected:
 	/* IGraphBuilder2 */
 	STDMETHODIMP IsPinConnected(IPin *ppin);
+	STDMETHODIMP IsPinDirection(IPin *ppin, PIN_DIRECTION dir);
 	/* IFilterGraph2 */
 	STDMETHODIMP AddSourceFilterForMoniker(IMoniker *pMoniker, IBindCtx *pCtx, LPCWSTR lpcwstrFilterName, IBaseFilter **ppFilter);
 	STDMETHODIMP ReconnectEx(IPin *ppin, const AM_MEDIA_TYPE *pmt);

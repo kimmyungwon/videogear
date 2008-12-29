@@ -18,6 +18,7 @@ IMPLEMENT_DYNAMIC(CMainFrame, CFrameWnd)
 BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_WM_CREATE()
 	ON_WM_SETFOCUS()
+	ON_COMMAND(ID_FILE_QOPEN, &CMainFrame::OnFileQOpen)
 END_MESSAGE_MAP()
 
 // CMainFrame 构造/析构
@@ -97,4 +98,12 @@ BOOL CMainFrame::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO*
 
 	// 否则，执行默认处理
 	return __super::OnCmdMsg(nID, nCode, pExtra, pHandlerInfo);
+}
+
+void CMainFrame::OnFileQOpen( void )
+{
+	CAutoPtr<OpenFileData> pOFD(new OpenFileData);
+	pOFD->gFiles.push_back(_T("C:\\Windows\\clock.avi"));
+	if (SUCCEEDED(m_player.OpenMedia(pOFD)))
+		m_player.Play();
 }

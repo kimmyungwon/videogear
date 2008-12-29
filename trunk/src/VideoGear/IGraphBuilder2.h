@@ -10,4 +10,5 @@ DEFINE_GUID(IID_IGraphBuilder2,
 DECLARE_INTERFACE_(IGraphBuilder2, IFilterGraph2)
 {
 	STDMETHOD(IsPinConnected)(THIS_ IPin *ppin) PURE;
+	STDMETHOD(IsPinDirection)(THIS_ IPin *ppin, PIN_DIRECTION dir) PURE;
 };

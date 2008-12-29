@@ -39,9 +39,10 @@ private:
 
 // 生成的消息映射函数
 	DECLARE_MESSAGE_MAP()
-protected:
+private:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnSetFocus(CWnd *pOldWnd);
+	afx_msg void OnFileQOpen(void);
 };
 
 
