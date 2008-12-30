@@ -118,15 +118,11 @@ LRESULT CMainFrame::OnPlayerNotify( WPARAM wParam, LPARAM lParam )
 
 void CMainFrame::OnFileQOpen( void )
 {
-	CFileDialog dlgOpen(TRUE, NULL, NULL, OFN_EXPLORER|OFN_FILEMUSTEXIST|OFN_ALLOWMULTISELECT, NULL, this);
+	CFileDialog dlgOpen(TRUE, NULL, NULL, OFN_EXPLORER|OFN_FILEMUSTEXIST, NULL, this);
 	if (dlgOpen.DoModal() == IDOK)
 	{
 		CAutoPtr<OpenFileData> pOFD(new OpenFileData);
-		POSITION pos = dlgOpen.GetStartPosition();
-		while (pos != NULL)
-		{
-			pOFD->gFiles.push_back(dlgOpen.GetNextPathName(pos));
-		}
+		pOFD->strFile = dlgOpen.GetFileName();
 		if (SUCCEEDED(m_player.OpenMedia(pOFD)))
 			m_player.Play();
 	}

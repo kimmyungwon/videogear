@@ -11,10 +11,7 @@ struct OpenMediaData
 
 struct OpenFileData : OpenMediaData
 {
-	vector<CString> gFiles;
-	size_t nIndex; 
-
-	OpenFileData(void): nIndex(0)	{}
+	CString strFile;
 };
 
 #define WM_PLAYER_NOTIFY	WM_APP + 0x100
@@ -44,9 +41,9 @@ public:
 	BOOL IsMediaLoaded(void);
 	// 打开媒体
 	HRESULT OpenMedia(CAutoPtr<OpenMediaData> pOMD);
-	HRESULT OpenNext(void);
 	// 基本控制
 	HRESULT Play(void);
+	HRESULT Pause(void);
 	HRESULT Stop(void);
 	// 视频控制
 	HRESULT RepaintVideo(CDC* pDC);

@@ -6,7 +6,7 @@
 #include "afxwinappex.h"
 #include "VideoGear.h"
 #include "MainFrm.h"
-
+#include "APIHook.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -111,8 +111,19 @@ protected:
 	DECLARE_MESSAGE_MAP()
 };
 
-CAboutDlg::CAboutDlg() : CDialog(CAboutDlg::IDD)
+static int (__stdcall *Real_MessageBoxW)(HWND, LPCWSTR, LPCWSTR, UINT) = ::MessageBoxW;
+
+int __stdcall Mine_MessageBoxW(HWND, LPCWSTR, LPCWSTR, UINT)
 {
+	return Real_MessageBoxW(NULL, L"From Hook!", NULL, MB_OK);
+}
+
+CAboutDlg::CAboutDlg() : CDialog(CAboutDlg::IDD)
+{	
+	HookAPI(Real_MessageBoxW, Mine_MessageBoxW);
+	::MessageBoxW(NULL, L"Hello!", NULL, MB_OK);
+	UnhookAPI(Real_MessageBoxW);
+	::MessageBoxW(NULL, L"Hello!", NULL, MB_OK);
 }
 
 void CAboutDlg::DoDataExchange(CDataExchange* pDX)

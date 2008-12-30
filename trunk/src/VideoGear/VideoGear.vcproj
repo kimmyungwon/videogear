@@ -202,6 +202,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\FakeFilterMapper2.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\FGManager.cpp"
 				>
 			</File>
@@ -244,6 +248,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\APIHook.h"
+				>
+			</File>
+			<File
 				RelativePath=".\AppSetting.h"
 				>
 			</File>
@@ -253,6 +261,10 @@
 			</File>
 			<File
 				RelativePath=".\DSUtils.h"
+				>
+			</File>
+			<File
+				RelativePath=".\FakeFilterMapper2.h"
 				>
 			</File>
 			<File

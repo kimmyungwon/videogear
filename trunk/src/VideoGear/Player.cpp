@@ -65,27 +65,18 @@ UINT CPlayer::GetState( void )
 
 BOOL CPlayer::IsMediaLoaded( void )
 {
-	return m_nState == STATE_PLAYING || m_nState == STATE_PAUSE;
+	return m_nState == STATE_STOPPED || m_nState == STATE_PLAYING || m_nState == STATE_PAUSE;
 }
 
 HRESULT CPlayer::OpenMedia( CAutoPtr<OpenMediaData> pOMD )
 {
-	return OpenMediaPrivate(pOMD);
-}
-
-HRESULT CPlayer::OpenNext( void )
-{
-	if (m_pOMD == NULL)
-		return E_UNEXPECTED;
 	Stop();
-	if (OpenFileData* pOFD = dynamic_cast<OpenFileData*>(m_pOMD.m_p))
+	if (m_pOMD != NULL)
 	{
-		ASSERT(pOFD->gFiles.size() > 0);
-		pOFD->nIndex = (pOFD->nIndex + 1) % pOFD->gFiles.size();
-		return OpenFilePrivate(pOFD->gFiles[pOFD->nIndex]);
-	}
-	else
-		return E_INVALIDARG;
+		m_pOMD.Free();
+		m_nState = STATE_IDLE;
+	}	
+	return OpenMediaPrivate(pOMD);
 }
 
 HRESULT CPlayer::Play( void )
@@ -93,6 +84,24 @@ HRESULT CPlayer::Play( void )
 	if (!IsMediaLoaded())
 		return E_UNEXPECTED;
 	return m_pMC->Run();
+}
+
+HRESULT CPlayer::Pause( void )
+{
+	HRESULT hr;
+	
+	switch (m_nState)
+	{
+	case STATE_PLAYING:
+		ASSERT(m_pMC != NULL);
+		JIF(m_pMC->Pause());
+		m_nState = STATE_PAUSE;
+		return S_OK;
+	case STATE_PAUSE:
+		return S_OK;
+	default:
+		return E_UNEXPECTED;
+	}
 }
 
 HRESULT CPlayer::Stop( void )
@@ -294,17 +303,10 @@ HRESULT CPlayer::OpenMediaPrivate( CAutoPtr<OpenMediaData> pOMD )
 
 	HRESULT hr;
 
-	Stop();
-	if (m_pOMD != NULL)
-	{
-		m_pOMD.Free();
-		m_nState = STATE_IDLE;
-	}
 	m_nState = STATE_OPENNING;
 	if (OpenFileData* pOFD = dynamic_cast<OpenFileData*>(pOMD.m_p))
 	{
-		if (pOFD->nIndex < pOFD->gFiles.size())
-			JIF(OpenFilePrivate(pOFD->gFiles[pOFD->nIndex]));
+		JIF(OpenFilePrivate(pOFD->strFile));
 	}
 	else
 		return E_INVALIDARG;
@@ -331,14 +333,6 @@ void CPlayer::HandleGraphEvent( void )
 	while (m_pME->GetEvent(&nEventCode, &nParam1, &nParam2, INFINITE) == S_OK)
 	{
 		TRACE1("EventCode = %d\n", nEventCode);
-		switch (nEventCode)
-		{
-		case EC_COMPLETE:
-			m_nState = STATE_STOPPED;
-			OpenNext();
-			Play();
-			break;
-		}
 		m_pME->FreeEventParams(nEventCode, nParam1, nParam2);
 	}
 }
