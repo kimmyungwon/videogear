@@ -11,6 +11,19 @@ struct LongJump
 #pragma pack(pop)
 
 template<typename FuncT>
+FuncT GetFunctionPointer(FuncT& pfn)
+{
+	BYTE gFuncHdr[5];
+	
+	if (!ReadProcessMemory(GetCurrentProcess(), (LPCVOID)pfn, (LPVOID)gFuncHdr, sizeof(gFuncHdr), NULL))
+		return pfn;
+	if (gFuncHdr[0] == 0xE9)
+		return (FuncT)(((LongJump*)gFuncHdr)->operand);
+	else
+		return pfn;
+}
+
+template<typename FuncT>
 HRESULT HookAPI(FuncT& pfnReal, FuncT pfnHook)
 {
 	HRESULT hr;
@@ -19,6 +32,7 @@ HRESULT HookAPI(FuncT& pfnReal, FuncT pfnHook)
 	LPVOID lpProxy;
 	LongJump jumpToReal, jumpToHook;
 	
+	pfnReal = GetFunctionPointer(pfnReal);
 	hr = VirtualProtect((LPVOID)pfnReal, sizeof(LongJump), PAGE_EXECUTE_READWRITE, &dwOldProtect);
 	if (FAILED(hr))
 		return hr;
@@ -32,26 +46,16 @@ HRESULT HookAPI(FuncT& pfnReal, FuncT pfnHook)
 		VirtualProtect((LPVOID)pfnReal, sizeof(LongJump), dwOldProtect, NULL);
 		return E_FAIL;
 	}
-	if (!WriteProcessMemory(GetCurrentProcess(), lpProxy, (LPCVOID)gFuncHdr, sizeof(gFuncHdr), NULL))
-	{
-		VirtualFree(lpProxy, 0, MEM_RELEASE);
-		VirtualProtect((LPVOID)pfnReal, sizeof(LongJump), dwOldProtect, NULL);
-		return E_FAIL;
-	}
 	// 生成到原函数的跳转
 	jumpToReal.opcode = 0xE9;
 	jumpToReal.operand = ((UINT_PTR)pfnReal + 5) - ((UINT_PTR)lpProxy + 10);
-	if (!WriteProcessMemory(GetCurrentProcess(), (LPVOID)((UINT_PTR)lpProxy + 5), (LPCVOID)&jumpToReal, sizeof(jumpToReal), NULL))
-	{
-		VirtualFree(lpProxy, 0, MEM_RELEASE);
-		VirtualProtect((LPVOID)pfnReal, sizeof(LongJump), dwOldProtect, NULL);
-		return E_FAIL;
-	}
 	// 生成到Hook函数的跳转
 	jumpToHook.opcode = 0xE9;
 	jumpToHook.operand = (UINT_PTR)pfnHook - ((UINT_PTR)pfnReal + 5);
-	// 改写原函数
-	if (!WriteProcessMemory(GetCurrentProcess(), (LPVOID)pfnReal, (LPCVOID)&jumpToHook, sizeof(jumpToHook), NULL))
+	// 写入Proxy，改写原函数
+	if (!WriteProcessMemory(GetCurrentProcess(), lpProxy, (LPCVOID)gFuncHdr, sizeof(gFuncHdr), NULL)
+		|| !WriteProcessMemory(GetCurrentProcess(), (LPVOID)((UINT_PTR)lpProxy + 5), (LPCVOID)&jumpToReal, sizeof(jumpToReal), NULL)
+		|| !WriteProcessMemory(GetCurrentProcess(), (LPVOID)pfnReal, (LPCVOID)&jumpToHook, sizeof(jumpToHook), NULL))
 	{
 		VirtualFree(lpProxy, 0, MEM_RELEASE);
 		VirtualProtect((LPVOID)pfnReal, sizeof(LongJump), dwOldProtect, NULL);
@@ -74,11 +78,9 @@ HRESULT UnhookAPI(FuncT& pfnReal)
 	HRESULT hr;
 	DWORD dwOldProtect;
 	
-	// 读取Proxy的前5个字节（保存的是原函数的前5个字节）
-	if (!ReadProcessMemory(GetCurrentProcess(), (LPCVOID)pfnReal, (LPVOID)gFuncHdr, sizeof(gFuncHdr), NULL))
-		return E_FAIL;
-	// 读取跳转来获取原函数的地址
-	if (!ReadProcessMemory(GetCurrentProcess(), (LPCVOID)((UINT_PTR)pfnReal + 5), (LPVOID)&jumpToReal, sizeof(jumpToReal), NULL))
+	// 读取Proxy的前5个字节作为原函数的前5个字节，读取跳转来获取原函数的地址
+	if (!ReadProcessMemory(GetCurrentProcess(), (LPCVOID)pfnReal, (LPVOID)gFuncHdr, sizeof(gFuncHdr), NULL)
+		|| !ReadProcessMemory(GetCurrentProcess(), (LPCVOID)((UINT_PTR)pfnReal + 5), (LPVOID)&jumpToReal, sizeof(jumpToReal), NULL))
 		return E_FAIL;
 	lpReal = (LPVOID)(((UINT_PTR)pfnReal + 10) + jumpToReal.operand - 5);
 	// 恢复原函数头
