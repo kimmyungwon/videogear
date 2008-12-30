@@ -122,7 +122,7 @@ void CMainFrame::OnFileQOpen( void )
 	if (dlgOpen.DoModal() == IDOK)
 	{
 		CAutoPtr<OpenFileData> pOFD(new OpenFileData);
-		pOFD->strFile = dlgOpen.GetFileName();
+		pOFD->strFile = dlgOpen.GetPathName();
 		if (SUCCEEDED(m_player.OpenMedia(pOFD)))
 			m_player.Play();
 	}

@@ -3,12 +3,12 @@
 #include "IGraphBuilder2.h"
 
 class CFGManager : public CUnknown
-					 , public IGraphBuilder2
-					 , public CCritSec
+				 , public IGraphBuilder2
+				 , public CCritSec
 {
 	DECLARE_IUNKNOWN
 public:
-	CFGManager(HRESULT *hr = NULL);
+	CFGManager(LPUNKNOWN pUnk, HRESULT *hr = NULL);
 	virtual ~CFGManager(void);
 protected:
 	/* IGraphBuilder2 */

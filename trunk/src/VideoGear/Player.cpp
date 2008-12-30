@@ -35,6 +35,7 @@ CPlayer::~CPlayer()
 		m_hEventThread = NULL;
 	}
 	m_pME = NULL;
+	m_pMS = NULL;
 	m_pMC = NULL;
 	m_pGraph = NULL;
 }
@@ -47,10 +48,11 @@ HRESULT CPlayer::Initialize( HWND hwndMsg, HWND hwndVid )
 		return E_UNEXPECTED;
 	m_hwndMsg = hwndMsg;
 	m_hwndVid = hwndVid;	
-	m_pGraph = new CFGManager(&hr);
+	m_pGraph = new CFGManager(NULL, &hr);
 	if (FAILED(hr))
 		return hr;
 	JIF(m_pGraph.QueryInterface(&m_pMC));
+	JIF(m_pGraph.QueryInterface(&m_pMS));
 	JIF(m_pGraph.QueryInterface(&m_pME));
 	m_hEventThread = CreateThread(NULL, 0, &GraphEventProc, (LPVOID)this, 0, NULL);
 	if (m_hEventThread == NULL)
@@ -141,7 +143,7 @@ HRESULT CPlayer::GetVideoPosition( LPRECT lpRect )
 	return m_pWC->GetVideoPosition(NULL, lpRect);
 }
 
-HRESULT CPlayer::UpdateVideoPosition( const LPRECT lpRect )
+HRESULT CPlayer::UpdateVideoPosition( const LPRECT lpRect, bool bInitial /* 是否使用初始化视频大小 */ )
 {
 	CAppSetting& s = AfxGetAppSetting();
 	HRESULT hr;
@@ -183,7 +185,7 @@ HRESULT CPlayer::UpdateVideoPosition( const LPRECT lpRect )
 			break;
 		}
 		// 按指定的初始大小缩放视频
-		if (s.GetInitialVideoSize() == IVS_DONTCARE)
+		if (!bInitial || s.GetInitialVideoSize() == IVS_DONTCARE)
 		{
 			nDstW = lpRect->right - lpRect->left;
 			nDstH = lpRect->bottom - lpRect->top;
@@ -232,7 +234,7 @@ HRESULT CPlayer::UpdateVideoPosition( const LPRECT lpRect )
 
 void CPlayer::ClearGraph( void )
 {
-	m_pWC.Release();
+	m_pWC = NULL;
 	BeginEnumFilters(m_pGraph, pEnumFilters, pFilter)
 	{
 		TRACE1("Removing %s\n", GetFilterName(pFilter));
@@ -292,7 +294,7 @@ HRESULT CPlayer::RenderStreams( IBaseFilter* pSource )
 		m_nState = STATE_PAUSE;
 		m_pWC = pWC;
 		GetClientRect(m_hwndVid, &rctWnd);
-		UpdateVideoPosition(&rctWnd);		
+		UpdateVideoPosition(&rctWnd, true);		
 	}
 	return hr;	
 }

@@ -2,8 +2,8 @@
 #include "FGManager.h"
 #include "VideoGear.h"
 
-CFGManager::CFGManager(HRESULT *hr)
-: CUnknown(L"CFilterManager", NULL)
+CFGManager::CFGManager( LPUNKNOWN pUnk, HRESULT *hr )
+: CUnknown(L"CFilterManager", pUnk)
 {
 	if (hr != NULL)
 		*hr = m_pFG.CoCreateInstance(CLSID_FilterGraph);

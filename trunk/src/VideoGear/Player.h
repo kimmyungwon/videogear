@@ -48,7 +48,7 @@ public:
 	// 视频控制
 	HRESULT RepaintVideo(CDC* pDC);
 	HRESULT GetVideoPosition(LPRECT lpRect);
-	HRESULT UpdateVideoPosition(const LPRECT lpRect);
+	HRESULT UpdateVideoPosition(const LPRECT lpRect, bool bInitial = false);
 private:
 	// 滤镜处理
 	void ClearGraph(void);
@@ -64,6 +64,7 @@ private:
 	HWND	m_hwndMsg, m_hwndVid;
 	CComPtr<IGraphBuilder2> m_pGraph;
 	CComPtr<IMediaControl>	m_pMC;
+	CComPtr<IMediaSeeking>	m_pMS;
 	CComPtr<IMediaEvent>	m_pME;
 	CComPtr<IVMRWindowlessControl>	m_pWC;
 	HANDLE	m_hEventThread;
