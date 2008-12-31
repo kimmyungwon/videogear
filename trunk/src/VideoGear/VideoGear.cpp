@@ -6,7 +6,7 @@
 #include "afxwinappex.h"
 #include "VideoGear.h"
 #include "MainFrm.h"
-#include "APIHook.h"
+#include "FakeFilterMapper2.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -63,6 +63,8 @@ BOOL CVideoGearApp::InitInstance()
 	// 例如修改为公司或组织名
 	SetRegistryKey(_T("应用程序向导生成的本地应用程序"));
 
+	CFakeFilterMapper2::Initialize();
+
 	// 若要创建主窗口，此代码将创建新的框架窗口
 	// 对象，然后将其设置为应用程序的主窗口对象
 	CMainFrame* pFrame = new CMainFrame;
@@ -111,19 +113,8 @@ protected:
 	DECLARE_MESSAGE_MAP()
 };
 
-static int (__stdcall *Real_MessageBoxW)(HWND, LPCWSTR, LPCWSTR, UINT) = ::MessageBoxW;
-
-int __stdcall Mine_MessageBoxW(HWND, LPCWSTR, LPCWSTR, UINT)
-{
-	return Real_MessageBoxW(NULL, L"From Hook!", NULL, MB_OK);
-}
-
 CAboutDlg::CAboutDlg() : CDialog(CAboutDlg::IDD)
 {	
-	HookAPI(Real_MessageBoxW, Mine_MessageBoxW);
-	::MessageBoxW(NULL, L"Hello!", NULL, MB_OK);
-	UnhookAPI(Real_MessageBoxW);
-	::MessageBoxW(NULL, L"Hello!", NULL, MB_OK);
 }
 
 void CAboutDlg::DoDataExchange(CDataExchange* pDX)

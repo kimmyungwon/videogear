@@ -4,7 +4,7 @@
 
 HRESULT 
 (STDMETHODCALLTYPE *Real_CoCreateInstance)(
-	__in REFCLSID rclsid, 
+   __in REFCLSID rclsid, 
    __in_opt LPUNKNOWN pUnkOuter,
    __in DWORD dwClsContext, 
    __in REFIID riid, 
@@ -425,6 +425,58 @@ LSTATUS
     __in HKEY    hKey,
     __in_opt LPCWSTR lpSubKey
     ) = RegUnLoadKeyW ;
+
+//////////////////////////////////////////////////////////////////////////
+
+HRESULT STDMETHODCALLTYPE Mine_CoCreateInstance(REFCLSID rclsid, LPUNKNOWN pUnkOuter, DWORD dwClsContext, REFIID riid, 
+	LPVOID* ppv)
+{
+	if (CFakeFilterMapper2::m_pFilterMapper != NULL)
+	{
+		CheckPointer(ppv, E_POINTER);
+		
+		if (rclsid == IID_IFilterMapper)
+		{
+			*ppv = NULL;
+			return REGDB_E_CLASSNOTREG;
+		}
+		else if (rclsid == IID_IFilterMapper2)
+		{
+			if (pUnkOuter != NULL)
+				return CLASS_E_NOAGGREGATION;
+
+			if (riid == IID_IUnknown)
+			{
+				CFakeFilterMapper2::m_pFilterMapper->AddRef();
+				*ppv = (IUnknown*)CFakeFilterMapper2::m_pFilterMapper;
+				return S_OK;
+			}
+			else if (riid == IID_IFilterMapper2)
+			{
+				CFakeFilterMapper2::m_pFilterMapper->AddRef();
+				*ppv = (IFilterMapper2*)CFakeFilterMapper2::m_pFilterMapper;
+				return S_OK;
+			}
+			else
+				return E_NOINTERFACE;
+		}
+	}
+
+	return Real_CoCreateInstance(rclsid, pUnkOuter, dwClsContext, riid, ppv);
+}
+
+IFilterMapper2* CFakeFilterMapper2::m_pFilterMapper = NULL;
+
+void CFakeFilterMapper2::Initialize( void )
+{
+	static bool bInitialized = false;
+	
+	if (!bInitialized)
+	{
+
+		bInitialized = true;
+	}	
+}
 
 CFakeFilterMapper2::CFakeFilterMapper2( LPUNKNOWN pUnk )
 : CUnknown(_T("CFakeFilterMapper2"), pUnk)
