@@ -238,6 +238,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\VGCtrlBar.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\VideoGear.cpp"
 				>
 			</File>
@@ -296,6 +300,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\VGCtrlBar.h"
+				>
+			</File>
+			<File
 				RelativePath=".\VideoGear.h"
 				>
 			</File>
@@ -305,6 +313,10 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+			<File
+				RelativePath=".\res\toolbar1.bmp"
+				>
+			</File>
 			<File
 				RelativePath=".\res\VideoGear.ico"
 				>

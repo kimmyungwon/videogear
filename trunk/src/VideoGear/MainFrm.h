@@ -4,6 +4,7 @@
 
 #pragma once
 #include "ChildView.h"
+#include "VGCtrlBar.h"
 #include "Player.h"
 
 class CMainFrame : public CFrameWnd
@@ -35,6 +36,7 @@ public:
 
 private:
 	CChildView	m_wndView;
+	CVGCtrlBar	m_wndCtrl;
 	CPlayer		m_player;
 
 // 生成的消息映射函数
@@ -43,6 +45,7 @@ private:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnSetFocus(CWnd *pOldWnd);
 	afx_msg LRESULT OnPlayerNotify(WPARAM wParam, LPARAM lParam);
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnFileQOpen(void);
 };
 

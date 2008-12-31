@@ -3,12 +3,14 @@
 class CFakeFilterMapper2 : public CUnknown
 						 , public IFilterMapper2
 {
+	DECLARE_IUNKNOWN
 public:
 	static IFilterMapper2* m_pFilterMapper;
 public:
 	static void Initialize(void);
 	CFakeFilterMapper2(LPUNKNOWN pUnk);
 	virtual ~CFakeFilterMapper2(void);
+	HRESULT Register(LPCTSTR lpszFile);
 protected:
 	STDMETHODIMP CreateCategory(REFCLSID clsidCategory, DWORD dwCategoryMerit, LPCWSTR Description);
 	STDMETHODIMP UnregisterFilter(const CLSID *pclsidCategory, LPCOLESTR szInstance, REFCLSID Filter);

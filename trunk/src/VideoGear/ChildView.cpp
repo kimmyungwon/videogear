@@ -10,7 +10,6 @@
 #define new DEBUG_NEW
 #endif
 
-
 // CChildView
 
 CChildView::CChildView()
@@ -77,3 +76,4 @@ void CChildView::OnSize( UINT nType, int cx, int cy )
 	if (m_pPlayer != NULL)
 		m_pPlayer->UpdateVideoPosition(CRect(0, 0, cx, cy));
 }
+

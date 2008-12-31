@@ -84,6 +84,12 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "退出(&X)",                      ID_APP_EXIT
     END
+    POPUP "控制"
+    BEGIN
+        MENUITEM "播放",                          ID_CTRL_PLAY
+        MENUITEM "暂停",                          ID_CTRL_PAUSE
+        MENUITEM "停止",                          ID_CTRL_STOP
+    END
     POPUP "帮助(&H)"
     BEGIN
         MENUITEM "关于 VideoGear(&A)...",         ID_APP_ABOUT
@@ -185,6 +191,13 @@ BEGIN
 END
 #endif    // APSTUDIO_INVOKED
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_CONTROLBAR          BITMAP                  "res\\toolbar1.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //

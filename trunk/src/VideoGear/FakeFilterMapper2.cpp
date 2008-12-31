@@ -435,12 +435,12 @@ HRESULT STDMETHODCALLTYPE Mine_CoCreateInstance(REFCLSID rclsid, LPUNKNOWN pUnkO
 	{
 		CheckPointer(ppv, E_POINTER);
 		
-		if (rclsid == IID_IFilterMapper)
+		if (rclsid == CLSID_FilterMapper)
 		{
 			*ppv = NULL;
 			return REGDB_E_CLASSNOTREG;
 		}
-		else if (rclsid == IID_IFilterMapper2)
+		else if (rclsid == CLSID_FilterMapper2)
 		{
 			if (pUnkOuter != NULL)
 				return CLASS_E_NOAGGREGATION;
@@ -473,7 +473,7 @@ void CFakeFilterMapper2::Initialize( void )
 	
 	if (!bInitialized)
 	{
-
+		HookAPI(Real_CoCreateInstance, Mine_CoCreateInstance);
 		bInitialized = true;
 	}	
 }
@@ -481,10 +481,51 @@ void CFakeFilterMapper2::Initialize( void )
 CFakeFilterMapper2::CFakeFilterMapper2( LPUNKNOWN pUnk )
 : CUnknown(_T("CFakeFilterMapper2"), pUnk)
 {
-	m_pFM2.CoCreateInstance(CLSID_FilterMapper2, reinterpret_cast<LPUNKNOWN>(static_cast<PNDUNKNOWN>(this)));
+	Real_CoCreateInstance(CLSID_FilterMapper2, NULL, CLSCTX_INPROC_SERVER, IID_IFilterMapper2, (LPVOID*)&m_pFM2);
 }
 
 CFakeFilterMapper2::~CFakeFilterMapper2( void )
 {
 	m_pFM2 = NULL;
 }
+
+HRESULT CFakeFilterMapper2::Register( LPCTSTR lpszFile )
+{
+	HMODULE hDLL;
+	typedef HRESULT (STDMETHODCALLTYPE *DllRegSvr)(void);
+	DllRegSvr pfnDllRegSvr;
+	
+	hDLL = LoadLibrary(lpszFile);
+	if (hDLL == NULL)
+		return HRESULT_FROM_WIN32(GetLastError());
+	pfnDllRegSvr = (DllRegSvr)GetProcAddress(hDLL, "DllRegisterServer");
+	if (pfnDllRegSvr == NULL)
+		return E_FAIL;
+	m_pFilterMapper = (IFilterMapper2*)this;
+	pfnDllRegSvr();
+	m_pFilterMapper = NULL;
+	FreeLibrary(hDLL);
+	return S_OK;
+}
+
+STDMETHODIMP CFakeFilterMapper2::CreateCategory( REFCLSID clsidCategory, DWORD dwCategoryMerit, LPCWSTR Description )
+{
+	return m_pFM2->CreateCategory(clsidCategory, dwCategoryMerit, Description);
+}
+
+STDMETHODIMP CFakeFilterMapper2::UnregisterFilter( const CLSID *pclsidCategory, LPCOLESTR szInstance, REFCLSID Filter )
+{
+	return m_pFM2->UnregisterFilter(pclsidCategory, szInstance, Filter);
+}
+
+STDMETHODIMP CFakeFilterMapper2::RegisterFilter( REFCLSID clsidFilter, LPCWSTR Name, IMoniker **ppMoniker, const CLSID *pclsidCategory, LPCOLESTR szInstance, const REGFILTER2 *prf2 )
+{
+	return m_pFM2->RegisterFilter(clsidFilter, Name, ppMoniker, pclsidCategory, szInstance, prf2);
+}
+
+STDMETHODIMP CFakeFilterMapper2::EnumMatchingFilters( IEnumMoniker **ppEnum, DWORD dwFlags, BOOL bExactMatch, DWORD dwMerit, BOOL bInputNeeded, DWORD cInputTypes, const GUID *pInputTypes, const REGPINMEDIUM *pMedIn, const CLSID *pPinCategoryIn, BOOL bRender, BOOL bOutputNeeded, DWORD cOutputTypes, const GUID *pOutputTypes, const REGPINMEDIUM *pMedOut, const CLSID *pPinCategoryOut )
+{
+	return m_pFM2->EnumMatchingFilters(ppEnum, dwFlags, bExactMatch, dwMerit, bInputNeeded, cInputTypes, pInputTypes,
+		pMedIn, pPinCategoryIn, bRender, bOutputNeeded, cOutputTypes, pOutputTypes, pMedOut, pPinCategoryOut);
+}
+

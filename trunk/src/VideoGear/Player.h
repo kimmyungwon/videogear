@@ -14,9 +14,13 @@ struct OpenFileData : OpenMediaData
 	CString strFile;
 };
 
+#define MAX_VOLUME	100
+
 #define WM_PLAYER_NOTIFY	WM_APP + 0x100
 
 enum {
+	PN_NULL,
+	PN_MEDIA_OPENED,
 	PN_VIDEOWINDOW_NEED_RESIZE
 };
 
@@ -45,6 +49,9 @@ public:
 	HRESULT Play(void);
 	HRESULT Pause(void);
 	HRESULT Stop(void);
+	int GetDuration(void);
+	int GetCurrentPosisiton(void);
+	int GetVolume(void);
 	//  ”∆µøÿ÷∆
 	HRESULT RepaintVideo(CDC* pDC);
 	HRESULT GetVideoPosition(LPRECT lpRect);
@@ -65,6 +72,7 @@ private:
 	CComPtr<IGraphBuilder2> m_pGraph;
 	CComPtr<IMediaControl>	m_pMC;
 	CComPtr<IMediaSeeking>	m_pMS;
+	CComPtr<IBasicAudio>	m_pBA;
 	CComPtr<IMediaEvent>	m_pME;
 	CComPtr<IVMRWindowlessControl>	m_pWC;
 	HANDLE	m_hEventThread;

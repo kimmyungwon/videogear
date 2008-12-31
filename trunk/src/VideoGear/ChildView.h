@@ -23,6 +23,7 @@ private:
 // 生成的消息映射函数
 	DECLARE_MESSAGE_MAP()
 protected:
+	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnPaint();
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnSize(UINT nType, int cx, int cy);

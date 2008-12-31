@@ -7,6 +7,7 @@
 #include "FGManager.h"
 #include "DSUtils.h"
 #include "AppSetting.h"
+#include "FakeFilterMapper2.h"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -35,6 +36,7 @@ CPlayer::~CPlayer()
 		m_hEventThread = NULL;
 	}
 	m_pME = NULL;
+	m_pBA = NULL;
 	m_pMS = NULL;
 	m_pMC = NULL;
 	m_pGraph = NULL;
@@ -53,10 +55,12 @@ HRESULT CPlayer::Initialize( HWND hwndMsg, HWND hwndVid )
 		return hr;
 	JIF(m_pGraph.QueryInterface(&m_pMC));
 	JIF(m_pGraph.QueryInterface(&m_pMS));
+	JIF(m_pGraph.QueryInterface(&m_pBA));
 	JIF(m_pGraph.QueryInterface(&m_pME));
 	m_hEventThread = CreateThread(NULL, 0, &GraphEventProc, (LPVOID)this, 0, NULL);
 	if (m_hEventThread == NULL)
 		return HRESULT_FROM_WIN32(GetLastError());
+	m_nState = STATE_IDLE;
 	return S_OK;
 }
 
@@ -82,10 +86,21 @@ HRESULT CPlayer::OpenMedia( CAutoPtr<OpenMediaData> pOMD )
 }
 
 HRESULT CPlayer::Play( void )
-{
-	if (!IsMediaLoaded())
+{	
+	HRESULT hr;
+
+	switch (m_nState)
+	{
+	case STATE_PLAYING:
+		return S_OK;
+	case STATE_STOPPED:
+	case STATE_PAUSE:
+		JIF(m_pMC->Run());
+		m_nState = STATE_PLAYING;
+		return S_OK;
+	default:
 		return E_UNEXPECTED;
-	return m_pMC->Run();
+	}
 }
 
 HRESULT CPlayer::Pause( void )
@@ -126,6 +141,41 @@ HRESULT CPlayer::Stop( void )
 		break;
 	}
 	return S_OK;
+}
+
+int CPlayer::GetDuration( void )
+{
+	DWORD dwCaps;
+	LONGLONG nDuration;
+
+	if (!IsMediaLoaded()
+		|| m_pMS == NULL
+		|| FAILED(m_pMS->GetCapabilities(&dwCaps))
+		|| (dwCaps & AM_SEEKING_CanGetDuration) == 0
+		|| FAILED(m_pMS->GetDuration(&nDuration)))
+		return 0;
+	return (int)(nDuration / 10000);	// 转为毫秒
+}
+
+int CPlayer::GetCurrentPosisiton( void )
+{
+	LONGLONG nCurrent;
+	
+	if (!IsMediaLoaded() 
+		|| m_pMS == NULL
+		|| FAILED(m_pMS->GetCurrentPosition(&nCurrent)))
+		return 0;
+	return (int)(nCurrent / 10000);	// 转为毫秒
+}
+
+int CPlayer::GetVolume( void )
+{
+	long nVolume;
+
+	if (m_pBA == NULL
+		|| FAILED(m_pBA->get_Volume(&nVolume)))
+		return 0;
+	return nVolume >= 0 ? nVolume / 100 : 0;	// 转为dB
 }
 
 HRESULT CPlayer::RepaintVideo( CDC* pDC )
@@ -312,7 +362,10 @@ HRESULT CPlayer::OpenMediaPrivate( CAutoPtr<OpenMediaData> pOMD )
 	}
 	else
 		return E_INVALIDARG;
+
 	m_pOMD = pOMD;
+	m_nState = STATE_STOPPED;
+	SendNotify(PN_MEDIA_OPENED, 0);
 	return S_OK;
 }
 
@@ -335,6 +388,12 @@ void CPlayer::HandleGraphEvent( void )
 	while (m_pME->GetEvent(&nEventCode, &nParam1, &nParam2, INFINITE) == S_OK)
 	{
 		TRACE1("EventCode = %d\n", nEventCode);
+		switch (nEventCode)
+		{
+		case EC_COMPLETE:
+			Stop();
+			break;
+		}
 		m_pME->FreeEventParams(nEventCode, nParam1, nParam2);
 	}
 }
@@ -343,6 +402,7 @@ void CPlayer::SendNotify( UINT nMsg, LPARAM lParam )
 {
 	SendMessage(m_hwndMsg, WM_PLAYER_NOTIFY, nMsg, lParam);
 }
+
 
 
 

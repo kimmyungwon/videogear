@@ -15,7 +15,7 @@ enum {
 struct VGCtrlBarItem
 {
 	UINT nID;
-	UINT nStyle;
+	WORD nStyle;
 	int iImage;
 };
 
@@ -34,7 +34,7 @@ IMPLEMENT_DYNAMIC(CVGCtrlBar, CToolBar)
 
 BOOL CVGCtrlBar::Create( CWnd* pParentWnd )
 {	
-	if (!__super::CreateEx(pParentWnd, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_ALIGN_BOTTOM | CBRS_BORDER_BOTTOM))
+	if (!__super::CreateEx(pParentWnd, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_ALIGN_BOTTOM))
 		return FALSE;
 	if (!m_wndProgBar.Create(WS_CHILD | WS_VISIBLE | TBS_HORZ | TBS_NOTICKS, CRect(0, 0, 0, 0), this, CBC_PROGRESSBAR))
 		return FALSE;
@@ -50,21 +50,38 @@ BOOL CVGCtrlBar::Create( CWnd* pParentWnd )
 	return TRUE;
 }
 
-void CVGCtrlBar::PlayerStateChanged( WORD wNewState )
+void CVGCtrlBar::SetPlayer( CPlayer* pPlayer )
 {
-	switch (wNewState)
+	m_pPlayer = pPlayer;
+	UpdateState();
+}
+
+void CVGCtrlBar::UpdateState( void )
+{
+	if (m_pPlayer == NULL)
+		return;
+	switch (m_pPlayer->GetState())
 	{
-	case CVGPlayer::stateIdle:
-		SetButtonInfo(CBC_PLAYPAUSE, ID_CTRL_PLAY, g_items[CBC_PLAYPAUSE].nStyle, 0);	
-		EnableButton(CBC_STOP, FALSE);
+	case CPlayer::STATE_IDLE:
+		SwitchPlayPause(true);
+		EnableButton(CBC_PLAYPAUSE, false);
+		EnableButton(CBC_STOP, false);
 		break;
-	case CVGPlayer::statePlaying:
-		SetButtonInfo(CBC_PLAYPAUSE, ID_CTRL_PAUSE, g_items[CBC_PLAYPAUSE].nStyle, 1);
-		EnableButton(CBC_STOP, TRUE);
+	case CPlayer::STATE_STOPPED:
+		SwitchPlayPause(true);
+		EnableButton(CBC_STOP, false);
 		break;
-	case CVGPlayer::statePaused:
-		SetButtonInfo(CBC_PLAYPAUSE, ID_CTRL_PLAY, g_items[CBC_PLAYPAUSE].nStyle, 0);	
-		EnableButton(CBC_STOP, TRUE);
+	case CPlayer::STATE_PLAYING:
+		SwitchPlayPause(false);
+		EnableButton(CBC_STOP, true);
+		m_wndProgBar.SetRangeMax(m_pPlayer->GetDuration(), FALSE);
+		m_wndProgBar.SetPos(m_pPlayer->GetCurrentPosisiton());
+		m_wndVolBar.SetRangeMax(MAX_VOLUME, FALSE);
+		m_wndVolBar.SetPos(m_pPlayer->GetVolume());
+		break;
+	case CPlayer::STATE_PAUSE:
+		SwitchPlayPause(false);
+		EnableButton(CBC_STOP, true);
 		break;
 	}
 }
@@ -76,6 +93,15 @@ void CVGCtrlBar::EnableButton( int nIndex, bool bEnabled )
 		SetButtonStyle(nIndex, nStyle & ~TBBS_DISABLED);
 	else
 		SetButtonStyle(nIndex, nStyle | TBBS_DISABLED);
+}
+
+void CVGCtrlBar::SwitchPlayPause( bool bPlay )
+{
+	UINT nStyle = GetButtonStyle(CBC_PLAYPAUSE);
+	if (bPlay)
+		SetButtonInfo(CBC_PLAYPAUSE, g_items[CBC_PLAYPAUSE].nID, HIWORD(nStyle) | g_items[CBC_PLAYPAUSE].nStyle, g_items[CBC_PLAYPAUSE].iImage);
+	else
+		SetButtonInfo(CBC_PLAYPAUSE, ID_CTRL_PAUSE, HIWORD(nStyle) | g_items[CBC_PLAYPAUSE].nStyle, g_items[CBC_PLAYPAUSE].iImage + 1);
 }
 
 void CVGCtrlBar::OnUpdateCmdUI(CFrameWnd* pTarget, BOOL bDisableIfNoHandler)
@@ -123,4 +149,5 @@ void CVGCtrlBar::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 		__super::OnHScroll(nSBCode, nPos, pScrollBar);
 	}
 }
+
 
