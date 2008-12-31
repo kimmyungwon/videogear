@@ -50,7 +50,7 @@ void CChildView::OnPaint()
 {
 	CPaintDC dc(this); // 用于绘制的设备上下文
 	
-	if (m_pPlayer != NULL && m_pPlayer->IsMediaLoaded())
+	if (m_pPlayer != NULL && m_pPlayer->IsMediaPlaying())
 		m_pPlayer->RepaintVideo(&dc);
 }
 
@@ -59,7 +59,7 @@ BOOL CChildView::OnEraseBkgnd(CDC* pDC)
 {
 	CRect rctVid, rect;
 	
-	if (m_pPlayer != NULL && m_pPlayer->IsMediaLoaded())
+	if (m_pPlayer != NULL && m_pPlayer->IsMediaPlaying())
 	{
 		m_pPlayer->GetVideoPosition(&rctVid);
 		pDC->ExcludeClipRect(&rctVid);

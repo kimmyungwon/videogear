@@ -47,6 +47,9 @@ private:
 	afx_msg LRESULT OnPlayerNotify(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnFileQOpen(void);
+	afx_msg void OnCtrlPlay(void);
+	afx_msg void OnCtrlPause(void);
+	afx_msg void OnCtrlStop(void);
 };
 
 

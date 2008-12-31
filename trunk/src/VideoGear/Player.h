@@ -43,6 +43,7 @@ public:
 	HRESULT Initialize(HWND hwndMsg, HWND hwndVid);
 	UINT GetState(void);
 	BOOL IsMediaLoaded(void);
+	BOOL IsMediaPlaying(void);
 	// 打开媒体
 	HRESULT OpenMedia(CAutoPtr<OpenMediaData> pOMD);
 	// 基本控制
@@ -52,6 +53,7 @@ public:
 	int GetDuration(void);
 	int GetCurrentPosisiton(void);
 	int GetVolume(void);
+	HRESULT SetVolume(int nVol);
 	// 视频控制
 	HRESULT RepaintVideo(CDC* pDC);
 	HRESULT GetVideoPosition(LPRECT lpRect);

@@ -69,10 +69,12 @@ void CVGCtrlBar::UpdateState( void )
 		break;
 	case CPlayer::STATE_STOPPED:
 		SwitchPlayPause(true);
+		EnableButton(CBC_PLAYPAUSE, true);
 		EnableButton(CBC_STOP, false);
 		break;
 	case CPlayer::STATE_PLAYING:
 		SwitchPlayPause(false);
+		EnableButton(CBC_PLAYPAUSE, true);
 		EnableButton(CBC_STOP, true);
 		m_wndProgBar.SetRangeMax(m_pPlayer->GetDuration(), FALSE);
 		m_wndProgBar.SetPos(m_pPlayer->GetCurrentPosisiton());
@@ -80,7 +82,8 @@ void CVGCtrlBar::UpdateState( void )
 		m_wndVolBar.SetPos(m_pPlayer->GetVolume());
 		break;
 	case CPlayer::STATE_PAUSE:
-		SwitchPlayPause(false);
+		SwitchPlayPause(true);
+		EnableButton(CBC_PLAYPAUSE, true);
 		EnableButton(CBC_STOP, true);
 		break;
 	}
@@ -144,6 +147,8 @@ void CVGCtrlBar::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 	case CBC_PROGRESSBAR:
 		break;
 	case CBC_VOLUMEBAR:
+		if (m_pPlayer != NULL && m_pPlayer->IsMediaPlaying())
+			m_pPlayer->SetVolume(pBar->GetPos());
 		break;
 	default:
 		__super::OnHScroll(nSBCode, nPos, pScrollBar);

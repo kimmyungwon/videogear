@@ -25,6 +25,9 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_MESSAGE(WM_PLAYER_NOTIFY, &CMainFrame::OnPlayerNotify)
 	ON_WM_TIMER()
 	ON_COMMAND(ID_FILE_QOPEN, &CMainFrame::OnFileQOpen)
+	ON_COMMAND(ID_CTRL_PLAY, &CMainFrame::OnCtrlPlay)
+	ON_COMMAND(ID_CTRL_PAUSE, &CMainFrame::OnCtrlPause)
+	ON_COMMAND(ID_CTRL_STOP, &CMainFrame::OnCtrlStop)
 END_MESSAGE_MAP()
 
 // CMainFrame ¹¹Ôì/Îö¹¹
@@ -159,4 +162,23 @@ void CMainFrame::OnFileQOpen( void )
 		if (SUCCEEDED(m_player.OpenMedia(pOFD)))
 			m_player.Play();
 	}
+}
+
+void CMainFrame::OnCtrlPlay( void )
+{
+	m_player.Play();
+	m_wndCtrl.UpdateState();
+}
+
+void CMainFrame::OnCtrlPause( void )
+{
+	m_player.Pause();
+	m_wndCtrl.UpdateState();
+}
+
+void CMainFrame::OnCtrlStop( void )
+{
+	m_player.Stop();
+	m_wndView.RedrawWindow();
+	m_wndCtrl.UpdateState();
 }

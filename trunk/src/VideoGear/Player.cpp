@@ -74,6 +74,11 @@ BOOL CPlayer::IsMediaLoaded( void )
 	return m_nState == STATE_STOPPED || m_nState == STATE_PLAYING || m_nState == STATE_PAUSE;
 }
 
+BOOL CPlayer::IsMediaPlaying( void )
+{
+	return m_nState == STATE_PLAYING || m_nState == STATE_PAUSE;
+}
+
 HRESULT CPlayer::OpenMedia( CAutoPtr<OpenMediaData> pOMD )
 {
 	Stop();
@@ -110,7 +115,6 @@ HRESULT CPlayer::Pause( void )
 	switch (m_nState)
 	{
 	case STATE_PLAYING:
-		ASSERT(m_pMC != NULL);
 		JIF(m_pMC->Pause());
 		m_nState = STATE_PAUSE;
 		return S_OK;
@@ -175,7 +179,14 @@ int CPlayer::GetVolume( void )
 	if (m_pBA == NULL
 		|| FAILED(m_pBA->get_Volume(&nVolume)))
 		return 0;
-	return nVolume >= 0 ? nVolume / 100 : 0;	// 转为dB
+	return (nVolume + 10000) / 100;	// 转为dB
+}
+
+HRESULT CPlayer::SetVolume( int nVol )
+{	
+	if (m_pBA == NULL)
+		return E_UNEXPECTED;
+	return m_pBA->put_Volume(nVol * 100 - 10000);
 }
 
 HRESULT CPlayer::RepaintVideo( CDC* pDC )
@@ -284,6 +295,7 @@ HRESULT CPlayer::UpdateVideoPosition( const LPRECT lpRect, bool bInitial /* 是否
 
 void CPlayer::ClearGraph( void )
 {
+	m_pWC->SetVideoClippingWindow(NULL);
 	m_pWC = NULL;
 	BeginEnumFilters(m_pGraph, pEnumFilters, pFilter)
 	{
@@ -402,6 +414,7 @@ void CPlayer::SendNotify( UINT nMsg, LPARAM lParam )
 {
 	SendMessage(m_hwndMsg, WM_PLAYER_NOTIFY, nMsg, lParam);
 }
+
 
 
 
