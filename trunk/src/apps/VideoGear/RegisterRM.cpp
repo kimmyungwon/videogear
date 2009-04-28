@@ -67,12 +67,23 @@ namespace RM
 		{&__uuidof(CRealVideoDecoder), L"MPC - RealVideo Decoder", MERIT_NORMAL, countof(sudpPins2), sudpPins2},
 		{&__uuidof(CRealAudioDecoder), L"MPC - RealAudio Decoder", MERIT_NORMAL, countof(sudpPins3), sudpPins3},
 	};
+
+	CFactoryTemplate g_Templates[] =
+	{
+		{sudFilter[0].strName, sudFilter[0].clsID, CreateInstance<CRealMediaSplitterFilter>, NULL, &sudFilter[0]},
+		{sudFilter[1].strName, sudFilter[1].clsID, CreateInstance<CRealMediaSourceFilter>, NULL, &sudFilter[1]},
+		{sudFilter[2].strName, sudFilter[2].clsID, CreateInstance<CRealVideoDecoder>, NULL, &sudFilter[2]},
+		{sudFilter[3].strName, sudFilter[3].clsID, CreateInstance<CRealAudioDecoder>, NULL, &sudFilter[3]},
+	};
 };
 
-CFactoryTemplate g_Templates[] =
+void RegisterRM(void)
 {
-	{RM::sudFilter[0].strName, RM::sudFilter[0].clsID, CreateInstance<CRealMediaSplitterFilter>, NULL, &RM::sudFilter[0]},
-	{RM::sudFilter[1].strName, RM::sudFilter[1].clsID, CreateInstance<CRealMediaSourceFilter>, NULL, &RM::sudFilter[1]},
-	{RM::sudFilter[2].strName, RM::sudFilter[2].clsID, CreateInstance<CRealVideoDecoder>, NULL, &RM::sudFilter[2]},
-	{RM::sudFilter[3].strName, RM::sudFilter[3].clsID, CreateInstance<CRealAudioDecoder>, NULL, &RM::sudFilter[3]},
-};
+	using namespace RM;
+	
+	RegisterFilter(sudFilter[0].strName, sudFilter[0].clsID, CreateInstance<CRealMediaSplitterFilter>, NULL, &sudFilter[0]);
+	RegisterSourceFilter(sudFilter[1].strName, sudFilter[1].clsID, CreateInstance<CRealMediaSourceFilter>, NULL, 
+		_T("0,4,,2E524D46"), _T(".rm"), _T(".rmvb"), _T(".ram"), NULL);
+	RegisterFilter(sudFilter[2].strName, sudFilter[2].clsID, CreateInstance<CRealVideoDecoder>, NULL, &sudFilter[2]);
+	RegisterFilter(sudFilter[3].strName, sudFilter[3].clsID, CreateInstance<CRealAudioDecoder>, NULL, &sudFilter[3]);
+}
