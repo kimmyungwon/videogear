@@ -47,3 +47,8 @@
 #include <dshow.h>
 #include <streams.h>
 #include <dvdmedia.h>
+#include <initguid.h>
+#include <moreuuids.h>
+
+#include <map>
+#include <boost/ptr_container/ptr_map.hpp>
