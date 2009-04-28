@@ -197,6 +197,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\RegisterAVI.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\RegisterMK.cpp"
 				>
 			</File>

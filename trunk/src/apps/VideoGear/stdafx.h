@@ -50,5 +50,6 @@
 #include <initguid.h>
 #include <moreuuids.h>
 
+#include <vector>
 #include <map>
 #include <boost/ptr_container/ptr_map.hpp>

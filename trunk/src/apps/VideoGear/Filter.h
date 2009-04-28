@@ -14,7 +14,7 @@ protected:
 class CInternalFilter : public CFilter
 {
 public:
-	CInternalFilter(LPCWSTR name, const CLSID& clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit = NULL);
+	CInternalFilter(LPCWSTR name, const CLSID& clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit);
 	virtual HRESULT CreateObject(IBaseFilter** ppvObj);
 private:
 	LPFNNewCOMObject	m_lpfnNew;

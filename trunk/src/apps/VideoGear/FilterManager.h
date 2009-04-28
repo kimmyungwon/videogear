@@ -35,6 +35,8 @@ public:
 		const AMOVIESETUP_FILTER* pAMovieSetup_Filter);
 	static void RegisterSourceFilter(const WCHAR* name, const CLSID* clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit, 
 		LPCTSTR chkbytes, LPCTSTR ext = NULL, ...);
+	static void RegisterSourceFilter(const WCHAR* name, const CLSID* clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit, 
+		const std::vector<CString>& chkbytes, LPCTSTR ext = NULL, ...);
 	static void RegisterInternalFilters(void);
 public:
 	CFilterManager(void);

@@ -39,8 +39,22 @@ void CFilterManager::RegisterFilter( const WCHAR* name, const CLSID* clsID, LPFN
 void CFilterManager::RegisterSourceFilter( const WCHAR* name, const CLSID* clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit, 
 										  LPCTSTR chkbytes, LPCTSTR ext /*= NULL*/, ... )
 {
+	ASSERT_POINTER(clsID, CLSID);
 
+	ms_regFilters.insert(GUID(*clsID), new CInternalFilter(name, *clsID, lpfnNew, lpfnInit));
 }
+
+void CFilterManager::RegisterSourceFilter( const WCHAR* name, const CLSID* clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit, 
+										  const std::vector<CString>& chkbytes, LPCTSTR ext /*= NULL*/, ... )
+{
+	ASSERT_POINTER(clsID, CLSID);
+
+	ms_regFilters.insert(GUID(*clsID), new CInternalFilter(name, *clsID, lpfnNew, lpfnInit));
+}
+
+#if SUPPORT_AVI
+void RegisterAVI(void);
+#endif
 
 #if SUPPORT_MK
 void RegisterMK(void);	
@@ -57,6 +71,9 @@ void CFilterManager::RegisterInternalFilters( void )
 #endif
 #if	SUPPORT_RM
 	RegisterRM();
+#endif
+#if SUPPORT_AVI
+	RegisterAVI();
 #endif
 }
 
