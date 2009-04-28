@@ -18,7 +18,7 @@ class CVideoGearApp : public CWinApp
 {
 public:
 	CVideoGearApp();
-
+	virtual ~CVideoGearApp();
 
 // ÖØÐ´
 public:
@@ -32,3 +32,7 @@ public:
 };
 
 extern CVideoGearApp theApp;
+
+//////////////////////////////////////////////////////////////////////////
+
+#define RIF(cond)	{HRESULT hr = (cond); if(FAILED(hr)) return hr;}

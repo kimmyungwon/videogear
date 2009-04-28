@@ -1,7 +1,7 @@
 #include "StdAfx.h"
 #include "Filter.h"
 
-CFilter::CFilter( LPCWSTR name, const CLSID& clsID )
+CFilter::CFilter( LPCTSTR name, const CLSID& clsID )
 : m_name(name), m_clsID(clsID)
 {
 
@@ -9,7 +9,7 @@ CFilter::CFilter( LPCWSTR name, const CLSID& clsID )
 
 //////////////////////////////////////////////////////////////////////////
 
-CInternalFilter::CInternalFilter( LPCWSTR name, const CLSID& clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit /*= NULL*/ )
+CInternalFilter::CInternalFilter( LPCTSTR name, const CLSID& clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit /*= NULL*/ )
 : CFilter(name, clsID), m_lpfnNew(lpfnNew), m_lpfnInit(lpfnInit)
 {
 }

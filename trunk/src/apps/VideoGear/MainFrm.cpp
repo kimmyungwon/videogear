@@ -24,7 +24,7 @@ END_MESSAGE_MAP()
 
 CMainFrame::CMainFrame()
 {
-	// TODO: 在此添加成员初始化代码
+	m_fm.AddSourceFilter(_T("E:\\test.rmvb"));
 }
 
 CMainFrame::~CMainFrame()

@@ -20,27 +20,44 @@ struct TMediaType
 			ret = memcmp(&subType, &rhs.subType, sizeof(GUID)); 
 		return ret < 0;
 	}
-};	
+};
 
-typedef boost::ptr_map<GUID, CFilter> TRegisteredFilters;
-typedef std::multimap<CString, GUID> TRegisteredExtensions;
-typedef std::multimap<TMediaType, GUID> TRegisteredInputMediaTypes;
+struct TCheckBytes
+{
+	CLSID clsID;
+	int64_t offset;
+	uint32_t length;
+	uint32_t mask;
+	std::string bytes;
+};
+
+typedef boost::ptr_map<CLSID, CFilter> TRegisteredFilters;
+typedef std::list<TCheckBytes> TRegisteredCheckBytes;
+typedef std::multimap<CString, CLSID> TRegisteredExtensions;
+typedef std::multimap<TMediaType, CLSID> TRegisteredInputMediaTypes;
 
 class CFilterManager
 {
 public:
 	static TRegisteredFilters ms_regFilters;
+	static TRegisteredCheckBytes ms_regChkBytes;
 	static TRegisteredExtensions ms_regExts;
 	static TRegisteredInputMediaTypes ms_regInputs;
 	
-	static void RegisterFilter(const WCHAR* name, const CLSID* clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit, 
+	static void RegisterFilter(LPCTSTR name, const CLSID* clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit, 
 		const AMOVIESETUP_FILTER* pAMovieSetup_Filter);
-	static void RegisterSourceFilter(const WCHAR* name, const CLSID* clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit, 
-		LPCTSTR chkbytes, LPCTSTR ext = NULL, ...);
-	static void RegisterSourceFilter(const WCHAR* name, const CLSID* clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit, 
+	static void RegisterSourceFilter(LPCTSTR name, const CLSID* clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit, 
+		CString chkbytes, LPCTSTR ext = NULL, ...);
+	static void RegisterSourceFilter(LPCTSTR name, const CLSID* clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit, 
 		const std::vector<CString>& chkbytes, LPCTSTR ext = NULL, ...);
 	static void RegisterInternalFilters(void);
 public:
 	CFilterManager(void);
 	virtual ~CFilterManager(void);
+	void Clear(void);
+	HRESULT AddSourceFilter(LPCTSTR fileName);
+protected:
+	bool CheckBytes(CFile& file, const TCheckBytes& chkbytes);
+private:
+	CComPtr<IFilterGraph2>	m_graph;
 };

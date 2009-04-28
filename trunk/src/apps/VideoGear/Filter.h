@@ -3,18 +3,19 @@
 class CFilter
 {
 public:
-	CFilter(LPCWSTR name, const CLSID& clsID);
+	CFilter(LPCTSTR name, const CLSID& clsID);
 	virtual ~CFilter(void)	{}
 	virtual HRESULT CreateObject(IBaseFilter** ppvObj) = 0;	
+	const CString& GetName(void)	{ return m_name; }
 protected:
-	CStringW	m_name;
-	CLSID		m_clsID;
+	CString	m_name;
+	CLSID	m_clsID;
 };
 
 class CInternalFilter : public CFilter
 {
 public:
-	CInternalFilter(LPCWSTR name, const CLSID& clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit);
+	CInternalFilter(LPCTSTR name, const CLSID& clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit);
 	virtual HRESULT CreateObject(IBaseFilter** ppvObj);
 private:
 	LPFNNewCOMObject	m_lpfnNew;
