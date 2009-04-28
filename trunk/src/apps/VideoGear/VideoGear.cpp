@@ -6,10 +6,14 @@
 #include "afxwinappex.h"
 #include "VideoGear.h"
 #include "MainFrm.h"
+#include "FilterManager.h"
 
+#ifdef _DEBUG
 #pragma comment(lib, "winmm.lib")
 #pragma comment(lib, "strmbaseDU.lib")
 #pragma comment(lib, "dsutilDU.lib")
+#pragma comment(lib, "zlibD.lib")
+#endif // _DEBUG
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -59,7 +63,9 @@ BOOL CVideoGearApp::InitInstance()
 	// 更改用于存储设置的注册表项
 	// TODO: 应适当修改该字符串，
 	// 例如修改为公司或组织名
-	SetRegistryKey(_T("应用程序向导生成的本地应用程序"));
+	//SetRegistryKey(_T("应用程序向导生成的本地应用程序"));
+
+	CFilterManager::RegisterInternalFilters();
 
 	// 若要创建主窗口，此代码将创建新的框架窗口
 	// 对象，然后将其设置为应用程序的主窗口对象
