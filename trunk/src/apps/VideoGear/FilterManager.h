@@ -23,12 +23,14 @@ struct TMediaType
 };	
 
 typedef boost::ptr_map<GUID, CFilter> TRegisteredFilters;
+typedef std::multimap<CString, GUID> TRegisteredExtensions;
 typedef std::multimap<TMediaType, GUID> TRegisteredInputMediaTypes;
 
 class CFilterManager
 {
 public:
 	static TRegisteredFilters ms_regFilters;
+	static TRegisteredExtensions ms_regExts;
 	static TRegisteredInputMediaTypes ms_regInputs;
 	
 	static void RegisterFilter(const WCHAR* name, const CLSID* clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit, 

@@ -10,6 +10,7 @@ bool operator< (const GUID& _left, const GUID& _right)
 //////////////////////////////////////////////////////////////////////////
 
 TRegisteredFilters CFilterManager::ms_regFilters;
+TRegisteredExtensions CFilterManager::ms_regExts;
 TRegisteredInputMediaTypes CFilterManager::ms_regInputs;
 
 void CFilterManager::RegisterFilter( const WCHAR* name, const CLSID* clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit, 
@@ -41,7 +42,14 @@ void CFilterManager::RegisterSourceFilter( const WCHAR* name, const CLSID* clsID
 {
 	ASSERT_POINTER(clsID, CLSID);
 
+	va_list args;
+	
 	ms_regFilters.insert(GUID(*clsID), new CInternalFilter(name, *clsID, lpfnNew, lpfnInit));
+
+	va_start(args, ext);
+	for (; ext != NULL; ext = va_arg(args, LPCTSTR))
+		ms_regExts.insert(std:: make_pair(CString(ext), *clsID));
+	va_end(args);
 }
 
 void CFilterManager::RegisterSourceFilter( const WCHAR* name, const CLSID* clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit, 
@@ -49,7 +57,14 @@ void CFilterManager::RegisterSourceFilter( const WCHAR* name, const CLSID* clsID
 {
 	ASSERT_POINTER(clsID, CLSID);
 
+	va_list args;
+	
 	ms_regFilters.insert(GUID(*clsID), new CInternalFilter(name, *clsID, lpfnNew, lpfnInit));
+
+	va_start(args, ext);
+	for (; ext != NULL; ext = va_arg(args, LPCTSTR))
+		ms_regExts.insert(std:: make_pair(CString(ext), *clsID));
+	va_end(args);
 }
 
 #if SUPPORT_AVI
