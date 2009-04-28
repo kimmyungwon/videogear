@@ -1,4 +1,5 @@
 #pragma once
 
 void HexToBin(LPCTSTR str, std::string& bytes);
-bool IsConnected(IPin* pin);
+bool IsPinConnected(IPin* pin);
+PIN_DIRECTION GetPinDir(IPin* pin);

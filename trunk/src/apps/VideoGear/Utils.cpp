@@ -16,11 +16,21 @@ void HexToBin(LPCTSTR str, std::string& bytes)
 	}
 }
 
-bool IsConnected(IPin* pin)
+bool IsPinConnected(IPin* pin)
 {
 	ASSERT(pin != NULL);
 
 	IPin* pinTo;
 
 	return (SUCCEEDED(pin->ConnectedTo(&pinTo)) && pinTo != NULL);
+}
+
+PIN_DIRECTION GetPinDir(IPin* pin)
+{
+	ASSERT(pin != NULL);
+
+	PIN_DIRECTION pinDir;
+
+	pin->QueryDirection(&pinDir);
+	return pinDir;
 }

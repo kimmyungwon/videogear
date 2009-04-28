@@ -139,7 +139,7 @@ void CFilterManager::Clear( void )
 	{
 		BeginEnumPins(filter, enumPins, pin)
 		{
-			if (IsConnected(pin))
+			if (IsPinConnected(pin))
 				m_graph->Disconnect(pin);
 		}
 		EndEnumPins
@@ -148,14 +148,17 @@ void CFilterManager::Clear( void )
 	EndEnumFilters
 }
 
-HRESULT CFilterManager::AddSourceFilter( LPCTSTR fileName )
+HRESULT CFilterManager::AddSourceFilter( LPCTSTR fileName, IBaseFilter*& filter )
 {
+	if (filter == NULL)
+		return E_POINTER;
+	
 	CFile file;
 	CFileException exception;
 	bool filterFound = false;
 	CLSID clsID;
-	CComPtr<IBaseFilter> filter;
-	CComPtr<IFileSourceFilter> source;
+	CComPtr<IBaseFilter> source;
+	CComPtr<IFileSourceFilter> fileSource;
 
 	if (!file.Open(fileName, CFile::modeRead | CFile::shareDenyNone, &exception))
 		return HRESULT_FROM_WIN32(exception.m_lOsError);
@@ -175,13 +178,27 @@ HRESULT CFilterManager::AddSourceFilter( LPCTSTR fileName )
 	TRegisteredFilters::iterator itFilter = ms_regFilters.find(clsID);
 	if (itFilter == ms_regFilters.end())
 		return VFW_E_CANNOT_LOAD_SOURCE_FILTER;
-	if (FAILED(itFilter->second->CreateObject(&filter))
-		|| FAILED(filter.QueryInterface(&source))
-		|| FAILED(source->Load(fileName, NULL))
-		|| FAILED(m_graph->AddFilter(filter, itFilter->second->GetName())))
+	if (FAILED(itFilter->second->CreateObject(&source))
+		|| FAILED(source.QueryInterface(&fileSource))
+		|| FAILED(fileSource->Load(fileName, NULL))
+		|| FAILED(m_graph->AddFilter(source, itFilter->second->GetName())))
 		return VFW_E_CANNOT_LOAD_SOURCE_FILTER;
-
+	
+	filter = source;
 	return S_OK;
+}
+
+HRESULT CFilterManager::Render( IBaseFilter* filter )
+{
+	if (filter == NULL)
+		return E_POINTER;
+
+	BeginEnumPins(filter, enumPins, outPin)
+	{
+		if (GetPinDir(outPin) != PINDIR_OUTPUT)
+			continue;
+	}
+	EndEnumPins
 }
 
 bool CFilterManager::CheckBytes( CFile& file, const TCheckBytes& chkbytes )

@@ -55,7 +55,8 @@ public:
 	CFilterManager(void);
 	virtual ~CFilterManager(void);
 	void Clear(void);
-	HRESULT AddSourceFilter(LPCTSTR fileName);
+	HRESULT AddSourceFilter(LPCTSTR fileName, IBaseFilter*& filter);
+	HRESULT Render(IBaseFilter* filter);
 protected:
 	bool CheckBytes(CFile& file, const TCheckBytes& chkbytes);
 private:
