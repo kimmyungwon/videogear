@@ -6,6 +6,7 @@
 #include "VideoGear.h"
 
 #include "MainFrm.h"
+#include "FilterManager.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -24,6 +25,12 @@ END_MESSAGE_MAP()
 
 CMainFrame::CMainFrame()
 {
+	CMediaType mt;
+	std::list<CFilter*> filter;
+	
+	mt.majortype = MEDIATYPE_Stream;
+	mt.subtype = MEDIASUBTYPE_NULL;
+	g_filterMan.EnumMatchingFilters(false, &mt, filter);
 }
 
 CMainFrame::~CMainFrame()
