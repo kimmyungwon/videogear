@@ -197,6 +197,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\RegisterAudioDec.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\RegisterAVI.cpp"
 				>
 			</File>
@@ -206,6 +210,10 @@
 			</File>
 			<File
 				RelativePath=".\RegisterRM.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RegisterVideoDec.cpp"
 				>
 			</File>
 			<File

@@ -5,9 +5,11 @@
 #include "Filter.h"
 #include "Util.h"
 
-#define SUPPORT_AVI	1
-#define SUPPORT_MK	1
-#define SUPPORT_RM	1
+#define SUPPORT_AVI			1
+#define SUPPORT_MK			1
+#define SUPPORT_RM			1
+#define SUPPORT_VIDEODEC	1
+#define SUPPORT_AUDIODEC	1
 
 struct MediaType
 {
@@ -41,7 +43,8 @@ public:
 	CFilterManager(void);
 	virtual ~CFilterManager(void);
 	void Initialize(void);
-	UINT EnumMatchingFilters(bool exactMatch, AM_MEDIA_TYPE* inputType, std::list<CFilter*>& filters);
+	HRESULT EnumMatchingFilters(bool exactMatch, AM_MEDIA_TYPE* inputType, std::list<CFilter*>& filters);
+	HRESULT EnumMatchingSource(LPCTSTR fileName, CSourceFilter*& filter);
 protected:
 	CFilter* RegisterFilter(LPCTSTR name, const CLSID* clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit, 
 		const AMOVIESETUP_FILTER* pAMovieSetup_Filter);
@@ -50,11 +53,15 @@ protected:
 	void RegisterAVI(void);
 	void RegisterMK(void);
 	void RegisterRM(void);
+	void RegisterVideoDec(void);
+	void RegisterAudioDec(void);
 private:
 	typedef boost::ptr_map<CLSID, CFilter> filters_t;
+	typedef boost::ptr_map<CLSID, CSourceFilter> sources_t;
 	typedef std::multimap<MediaType, CFilter*> input_types_t;  
 
 	filters_t		m_filters;
+	sources_t		m_sources;
 	input_types_t	m_inputTypes;
 };
 

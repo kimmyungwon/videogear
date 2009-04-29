@@ -49,15 +49,42 @@ public:
 		}
 		m_fileSigns.push_back(sign);
 	}
+
+	bool CheckSignature(CFile& file)
+	{
+		for (file_sign_list_t::const_iterator itSign = m_fileSigns.begin(); itSign != m_fileSigns.end(); itSign++)
+		{
+			bool matched = false;			
+			for (file_sign_t::parts_t::const_iterator itPart = itSign->parts.begin(); itPart != itSign->parts.end(); itPart++)
+			{
+				CAutoVectorPtr<char> buffer;
+				
+				file.Seek(itPart->offset, itPart->offset >= 0 ? CFile::begin : CFile::end);
+				buffer.Allocate(itPart->length);
+				if (file.Read(buffer.m_p, itPart->length) == itPart->length
+					&& memcmp(itPart->bytes.c_str(), buffer.m_p, itPart->length) == 0)
+					matched = true;
+				else
+				{
+					matched = false;
+					break;
+				}
+			}
+			if (matched)
+				return true;
+		}
+		return false;
+	}
 private:
 	struct file_sign_t
 	{
 		struct part_t{
 			LONGLONG offset;
 			UINT length;
-			CStringA bytes;
+			std::string bytes;
 		};
-		std::vector<part_t> parts;
+		typedef std::vector<part_t> parts_t;
+		parts_t parts;
 	};
 	typedef boost::ptr_vector<file_sign_t> file_sign_list_t;
 

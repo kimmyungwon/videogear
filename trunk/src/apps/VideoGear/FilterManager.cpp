@@ -22,6 +22,76 @@ void CFilterManager::Initialize( void )
 #if SUPPORT_RM
 	RegisterRM();
 #endif
+#if SUPPORT_VIDEODEC
+	RegisterVideoDec();
+#endif
+#if SUPPORT_AUDIODEC
+	RegisterAudioDec();
+#endif
+}
+
+HRESULT CFilterManager::EnumMatchingFilters( bool exactMatch, AM_MEDIA_TYPE* inputType, std::list<CFilter*>& filters )
+{
+	ASSERT(inputType != NULL);
+
+	MediaType reqType(*inputType);
+	bool found = false;
+
+	// 完全匹配
+	std::pair<input_types_t::const_iterator, input_types_t::const_iterator> pii = m_inputTypes.equal_range(reqType);
+	for (input_types_t::const_iterator it = pii.first; it != pii.second; it++)
+	{	
+		CFilter* filter = it->second;
+		if (std::find(filters.begin(), filters.end(), filter) == filters.end())
+			filters.push_back(filter);
+		found = true;
+	}
+	// 模糊匹配
+	if (!exactMatch && !(IsEqualGUID(inputType->majortype, GUID_NULL) && IsEqualGUID(inputType->subtype, GUID_NULL)))
+	{
+		if (!IsEqualGUID(inputType->majortype, GUID_NULL))
+		{
+			CMediaType mt(*inputType);
+			mt.majortype = GUID_NULL;
+			if (EnumMatchingFilters(true, &mt, filters) == S_OK)
+				found = true;
+		}
+		if (!IsEqualGUID(inputType->subtype, GUID_NULL))
+		{
+			CMediaType mt(*inputType);
+			mt.subtype = GUID_NULL;
+			if (EnumMatchingFilters(true, &mt, filters) == S_OK)
+				found = true;
+		}
+		if (!IsEqualGUID(inputType->majortype, GUID_NULL) && !IsEqualGUID(inputType->subtype, GUID_NULL))
+		{
+			CMediaType mt;
+			mt.majortype = GUID_NULL;
+			mt.subtype = GUID_NULL;
+			if (EnumMatchingFilters(true, &mt, filters) == S_OK)
+				found = true;
+		}
+	}
+	return found ? S_OK : E_FAIL;	
+}
+
+HRESULT CFilterManager::EnumMatchingSource( LPCTSTR fileName, CSourceFilter*& filter )
+{
+	CFile file;
+	CFileException exception;
+	
+	if (file.Open(fileName, CFile::modeRead | CFile::shareDenyNone, &exception))
+	{
+		for (sources_t::iterator it = m_sources.begin(); it != m_sources.end(); it++)
+		{
+			if (it->second->CheckSignature(file))
+			{
+				filter = it->second;
+				return S_OK;
+			}
+		}
+	}
+	return E_FAIL;
 }
 
 CFilter* CFilterManager::RegisterFilter( LPCTSTR name, const CLSID* clsID, LPFNNewCOMObject lpfnNew, 
@@ -53,42 +123,8 @@ CSourceFilter* CFilterManager::RegisterSourceFilter( LPCTSTR name, const CLSID* 
 	CSourceFilter* filter;
 
 	filter = new CInternalSourceFilter(name, *clsID, lpfnNew, lpfnInit);
-	m_filters.insert(CLSID(*clsID), filter);
+	m_sources.insert(CLSID(*clsID), filter);
 	for (size_t i = 0; i < chkbytesCount; i++)
 		filter->AddSignature(chkbytes[i]);
 	return filter;
-}
-
-UINT CFilterManager::EnumMatchingFilters( bool exactMatch, AM_MEDIA_TYPE* inputType, std::list<CFilter*>& filters )
-{
-	ASSERT(inputType != NULL);
-
-	MediaType reqType(*inputType);
-	UINT count = 0;
-
-	// 完全匹配
-	std::pair<input_types_t::const_iterator, input_types_t::const_iterator> pii = m_inputTypes.equal_range(reqType);
-	for (input_types_t::const_iterator it = pii.first; it != pii.second; it++)
-	{	
-		CFilter* filter = it->second;
-		filters.push_back(filter);
-		count++;
-	}
-	// 模糊匹配
-	if (!exactMatch && !(IsEqualGUID(inputType->majortype, GUID_NULL) && IsEqualGUID(inputType->subtype, GUID_NULL)))
-	{
-		if (!IsEqualGUID(inputType->majortype, GUID_NULL))
-		{
-			CMediaType mt(*inputType);
-			mt.majortype = GUID_NULL;
-			count += EnumMatchingFilters(true, &mt, filters);
-		}
-		if (!IsEqualGUID(inputType->subtype, GUID_NULL))
-		{
-			CMediaType mt(*inputType);
-			mt.subtype = GUID_NULL;
-			count += EnumMatchingFilters(true, &mt, filters);
-		}
-	}
-	return count;	
 }

@@ -7,9 +7,13 @@ class CFilterGraph
 public:
 	CFilterGraph(void);
 	virtual ~CFilterGraph(void);
-	void Initialize(void);
+	HRESULT Initialize(void);
+	HRESULT RenderFile(LPCWSTR fileName);
 protected:
-	void ClearGraph(void);
+	HRESULT ClearGraph(void);
+	HRESULT InitRenderers(void);
+	HRESULT Render(IBaseFilter* filter);
+	HRESULT ConnectDirect(IPin* outPin, IBaseFilter* inFilter, AM_MEDIA_TYPE* pmt);
 private:
 	CComPtr<IGraphBuilder>	m_graph;
 };

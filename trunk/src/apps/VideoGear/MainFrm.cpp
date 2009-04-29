@@ -6,6 +6,7 @@
 #include "VideoGear.h"
 
 #include "MainFrm.h"
+#include "FilterGraph.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -24,6 +25,10 @@ END_MESSAGE_MAP()
 
 CMainFrame::CMainFrame()
 {
+	CFilterGraph graph;
+
+	graph.Initialize();
+	graph.RenderFile(L"e:\\test.avi");
 }
 
 CMainFrame::~CMainFrame()
