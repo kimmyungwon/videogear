@@ -69,7 +69,7 @@ BOOL CVideoGearApp::InitInstance()
 	// 例如修改为公司或组织名
 	//SetRegistryKey(_T("应用程序向导生成的本地应用程序"));
 
-	CFilterManager::RegisterInternalFilters();
+	g_filterMan.Initialize();
 
 	// 若要创建主窗口，此代码将创建新的框架窗口
 	// 对象，然后将其设置为应用程序的主窗口对象

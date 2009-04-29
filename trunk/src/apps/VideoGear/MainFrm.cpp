@@ -24,10 +24,6 @@ END_MESSAGE_MAP()
 
 CMainFrame::CMainFrame()
 {
-	IBaseFilter* source;
-	
-	m_fm.AddSourceFilter(_T("E:\\test.rmvb"), source);
-	m_fm.Render(source);
 }
 
 CMainFrame::~CMainFrame()

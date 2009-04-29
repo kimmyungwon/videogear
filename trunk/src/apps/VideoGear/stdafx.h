@@ -49,9 +49,9 @@
 #include <dvdmedia.h>
 #include <initguid.h>
 #include <moreuuids.h>
-#include <stdint.h>
 
 #include <vector>
 #include <list>
 #include <map>
+#include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/ptr_container/ptr_map.hpp>

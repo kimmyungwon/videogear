@@ -25,16 +25,14 @@ namespace AVI
 	};
 };
 
-void RegisterAVI(void)
+void CFilterManager::RegisterAVI(void)
 {
 	using namespace AVI;
 	
-	std::vector<CString> chkbytes;
-	chkbytes.push_back(_T("0,4,,52494646,8,4,,41564920")); // 'RIFF' ... 'AVI '
-	chkbytes.push_back(_T("0,4,,52494646,8,4,,41564958")); // 'RIFF' ... 'AVIX'
-	chkbytes.push_back(_T("0,4,,52494646,8,4,,414D5620")); // 'RIFF' ... 'AMV '
-	
-	CFilterManager::RegisterFilter(sudFilter[0].strName, sudFilter[0].clsID, CreateInstance<CAviSplitterFilter>, NULL, &sudFilter[0]);
-	CFilterManager::RegisterSourceFilter(sudFilter[1].strName, sudFilter[1].clsID, CreateInstance<CAviSourceFilter>, NULL,
-		chkbytes, _T(".avi"), _T(".divx"), _T(".vp6"), _T(".amv"), NULL);
+	RegisterFilter(sudFilter[0].strName, sudFilter[0].clsID, CreateInstance<CAviSplitterFilter>, NULL, &sudFilter[0]);
+	RegisterSourceFilter(sudFilter[1].strName, sudFilter[1].clsID, CreateInstance<CAviSourceFilter>, NULL,
+		ARRAYOF(LPCTSTR, _T("0,4,,52494646,8,4,,41564920"),	// 'RIFF' ... 'AVI '
+						_T("0,4,,52494646,8,4,,41564958"),	// 'RIFF' ... 'AVIX'
+						_T("0,4,,52494646,8,4,,414D5620")	// 'RIFF' ... 'AMV '
+		), ARRAYOF(LPCTSTR, _T(".avi"), _T(".divx"), _T(".vp6"), _T(".amv")));
 }

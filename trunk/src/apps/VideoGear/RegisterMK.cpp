@@ -25,11 +25,11 @@ namespace MK
 	};
 };
 
-void RegisterMK(void)
+void CFilterManager::RegisterMK(void)
 {
 	using namespace MK;
 
-	CFilterManager::RegisterFilter(sudFilter[0].strName, sudFilter[0].clsID, CreateInstance<CMatroskaSplitterFilter>, NULL, &sudFilter[0]);
-	CFilterManager::RegisterSourceFilter(sudFilter[1].strName, sudFilter[1].clsID, CreateInstance<CMatroskaSourceFilter>, NULL,
-		_T("0,4,,1A45DFA3"), _T(".mkv"), _T(".mka"), _T(".mks"), NULL);
+	RegisterFilter(sudFilter[0].strName, sudFilter[0].clsID, CreateInstance<CMatroskaSplitterFilter>, NULL, &sudFilter[0]);
+	RegisterSourceFilter(sudFilter[1].strName, sudFilter[1].clsID, CreateInstance<CMatroskaSourceFilter>, NULL,
+		ARRAYOF(LPCTSTR, _T("0,4,,1A45DFA3")), ARRAYOF(LPCTSTR, _T(".mkv"), _T(".mka"), _T(".mks")));
 }

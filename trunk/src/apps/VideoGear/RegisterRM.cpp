@@ -77,13 +77,13 @@ namespace RM
 	};
 };
 
-void RegisterRM(void)
+void CFilterManager::RegisterRM(void)
 {
 	using namespace RM;
 	
-	CFilterManager::RegisterFilter(sudFilter[0].strName, sudFilter[0].clsID, CreateInstance<CRealMediaSplitterFilter>, NULL, &sudFilter[0]);
-	CFilterManager::RegisterSourceFilter(sudFilter[1].strName, sudFilter[1].clsID, CreateInstance<CRealMediaSourceFilter>, NULL, 
-		_T("0,4,,2E524D46"), _T(".rm"), _T(".rmvb"), _T(".ram"), NULL);
-	CFilterManager::RegisterFilter(sudFilter[2].strName, sudFilter[2].clsID, CreateInstance<CRealVideoDecoder>, NULL, &sudFilter[2]);
-	CFilterManager::RegisterFilter(sudFilter[3].strName, sudFilter[3].clsID, CreateInstance<CRealAudioDecoder>, NULL, &sudFilter[3]);
+	RegisterFilter(sudFilter[0].strName, sudFilter[0].clsID, CreateInstance<CRealMediaSplitterFilter>, NULL, &sudFilter[0]);
+	RegisterSourceFilter(sudFilter[1].strName, sudFilter[1].clsID, CreateInstance<CRealMediaSourceFilter>, NULL, 
+		ARRAYOF(LPCTSTR, _T("0,4,,2E524D46")), ARRAYOF(LPCTSTR, _T(".rm"), _T(".rmvb"), _T(".ram")));
+	RegisterFilter(sudFilter[2].strName, sudFilter[2].clsID, CreateInstance<CRealVideoDecoder>, NULL, &sudFilter[2]);
+	RegisterFilter(sudFilter[3].strName, sudFilter[3].clsID, CreateInstance<CRealAudioDecoder>, NULL, &sudFilter[3]);
 }
