@@ -59,17 +59,36 @@ CSourceFilter* CFilterManager::RegisterSourceFilter( LPCTSTR name, const CLSID* 
 	return filter;
 }
 
-bool CFilterManager::EnumMatchingFilters( bool exactMatch, AM_MEDIA_TYPE* inputType, std::list<CFilter*>& filters )
+UINT CFilterManager::EnumMatchingFilters( bool exactMatch, AM_MEDIA_TYPE* inputType, std::list<CFilter*>& filters )
 {
 	ASSERT(inputType != NULL);
 
 	MediaType reqType(*inputType);
+	UINT count = 0;
 
+	// ÍêÈ«Æ¥Åä
 	std::pair<input_types_t::const_iterator, input_types_t::const_iterator> pii = m_inputTypes.equal_range(reqType);
 	for (input_types_t::const_iterator it = pii.first; it != pii.second; it++)
 	{	
 		CFilter* filter = it->second;
 		filters.push_back(filter);
+		count++;
 	}
-	return true;	
+	// Ä£ºýÆ¥Åä
+	if (!exactMatch && !(IsEqualGUID(inputType->majortype, GUID_NULL) && IsEqualGUID(inputType->subtype, GUID_NULL)))
+	{
+		if (!IsEqualGUID(inputType->majortype, GUID_NULL))
+		{
+			CMediaType mt(*inputType);
+			mt.majortype = GUID_NULL;
+			count += EnumMatchingFilters(true, &mt, filters);
+		}
+		if (!IsEqualGUID(inputType->subtype, GUID_NULL))
+		{
+			CMediaType mt(*inputType);
+			mt.subtype = GUID_NULL;
+			count += EnumMatchingFilters(true, &mt, filters);
+		}
+	}
+	return count;	
 }

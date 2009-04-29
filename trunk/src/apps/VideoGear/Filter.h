@@ -12,7 +12,8 @@ public:
 
 	virtual ~CFilter(void)	{}
 	virtual HRESULT CreateObject(IBaseFilter** ppvObj) = 0;	
-	const CString& GetName(void)	{ return m_name; }
+	const CString& GetName(void) const	{ return m_name; }
+	const CLSID& GetClassID(void) const	{ return m_clsID; }
 protected:
 	CString	m_name;
 	CLSID	m_clsID;

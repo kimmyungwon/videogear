@@ -41,7 +41,7 @@ public:
 	CFilterManager(void);
 	virtual ~CFilterManager(void);
 	void Initialize(void);
-	bool EnumMatchingFilters(bool exactMatch, AM_MEDIA_TYPE* inputType, std::list<CFilter*>& filters);
+	UINT EnumMatchingFilters(bool exactMatch, AM_MEDIA_TYPE* inputType, std::list<CFilter*>& filters);
 protected:
 	CFilter* RegisterFilter(LPCTSTR name, const CLSID* clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit, 
 		const AMOVIESETUP_FILTER* pAMovieSetup_Filter);
