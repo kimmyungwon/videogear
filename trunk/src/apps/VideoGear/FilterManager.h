@@ -16,6 +16,12 @@ struct MediaType
 	GUID major;
 	GUID minor;
 
+	MediaType(const GUID& ma, const GUID& mi)
+	{
+		major = ma;
+		minor = mi;
+	}
+
 	MediaType(const REGPINTYPES& rpt)
 	{
 		major = *rpt.clsMajorType;
@@ -43,7 +49,7 @@ public:
 	CFilterManager(void);
 	virtual ~CFilterManager(void);
 	void Initialize(void);
-	HRESULT EnumMatchingFilters(bool exactMatch, AM_MEDIA_TYPE* inputType, std::list<CFilter*>& filters);
+	HRESULT EnumMatchingFilters(bool exactMatch, const GUID* inputTypes, size_t inputTypeCount, std::list<CFilter*>& filters);
 	HRESULT EnumMatchingSource(LPCTSTR fileName, CSourceFilter*& filter);
 protected:
 	CFilter* RegisterFilter(LPCTSTR name, const CLSID* clsID, LPFNNewCOMObject lpfnNew, LPFNInitRoutine lpfnInit, 

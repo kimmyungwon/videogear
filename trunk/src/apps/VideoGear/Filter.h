@@ -29,22 +29,18 @@ public:
 
 	virtual void AddSignature(const CString& chkbytes)
 	{
-		std::list<CString> tokens;
+		CAtlList<CString> tokens;
 		file_sign_t* sign;
 		
 		sign = new file_sign_t;
-		ExtractStrings(_T(','), chkbytes, tokens);
-		while (tokens.size() >= 4)
+		Explode(chkbytes, tokens, _T(','));
+		while (tokens.GetCount() >= 4)
 		{
-			file_sign_t::part_t part;
-			
-			part.offset = _tcstoi64(tokens.front(), NULL, 10);
-			tokens.pop_front();
-			part.length = _tcstol(tokens.front(), NULL, 10);
-			tokens.pop_front();
-			tokens.pop_front();	// ºöÂÔmask
-			HexToBin(tokens.front(), part.bytes);
-			tokens.pop_front();
+			file_sign_t::part_t* part = new file_sign_t::part_t;
+			part->offset = _tcstoi64(tokens.RemoveHead(), NULL, 10);
+			part->length = _tcstol(tokens.RemoveHead(), NULL, 10);
+			tokens.RemoveHeadNoReturn();	// ºöÂÔmask
+			CStringToBin(tokens.RemoveHead(), part->bytes);
 			sign->parts.push_back(part);
 		}
 		m_fileSigns.push_back(sign);
@@ -57,12 +53,12 @@ public:
 			bool matched = false;			
 			for (file_sign_t::parts_t::const_iterator itPart = itSign->parts.begin(); itPart != itSign->parts.end(); itPart++)
 			{
-				CAutoVectorPtr<char> buffer;
+				CAutoVectorPtr<BYTE> buffer;
 				
 				file.Seek(itPart->offset, itPart->offset >= 0 ? CFile::begin : CFile::end);
 				buffer.Allocate(itPart->length);
 				if (file.Read(buffer.m_p, itPart->length) == itPart->length
-					&& memcmp(itPart->bytes.c_str(), buffer.m_p, itPart->length) == 0)
+					&& memcmp(itPart->bytes.GetData(), buffer.m_p, itPart->length) == 0)
 					matched = true;
 				else
 				{
@@ -81,9 +77,9 @@ private:
 		struct part_t{
 			LONGLONG offset;
 			UINT length;
-			std::string bytes;
+			CAtlArray<BYTE> bytes;
 		};
-		typedef std::vector<part_t> parts_t;
+		typedef boost::ptr_vector<part_t> parts_t;
 		parts_t parts;
 	};
 	typedef boost::ptr_vector<file_sign_t> file_sign_list_t;

@@ -22,6 +22,7 @@ HRESULT CFilterGraph::RenderFile( LPCWSTR fileName )
 	CSourceFilter* source;
 	CComPtr<IBaseFilter> filter;
 	CComPtr<IFileSourceFilter> fileSrc;
+	HRESULT hr;
 	
 	if (m_graph == NULL)
 		return E_UNEXPECTED;
@@ -33,10 +34,12 @@ HRESULT CFilterGraph::RenderFile( LPCWSTR fileName )
 		&& SUCCEEDED(fileSrc->Load(fileName, NULL))
 		&& SUCCEEDED(m_graph->AddFilter(filter, source->GetName())))
 	{
-		return Render(filter);
+		if (SUCCEEDED(hr = Render(filter)))
+			return hr;
+		NukeDownstream(filter);
+		m_graph->RemoveFilter(filter);
 	}
-	else
-		return VFW_E_CANNOT_RENDER;
+	return VFW_E_CANNOT_RENDER;
 }
 
 HRESULT CFilterGraph::ClearGraph( void )
@@ -51,13 +54,8 @@ HRESULT CFilterGraph::ClearGraph( void )
 
 	for (std::vector<IBaseFilter*>::iterator it = filters.begin(); it != filters.end(); it++)
 	{
-		IBaseFilter* filter = *it;
-		BeginEnumPins(filter, enumPins, pin)
-		{
-			RIF(m_graph->Disconnect(pin));
-		}
-		EndEnumPins
-		RIF(m_graph->RemoveFilter(filter));
+		NukeDownstream(*it);
+		m_graph->RemoveFilter(*it);
 	}
 
 	return S_OK;
@@ -89,70 +87,18 @@ HRESULT CFilterGraph::Render( IBaseFilter* filter )
 		if (IsPinConnected(outPin) || GetPinDir(outPin) != PINDIR_OUTPUT)
 			continue;
 		totalCount++;
+
 		XTRACE(_T("正在渲染[%s(%s)]\n"), GetFilterName(filter), GetPinName(outPin));
-
-		/* 优先使用已缓存的滤镜 */
-
-		BeginEnumFilters(m_graph, enumCachedFilters, cachedFilter)
+		if (SUCCEEDED(Render(outPin)))
 		{
-			if (!IsEqualCLSID(GetCLSID(filter), GetCLSID(cachedFilter)))
-				cachedFilters.push_back(cachedFilter);
+			XTRACE(_T("渲染[%s(%s)]成功\n"), GetFilterName(filter), GetPinName(outPin));
+			renderedCount++;
 		}
-		EndEnumFilters
-
-		for (std::vector<IBaseFilter*>::iterator it = cachedFilters.begin(); it != cachedFilters.end(); it++)
+		else
 		{
-			XTRACE(_T("尝试渲染[%s(%s)]->[%s]\n"), GetFilterName(filter), GetPinName(outPin), GetFilterName(*it));
-			if (SUCCEEDED(ConnectDirect(outPin, *it, NULL)) && SUCCEEDED(Render(*it)))
-			{
-				XTRACE(_T("成功渲染[%s(%s)]->[%s]\n"), GetFilterName(filter), GetPinName(outPin), GetFilterName(*it));
-				rendered = true;
-				renderedCount++;
-				break;
-			}
+			XTRACE(_T("渲染[%s(%s)]失败\n"), GetFilterName(filter), GetPinName(outPin));
+			NukeDownstream(outPin);
 		}
-		cachedFilters.clear();
-		if (rendered)
-			continue;
-
-		/* 使用内部滤镜 */
-
-		BeginEnumMediaTypes(outPin, enumTypes, pmt)
-		{
-			std::list<CFilter*> filters;
-			
-			if (g_filterMan.EnumMatchingFilters(false, pmt, filters) != S_OK)
-				continue;
-
-			for (std::list<CFilter*>::iterator it = filters.begin(); it != filters.end(); it++)
-			{
-				CComPtr<IBaseFilter> inFilter;
-				
-				if (FAILED((*it)->CreateObject(&inFilter)))
-					continue;
-
-				XTRACE(_T("尝试渲染[%s(%s)]->[%s]\n"), GetFilterName(filter), GetPinName(outPin), (*it)->GetName());
-				m_graph->AddFilter(inFilter, (*it)->GetName());
-				if (SUCCEEDED(ConnectDirect(outPin, inFilter, pmt)) && SUCCEEDED(Render(inFilter)))
-				{
-					XTRACE(_T("成功渲染[%s(%s)]->[%s]\n"), GetFilterName(filter), GetPinName(outPin), (*it)->GetName());
-					rendered = true;
-					renderedCount++;
-					break;
-				}
-				else
-				{
-					m_graph->RemoveFilter(inFilter);
-				}
-			}
-			if (rendered)
-				break;
-		}
-		EndEnumMediaTypes(pmt)
-		if (rendered)
-			continue;
-
-		XTRACE(_T("渲染[%s(%s)]失败\n"), GetFilterName(filter), GetPinName(outPin));
 	}
 	EndEnumPins
 
@@ -172,6 +118,69 @@ HRESULT CFilterGraph::Render( IBaseFilter* filter )
 		return S_OK;
 }
 
+HRESULT CFilterGraph::Render( IPin* pin )
+{
+	if (pin == NULL || IsPinConnected(pin) || GetPinDir(pin) != PINDIR_OUTPUT)
+		return E_INVALIDARG;
+
+	/* 1、使用已有的滤镜 */
+	{
+		CInterfaceList<IBaseFilter> cachedFilters;
+
+		BeginEnumFilters(m_graph, enumCachedFilters, cachedFilter)
+		{
+			if (!IsEqualCLSID(GetCLSID(GetFilterFromPin(pin)), GetCLSID(cachedFilter)))
+				cachedFilters.AddTail(cachedFilter);
+		}
+		EndEnumFilters
+
+		POSITION pos = cachedFilters.GetHeadPosition();
+		while (pos != NULL)
+		{
+			IBaseFilter* inFilter = cachedFilters.GetNext(pos);
+			XTRACE(_T("尝试渲染[%s(%s)]->[%s]\n"), GetFilterName(GetFilterFromPin(pin)), GetPinName(pin), GetFilterName(inFilter));
+			if (SUCCEEDED(ConnectDirect(pin, inFilter, NULL)))
+			{	
+				HRESULT hr = Render(inFilter);
+				if (SUCCEEDED(hr))
+					return hr;
+				m_graph->Disconnect(pin);
+			}
+		}
+	}
+
+	/* 2、使用内部滤镜 */
+	{
+		CAtlArray<GUID> types;
+		std::list<CFilter*> filters;
+
+		ExtractMediaTypes(pin, types);
+		if (SUCCEEDED(g_filterMan.EnumMatchingFilters(false, types.GetData(), types.GetCount(), filters)))
+		{
+			for (std::list<CFilter*>::iterator it = filters.begin(); it != filters.end(); it++)
+			{
+				CComPtr<IBaseFilter> inFilter;
+
+				if (FAILED((*it)->CreateObject(&inFilter)))
+					continue;
+				XTRACE(_T("尝试渲染[%s(%s)]->[%s]\n"), GetFilterName(GetFilterFromPin(pin)), GetPinName(pin), (*it)->GetName());
+				m_graph->AddFilter(inFilter, (*it)->GetName());
+				if (SUCCEEDED(ConnectDirect(pin, inFilter, NULL)))
+				{
+					HRESULT hr = Render(inFilter);
+					if (SUCCEEDED(hr))
+						return hr;
+					m_graph->Disconnect(pin);
+				}
+				NukeDownstream(inFilter);
+				m_graph->RemoveFilter(inFilter);
+			}
+		}
+	}
+
+	return VFW_E_CANNOT_RENDER;
+}
+
 HRESULT CFilterGraph::ConnectDirect( IPin* outPin, IBaseFilter* inFilter, AM_MEDIA_TYPE* pmt )
 {
 	BeginEnumPins(inFilter, enumPins, inPin)
@@ -183,4 +192,38 @@ HRESULT CFilterGraph::ConnectDirect( IPin* outPin, IBaseFilter* inFilter, AM_MED
 	}
 	EndEnumPins
 	return VFW_E_CANNOT_CONNECT;
+}
+
+HRESULT CFilterGraph::NukeDownstream( IUnknown* unk )
+{
+	if(CComQIPtr<IBaseFilter> filter = unk)
+	{
+		BeginEnumPins(filter, enumPins, pin)
+		{
+			NukeDownstream(pin);
+		}
+		EndEnumPins
+	}
+	else if(CComQIPtr<IPin> pin = unk)
+	{
+		CComPtr<IPin> pinTo;
+
+		if(GetPinDir(pin) == PINDIR_OUTPUT
+			&& SUCCEEDED(pin->ConnectedTo(&pinTo)) && pinTo != NULL)
+		{
+			if(CComPtr<IBaseFilter> filter = GetFilterFromPin(pinTo))
+			{
+				NukeDownstream(filter);
+				m_graph->Disconnect(pinTo);
+				m_graph->Disconnect(pin);
+				m_graph->RemoveFilter(filter);
+			}
+		}
+	}
+	else
+	{
+		return E_INVALIDARG;
+	}
+
+	return S_OK;
 }

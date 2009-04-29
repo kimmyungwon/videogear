@@ -10,9 +10,11 @@ public:
 	HRESULT Initialize(void);
 	HRESULT RenderFile(LPCWSTR fileName);
 protected:
+	HRESULT NukeDownstream(IUnknown* unk);
 	HRESULT ClearGraph(void);
 	HRESULT InitRenderers(void);
 	HRESULT Render(IBaseFilter* filter);
+	HRESULT Render(IPin* pin);
 	HRESULT ConnectDirect(IPin* outPin, IBaseFilter* inFilter, AM_MEDIA_TYPE* pmt);
 private:
 	CComPtr<IGraphBuilder>	m_graph;

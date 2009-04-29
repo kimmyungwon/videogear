@@ -30,49 +30,49 @@ void CFilterManager::Initialize( void )
 #endif
 }
 
-HRESULT CFilterManager::EnumMatchingFilters( bool exactMatch, AM_MEDIA_TYPE* inputType, std::list<CFilter*>& filters )
+HRESULT CFilterManager::EnumMatchingFilters( bool exactMatch, const GUID* inputTypes, size_t inputTypeCount, std::list<CFilter*>& filters )
 {
-	ASSERT(inputType != NULL);
+	ASSERT(inputTypes != NULL);
 
-	MediaType reqType(*inputType);
 	bool found = false;
 
-	// ÍêÈ«Æ¥Åä
-	std::pair<input_types_t::const_iterator, input_types_t::const_iterator> pii = m_inputTypes.equal_range(reqType);
-	for (input_types_t::const_iterator it = pii.first; it != pii.second; it++)
-	{	
-		CFilter* filter = it->second;
-		if (std::find(filters.begin(), filters.end(), filter) == filters.end())
-			filters.push_back(filter);
-		found = true;
-	}
-	// Ä£ºýÆ¥Åä
-	if (!exactMatch && !(IsEqualGUID(inputType->majortype, GUID_NULL) && IsEqualGUID(inputType->subtype, GUID_NULL)))
+	for (size_t iType = 0; iType < inputTypeCount; iType += 2)
 	{
-		if (!IsEqualGUID(inputType->majortype, GUID_NULL))
-		{
-			CMediaType mt(*inputType);
-			mt.majortype = GUID_NULL;
-			if (EnumMatchingFilters(true, &mt, filters) == S_OK)
-				found = true;
+		MediaType reqType(inputTypes[iType], inputTypes[iType + 1]);
+
+		// ÍêÈ«Æ¥Åä
+		std::pair<input_types_t::const_iterator, input_types_t::const_iterator> pii = m_inputTypes.equal_range(reqType);
+		for (input_types_t::const_iterator it = pii.first; it != pii.second; it++)
+		{	
+			CFilter* filter = it->second;
+			if (std::find(filters.begin(), filters.end(), filter) == filters.end())
+				filters.push_back(filter);
+			found = true;
 		}
-		if (!IsEqualGUID(inputType->subtype, GUID_NULL))
+		// Ä£ºýÆ¥Åä
+		if (!exactMatch && !(IsEqualGUID(reqType.major, GUID_NULL) && IsEqualGUID(reqType.minor, GUID_NULL)))
 		{
-			CMediaType mt(*inputType);
-			mt.subtype = GUID_NULL;
-			if (EnumMatchingFilters(true, &mt, filters) == S_OK)
-				found = true;
-		}
-		if (!IsEqualGUID(inputType->majortype, GUID_NULL) && !IsEqualGUID(inputType->subtype, GUID_NULL))
-		{
-			CMediaType mt;
-			mt.majortype = GUID_NULL;
-			mt.subtype = GUID_NULL;
-			if (EnumMatchingFilters(true, &mt, filters) == S_OK)
-				found = true;
+			if (!IsEqualGUID(reqType.major, GUID_NULL))
+			{
+				GUID types[] = {GUID_NULL, reqType.minor};
+				if (EnumMatchingFilters(true, types, 2, filters) == S_OK)
+					found = true;
+			}
+			if (!IsEqualGUID(reqType.minor, GUID_NULL))
+			{
+				GUID types[] = {reqType.major, GUID_NULL};
+				if (EnumMatchingFilters(true, types, 2, filters) == S_OK)
+					found = true;
+			}
+			if (!IsEqualGUID(reqType.major, GUID_NULL) && !IsEqualGUID(reqType.minor, GUID_NULL))
+			{
+				GUID types[] = {GUID_NULL, GUID_NULL};
+				if (EnumMatchingFilters(true, types, 2, filters) == S_OK)
+					found = true;
+			}
 		}
 	}
-	return found ? S_OK : E_FAIL;	
+	return found ? S_OK : E_FAIL;
 }
 
 HRESULT CFilterManager::EnumMatchingSource( LPCTSTR fileName, CSourceFilter*& filter )
