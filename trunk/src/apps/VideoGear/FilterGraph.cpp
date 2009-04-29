@@ -41,7 +41,7 @@ HRESULT CFilterGraph::RenderFile( LPCWSTR fileName )
 
 HRESULT CFilterGraph::ClearGraph( void )
 {	
-	std::vector<CComPtr<IBaseFilter> > filters;
+	std::vector<IBaseFilter*> filters;
 	
 	BeginEnumFilters(m_graph, enumFilters, filter)
 	{
@@ -49,16 +49,15 @@ HRESULT CFilterGraph::ClearGraph( void )
 	}
 	EndEnumFilters
 
-	for (std::vector<CComPtr<IBaseFilter> >::iterator it = filters.begin(); it != filters.end(); it++)
+	for (std::vector<IBaseFilter*>::iterator it = filters.begin(); it != filters.end(); it++)
 	{
-		CComPtr<IBaseFilter>& filter = *it;
+		IBaseFilter* filter = *it;
 		BeginEnumPins(filter, enumPins, pin)
 		{
 			RIF(m_graph->Disconnect(pin));
 		}
 		EndEnumPins
 		RIF(m_graph->RemoveFilter(filter));
-		filter.Release();
 	}
 
 	return S_OK;
@@ -85,7 +84,7 @@ HRESULT CFilterGraph::Render( IBaseFilter* filter )
 	BeginEnumPins(filter, enumPins, outPin)
 	{
 		bool rendered = false;
-		std::vector<CComPtr<IBaseFilter> > cachedFilters;
+		std::vector<IBaseFilter*> cachedFilters;
 		
 		if (IsPinConnected(outPin) || GetPinDir(outPin) != PINDIR_OUTPUT)
 			continue;
@@ -101,7 +100,7 @@ HRESULT CFilterGraph::Render( IBaseFilter* filter )
 		}
 		EndEnumFilters
 
-		for (std::vector<CComPtr<IBaseFilter> >::iterator it = cachedFilters.begin(); it != cachedFilters.end(); it++)
+		for (std::vector<IBaseFilter*>::iterator it = cachedFilters.begin(); it != cachedFilters.end(); it++)
 		{
 			XTRACE(_T("³¢ÊÔäÖÈ¾[%s(%s)]->[%s]\n"), GetFilterName(filter), GetPinName(outPin), GetFilterName(*it));
 			if (SUCCEEDED(ConnectDirect(outPin, *it, NULL)) && SUCCEEDED(Render(*it)))
