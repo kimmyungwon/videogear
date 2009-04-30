@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="gb2312"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="common"
+	OutputDirectory="$(SolutionDir)..\bin\$(PlatformName)_$(ConfigurationName)"
+	IntermediateDirectory="$(SolutionDir)..\obj\$(PlatformName)_$(ConfigurationName)\$(ProjectName)"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalIncludeDirectories="$(SolutionDir)..\inc"
+	/>
+</VisualStudioPropertySheet>
