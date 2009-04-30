@@ -22,6 +22,7 @@
 
 #include <afxwin.h>         // MFC 核心组件和标准组件
 #include <afxext.h>         // MFC 扩展
+#include <afxmt.h>
 
 #ifdef _UNICODE
 #if defined _M_IX86
@@ -35,4 +36,8 @@
 #endif
 #endif
 
+#include <stdint.h>
+#include <vector>
+#include <map>
+#include <rpc.h>
 #include <dshow.h>

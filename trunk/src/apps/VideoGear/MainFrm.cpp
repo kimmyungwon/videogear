@@ -6,6 +6,7 @@
 #include "VideoGear.h"
 
 #include "MainFrm.h"
+#include "FakeFilterMapper2.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -24,7 +25,9 @@ END_MESSAGE_MAP()
 
 CMainFrame::CMainFrame()
 {
-	// TODO: 在此添加成员初始化代码
+	CFakeFilterMapper2 fm2;
+
+	fm2.Register(_T("RealMediaSplitter.ax"));
 }
 
 CMainFrame::~CMainFrame()

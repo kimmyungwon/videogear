@@ -18,7 +18,7 @@ class CVideoGearApp : public CWinApp
 {
 public:
 	CVideoGearApp();
-
+	virtual ~CVideoGearApp();
 
 // ÖØÐ´
 public:

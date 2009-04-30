@@ -24,9 +24,12 @@ END_MESSAGE_MAP()
 
 CVideoGearApp::CVideoGearApp()
 {
+	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+}
 
-	// TODO: 在此处添加构造代码，
-	// 将所有重要的初始化放置在 InitInstance 中
+CVideoGearApp::~CVideoGearApp()
+{
+	CoUninitialize();
 }
 
 // 唯一的一个 CVideoGearApp 对象
