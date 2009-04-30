@@ -684,11 +684,8 @@ LSTATUS
 //////////////////////////////////////////////////////////////////////////
 
 #define FAKEHKEY			((HKEY)0x40000000)
-#define MakeFHKEY(id)		((HKEY)((uint32_t)FAKEHKEY + id))
-#define IDFromFHKEY(hkey)	((uint32_t)(hkey) & 0x3FFFFFFF)
-#define IsFHKEY(hkey)		((uint32_t)(hkey) & (uint32_t)FAKEHKEY)
-
-#define REGPATH_MEDIATYPE	L"Media Type\\{E436EB83-524F-11CE-9F53-0020AF0BA770}"
+#define IsFakeHKEY(hkey)	(hkey == FAKEHKEY)
+#define IsRootHKEY(hkey)	((uint32_t)hkey >= 0x80000000)
 
 HRESULT 
 STDAPICALLTYPE Mine_CoCreateInstance (
@@ -736,11 +733,8 @@ APIENTRY Mine_RegCloseKey (
     __in HKEY hKey
     )
 {
-	TRACE("RegCloseKey\n");
-	if (IsFHKEY(hKey))
-	{
+	if (IsFakeHKEY(hKey))
 		return S_OK;
-	}
 	else
 		return Real_RegCloseKey(hKey);
 }
@@ -895,19 +889,11 @@ APIENTRY Mine_RegCreateKeyExW (
 {
 	if (CFakeFilterMapper2::ms_pFilterMapper2 != NULL)
 	{
-		TRACE("RegCreateKeyExW\n");
-		if (hKey == HKEY_CLASSES_ROOT && StartsTextW(REGPATH_MEDIATYPE, lpSubKey))
-		{
-			CStringW strSubKey = lpSubKey;
-			CStringW strGUID = strSubKey.Right(strSubKey.GetLength() - wcslen(REGPATH_MEDIATYPE) - 1);
-			*phkResult = CFakeFilterMapper2::ms_pFilterMapper2->RegisterMediaType(strGUID);
-			return S_OK;
-		}
-		else
-		{
-			*phkResult = FAKEHKEY;
-			return S_OK;
-		}
+		if (phkResult == NULL)
+			return E_POINTER;
+		
+		*phkResult = FAKEHKEY;
+		return S_OK;
 	}
 	else
 		return Real_RegCreateKeyExW(hKey, lpSubKey, Reserved, lpClass, dwOptions, samDesired, lpSecurityAttributes, phkResult, lpdwDisposition);
@@ -969,8 +955,10 @@ APIENTRY Mine_RegDeleteKeyW (
     __in LPCWSTR lpSubKey
     )
 {
-	TRACE("RegDeleteKeyW\n");
-	return E_NOTIMPL;
+	if (CFakeFilterMapper2::ms_pFilterMapper2 != NULL && (IsFakeHKEY(hKey) || IsRootHKEY(hKey)))
+		return S_OK;
+	else
+		return Real_RegDeleteKeyW(hKey, lpSubKey);
 }
 
 #if _WIN32_WINNT >= 0x0600
@@ -1256,8 +1244,16 @@ APIENTRY Mine_RegOpenKeyExW (
     __out PHKEY phkResult
     )
 {
-	TRACE("RegOpenKeyExW\n");
-	return E_NOTIMPL;
+	if (CFakeFilterMapper2::ms_pFilterMapper2 != NULL && samDesired & (KEY_SET_VALUE|KEY_CREATE_SUB_KEY))
+	{
+		if (phkResult == NULL)
+			return E_POINTER;
+		
+		*phkResult = FAKEHKEY;
+		return S_OK;
+	}
+	else
+		return Real_RegOpenKeyExW(hKey, lpSubKey, ulOptions, samDesired, phkResult);
 }
 
 #if _WIN32_WINNT >= 0x0600
@@ -1535,17 +1531,8 @@ APIENTRY Mine_RegSetValueExW (
     __in DWORD cbData
     )
 {
-	if (CFakeFilterMapper2::ms_pFilterMapper2 != NULL && IsFHKEY(hKey))
-	{
-		uint32_t nID = IDFromFHKEY(hKey);
-		
-		TRACE("RegSetValueExW\n");
-		if (nID > 0 && dwType == REG_SZ && lpData != NULL && *lpData != 0)
-		{
-			CFakeFilterMapper2::ms_pFilterMapper2->RegisterMediaType(nID, CStringW((LPCWSTR)lpData, cbData / sizeof(WCHAR)));
-		}
+	if (CFakeFilterMapper2::ms_pFilterMapper2 != NULL && (IsFakeHKEY(hKey) || IsRootHKEY(hKey)))
 		return S_OK;
-	}
 	else
 		return Real_RegSetValueExW(hKey, lpValueName, Reserved, dwType, lpData, cbData);
 }
@@ -1772,8 +1759,8 @@ CFakeFilterMapper2::CFakeFilterMapper2( void )
 		HookAPI(Real_RegConnectRegistryExA, Mine_RegConnectRegistryExA);
 		HookAPI(Real_RegConnectRegistryExW, Mine_RegConnectRegistryExW);
 #endif // _WIN32_WINNT >= 0x0600
-		HookAPI(Real_RegCreateKeyA, Mine_RegCreateKeyA);
-		HookAPI(Real_RegCreateKeyW, Mine_RegCreateKeyW);
+		//HookAPI(Real_RegCreateKeyA, Mine_RegCreateKeyA);
+		//HookAPI(Real_RegCreateKeyW, Mine_RegCreateKeyW);
 		HookAPI(Real_RegCreateKeyExA, Mine_RegCreateKeyExA);
 		HookAPI(Real_RegCreateKeyExW, Mine_RegCreateKeyExW);
 #if _WIN32_WINNT >= 0x0600
@@ -1804,8 +1791,8 @@ CFakeFilterMapper2::CFakeFilterMapper2( void )
 		HookAPI(Real_RegLoadKeyA, Mine_RegLoadKeyA);
 		HookAPI(Real_RegLoadKeyW, Mine_RegLoadKeyW);
 		HookAPI(Real_RegNotifyChangeKeyValue, Mine_RegNotifyChangeKeyValue);
-		HookAPI(Real_RegOpenKeyA, Mine_RegOpenKeyA);
-		HookAPI(Real_RegOpenKeyW, Mine_RegOpenKeyW);
+		//HookAPI(Real_RegOpenKeyA, Mine_RegOpenKeyA);
+		//HookAPI(Real_RegOpenKeyW, Mine_RegOpenKeyW);
 		HookAPI(Real_RegOpenKeyExA, Mine_RegOpenKeyExA);
 		HookAPI(Real_RegOpenKeyExW, Mine_RegOpenKeyExW);
 #if _WIN32_WINNT >= 0x0600
@@ -1884,27 +1871,6 @@ HRESULT CFakeFilterMapper2::Register( LPCTSTR lpszFileName )
 		FreeLibrary(hDLL);
 	}
 	return hr;
-}
-
-HKEY CFakeFilterMapper2::RegisterMediaType( CStringW strCLSID )
-{
-	strCLSID.MakeUpper();
-	std::map<CStringW, uint32_t>::const_iterator it = m_MediaTypeIDs.find(strCLSID);
-	if (it != m_MediaTypeIDs.end())
-		return MakeFHKEY(it->second);
-	else
-	{
-		m_RegisteredMediaTypes.push_back(RegisteredMediaType());
-		uint32_t nIndex = m_RegisteredMediaTypes.size();
-		m_MediaTypeIDs.insert(std::make_pair(strCLSID, nIndex));
-		return MakeFHKEY(nIndex);
-	}
-}
-
-void CFakeFilterMapper2::RegisterMediaType( uint32_t nID, const CStringW& strChkBytes )
-{
-	ASSERT(nID <= m_RegisteredMediaTypes.size());
-	m_RegisteredMediaTypes[nID];
 }
 
 HRESULT STDMETHODCALLTYPE CFakeFilterMapper2::CreateCategory( REFCLSID clsidCategory, DWORD dwCategoryMerit, LPCWSTR Description )
