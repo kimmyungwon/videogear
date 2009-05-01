@@ -3,10 +3,9 @@
 //
 
 #include "stdafx.h"
-#include "afxwinappex.h"
 #include "VideoGear.h"
 #include "MainFrm.h"
-
+#include "FakeFilterMapper2.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -23,12 +22,14 @@ END_MESSAGE_MAP()
 // CVideoGearApp ¹¹Ôì
 
 CVideoGearApp::CVideoGearApp()
-{
+{	
 	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+	AfxGetFakeFM2()->Initialize();
 }
 
 CVideoGearApp::~CVideoGearApp()
 {
+	AfxGetFakeFM2()->Uninitialize();
 	CoUninitialize();
 }
 

@@ -1,16 +1,18 @@
 #pragma once
 
+#include "RegTree.h"
+
 class CFakeFilterMapper2
 	: public IFilterMapper2
 {
-	static bool ms_bInitialized;
-	static CCriticalSection ms_lockHooking;
+	friend CFakeFilterMapper2* AfxGetFakeFM2(void);
 public:
-	static CFakeFilterMapper2* ms_pFilterMapper2;
+	bool m_bHooking;
 public:
-	CFakeFilterMapper2(void);
-	virtual ~CFakeFilterMapper2(void);
+	void Initialize(void);
+	void Uninitialize(void);
 	HRESULT Register(LPCTSTR lpszFileName);
+	CRegTreeNode* RegNodeFromHKEY(HKEY hKey);
 	/* IFilterMapper2 */
 	virtual HRESULT STDMETHODCALLTYPE CreateCategory(REFCLSID clsidCategory, DWORD dwCategoryMerit, LPCWSTR Description);
 	virtual HRESULT STDMETHODCALLTYPE UnregisterFilter(const CLSID *pclsidCategory, LPCOLESTR szInstance, REFCLSID Filter);
@@ -24,6 +26,13 @@ public:
 	virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 	virtual ULONG STDMETHODCALLTYPE AddRef(void);
 	virtual ULONG STDMETHODCALLTYPE Release(void);
+protected:
+	CFakeFilterMapper2(void);
 private:
 	CComPtr<IFilterMapper2>	m_pFM2;
+	CCriticalSection m_lockHooking;
+	std::map<HKEY, CStringW> m_rootKeys;
+	CRegTree m_regDB;
 };
+
+CFakeFilterMapper2* AfxGetFakeFM2(void);

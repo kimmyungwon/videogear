@@ -39,5 +39,10 @@
 #include <stdint.h>
 #include <vector>
 #include <map>
+#include <boost/ptr_container/ptr_vector.hpp>
+#include <boost/ptr_container/ptr_list.hpp>
+#include <boost/ptr_container/ptr_map.hpp>
+
+#include <atlbase.h>
 #include <rpc.h>
 #include <dshow.h>

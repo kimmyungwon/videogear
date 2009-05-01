@@ -193,6 +193,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\RegTree.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.cpp"
 				>
 				<FileConfiguration
@@ -211,10 +215,6 @@
 						UsePrecompiledHeader="1"
 					/>
 				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\StrUtils.cpp"
-				>
 			</File>
 			<File
 				RelativePath=".\VideoGear.cpp"
@@ -239,15 +239,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\RegTree.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Resource.h"
 				>
 			</File>
 			<File
 				RelativePath=".\stdafx.h"
-				>
-			</File>
-			<File
-				RelativePath=".\StrUtils.h"
 				>
 			</File>
 			<File

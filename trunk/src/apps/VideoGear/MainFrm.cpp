@@ -25,9 +25,7 @@ END_MESSAGE_MAP()
 
 CMainFrame::CMainFrame()
 {
-	CFakeFilterMapper2 fm2;
-
-	fm2.Register(_T("RealMediaSplitter.ax"));
+	AfxGetFakeFM2()->Register(_T("RealMediaSplitter.ax"));
 }
 
 CMainFrame::~CMainFrame()

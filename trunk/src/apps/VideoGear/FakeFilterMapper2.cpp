@@ -1,7 +1,8 @@
 #include "stdafx.h"
 #include "FakeFilterMapper2.h"
 #include <APIHook.h>
-#include "StrUtils.h"
+
+#pragma region "×¢²á±íAPI"
 
 HRESULT 
 (STDAPICALLTYPE *Real_CoCreateInstance) (
@@ -60,25 +61,6 @@ LSTATUS
     __out PHKEY phkResult
     ) = RegConnectRegistryW;
 
-#if _WIN32_WINNT >= 0x0600
-
-LSTATUS
-(APIENTRY *Real_RegConnectRegistryExA) (
-    __in_opt LPCSTR lpMachineName,
-    __in HKEY hKey,
-    __in ULONG Flags,
-    __out PHKEY phkResult
-    ) = RegConnectRegistryExA;
-LSTATUS
-(APIENTRY *Real_RegConnectRegistryExW) (
-    __in_opt LPCWSTR lpMachineName,
-    __in HKEY hKey,
-    __in ULONG Flags,
-    __out PHKEY phkResult
-    ) = RegConnectRegistryExW;
-
-#endif // _WIN32_WINNT >= 0x0600
-
 LSTATUS
 (APIENTRY *Real_RegCreateKeyA) (
     __in HKEY hKey,
@@ -117,39 +99,6 @@ LSTATUS
     __out_opt LPDWORD lpdwDisposition
     ) = RegCreateKeyExW;
 
-#if _WIN32_WINNT >= 0x0600
-
-LSTATUS
-(APIENTRY *Real_RegCreateKeyTransactedA) (
-    __in HKEY hKey,
-    __in LPCSTR lpSubKey,
-    __reserved DWORD Reserved,
-    __in_opt LPSTR lpClass,
-    __in DWORD dwOptions,
-    __in REGSAM samDesired,
-    __in_opt CONST LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-    __out PHKEY phkResult,
-    __out_opt LPDWORD lpdwDisposition,
-    __in        HANDLE hTransaction,
-    __reserved PVOID  pExtendedParemeter
-    ) = RegCreateKeyTransactedA;
-LSTATUS
-(APIENTRY *Real_RegCreateKeyTransactedW) (
-    __in HKEY hKey,
-    __in LPCWSTR lpSubKey,
-    __reserved DWORD Reserved,
-    __in_opt LPWSTR lpClass,
-    __in DWORD dwOptions,
-    __in REGSAM samDesired,
-    __in_opt CONST LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-    __out PHKEY phkResult,
-    __out_opt LPDWORD lpdwDisposition,
-    __in        HANDLE hTransaction,
-    __reserved PVOID  pExtendedParemeter
-    ) = RegCreateKeyTransactedW;
-
-#endif // _WIN32_WINNT >= 0x0600
-
 LSTATUS
 (APIENTRY *Real_RegDeleteKeyA) (
     __in HKEY hKey,
@@ -160,60 +109,6 @@ LSTATUS
     __in HKEY hKey,
     __in LPCWSTR lpSubKey
     ) = RegDeleteKeyW;
-
-#if _WIN32_WINNT >= 0x0600
-
-LSTATUS
-(APIENTRY *Real_RegDeleteKeyExA) (
-    __in HKEY hKey,
-    __in LPCSTR lpSubKey,
-    __in REGSAM samDesired,
-    __reserved DWORD Reserved
-    ) = RegDeleteKeyExA;
-LSTATUS
-(APIENTRY *Real_RegDeleteKeyExW) (
-    __in HKEY hKey,
-    __in LPCWSTR lpSubKey,
-    __in REGSAM samDesired,
-    __reserved DWORD Reserved
-    ) = RegDeleteKeyExW;
-
-LSTATUS
-(APIENTRY *Real_RegDeleteKeyTransactedA) (
-    __in HKEY hKey,
-    __in LPCSTR lpSubKey,
-    __in REGSAM samDesired,
-    __reserved DWORD Reserved,
-    __in        HANDLE hTransaction,
-    __reserved PVOID  pExtendedParameter
-    ) = RegDeleteKeyTransactedA;
-LSTATUS
-(APIENTRY *Real_RegDeleteKeyTransactedW) (
-    __in HKEY hKey,
-    __in LPCWSTR lpSubKey,
-    __in REGSAM samDesired,
-    __reserved DWORD Reserved,
-    __in        HANDLE hTransaction,
-    __reserved PVOID  pExtendedParameter
-    ) = RegDeleteKeyTransactedW;
-
-LONG
-(APIENTRY *Real_RegDisableReflectionKey) (
-    __in HKEY hBase
-    ) = RegDisableReflectionKey;    
-
-LONG
-(APIENTRY *Real_RegEnableReflectionKey) (
-    __in HKEY hBase
-    ) = RegEnableReflectionKey;    
-
-LONG
-(APIENTRY *Real_RegQueryReflectionKey) (
-    __in HKEY hBase,
-    __out BOOL *bIsReflectionDisabled
-    ) = RegQueryReflectionKey;    
-
-#endif // _WIN32_WINNT >= 0x0600
     
 LSTATUS
 (APIENTRY *Real_RegDeleteValueA) (
@@ -351,31 +246,6 @@ LSTATUS
     __in REGSAM samDesired,
     __out PHKEY phkResult
     ) = RegOpenKeyExW;
-
-#if _WIN32_WINNT >= 0x0600
-
-LSTATUS
-(APIENTRY *Real_RegOpenKeyTransactedA) (
-    __in HKEY hKey,
-    __in_opt LPCSTR lpSubKey,
-    __in DWORD ulOptions,
-    __in REGSAM samDesired,
-    __out PHKEY phkResult,
-    __in        HANDLE hTransaction,
-    __reserved PVOID  pExtendedParemeter
-    ) = RegOpenKeyTransactedA;
-LSTATUS
-(APIENTRY *Real_RegOpenKeyTransactedW) (
-    __in HKEY hKey,
-    __in_opt LPCWSTR lpSubKey,
-    __in DWORD ulOptions,
-    __in REGSAM samDesired,
-    __out PHKEY phkResult,
-    __in        HANDLE hTransaction,
-    __reserved PVOID  pExtendedParemeter
-    ) = RegOpenKeyTransactedW;
-
-#endif // _WIN32_WINNT >= 0x0600
 
 LSTATUS
 (APIENTRY *Real_RegQueryInfoKeyA) (
@@ -558,134 +428,22 @@ LSTATUS
     __in_opt LPCWSTR lpSubKey
     ) = RegUnLoadKeyW;
 
-//
-// Utils wrappers
-//
-#if _WIN32_WINNT >= 0x0600
-
-LSTATUS
-(APIENTRY *Real_RegDeleteKeyValueA) (
-    __in      HKEY     hKey,
-    __in_opt  LPCSTR lpSubKey,
-    __in_opt  LPCSTR lpValueName
-    ) = RegDeleteKeyValueA;
-LSTATUS
-(APIENTRY *Real_RegDeleteKeyValueW) (
-    __in      HKEY     hKey,
-    __in_opt  LPCWSTR lpSubKey,
-    __in_opt  LPCWSTR lpValueName
-    ) = RegDeleteKeyValueW;
-
-LSTATUS
-(APIENTRY *Real_RegSetKeyValueA) (
-    __in        HKEY     hKey,
-    __in_opt    LPCSTR  lpSubKey,
-    __in_opt    LPCSTR  lpValueName,
-    __in        DWORD    dwType,
-    __in_bcount_opt(cbData) LPCVOID  lpData,
-    __in        DWORD    cbData
-    ) = RegSetKeyValueA;
-LSTATUS
-(APIENTRY *Real_RegSetKeyValueW) (
-    __in        HKEY     hKey,
-    __in_opt    LPCWSTR  lpSubKey,
-    __in_opt    LPCWSTR  lpValueName,
-    __in        DWORD    dwType,
-    __in_bcount_opt(cbData) LPCVOID  lpData,
-    __in        DWORD    cbData
-    ) = RegSetKeyValueW;
-
-LSTATUS
-(APIENTRY *Real_RegDeleteTreeA) (
-    __in        HKEY     hKey,
-    __in_opt    LPCSTR  lpSubKey
-    ) = RegDeleteTreeA;
-LSTATUS
-(APIENTRY *Real_RegDeleteTreeW) (
-    __in        HKEY     hKey,
-    __in_opt    LPCWSTR  lpSubKey
-    ) = RegDeleteTreeW;
-
-LSTATUS
-(APIENTRY *Real_RegCopyTreeA) (
-    __in        HKEY     hKeySrc,
-    __in_opt    LPCSTR  lpSubKey,
-    __in        HKEY     hKeyDest
-    ) = RegCopyTreeA;
-LSTATUS
-(APIENTRY *Real_RegCopyTreeW) (
-    __in        HKEY     hKeySrc,
-    __in_opt    LPCWSTR  lpSubKey,
-    __in        HKEY     hKeyDest
-    ) = RegCopyTreeW;
-
-LSTATUS
-(APIENTRY *Real_RegGetValueA) (
-    __in HKEY    hkey,
-    __in_opt LPCSTR  lpSubKey,
-    __in_opt LPCSTR  lpValue,
-    __in_opt DWORD    dwFlags,
-    __out_opt LPDWORD pdwType,
-    __out_bcount_part_opt(*pcbData,*pcbData) PVOID   pvData,
-    __inout_opt LPDWORD pcbData
-    ) = RegGetValueA;
-LSTATUS
-(APIENTRY *Real_RegGetValueW) (
-    __in HKEY    hkey,
-    __in_opt LPCWSTR  lpSubKey,
-    __in_opt LPCWSTR  lpValue,
-    __in_opt DWORD    dwFlags,
-    __out_opt LPDWORD pdwType,
-    __out_bcount_part_opt(*pcbData,*pcbData) PVOID   pvData,
-    __inout_opt LPDWORD pcbData
-    ) = RegGetValueW;
-
-LSTATUS
-(APIENTRY *Real_RegLoadMUIStringA) (
-    __in                    HKEY        hKey,
-    __in_opt                LPCSTR    pszValue,
-    __out_bcount_opt(cbOutBuf)  LPSTR     pszOutBuf,
-    __in                    DWORD       cbOutBuf,
-    __out_opt               LPDWORD     pcbData,
-    __in                    DWORD       Flags,   
-    __in_opt                LPCSTR    pszDirectory
-    ) = RegLoadMUIStringA;
-LSTATUS
-(APIENTRY *Real_RegLoadMUIStringW) (
-	__in                    HKEY        hKey,
-	__in_opt                LPCWSTR    pszValue,
-	__out_bcount_opt(cbOutBuf)  LPWSTR     pszOutBuf,
-	__in                    DWORD       cbOutBuf,
-	__out_opt               LPDWORD     pcbData,
-	__in                    DWORD       Flags,   
-	__in_opt                LPCWSTR    pszDirectory
-	) = RegLoadMUIStringW;
-
-
-LSTATUS
-(APIENTRY *Real_RegLoadAppKeyA) (
-        __in        LPCSTR    lpFile,
-        __out       PHKEY       phkResult,
-        __in        REGSAM      samDesired, 
-        __in        DWORD       dwOptions,
-        __reserved  DWORD       Reserved
-    ) = RegLoadAppKeyA;
-LSTATUS
-(APIENTRY *Real_RegLoadAppKeyW) (
-        __in        LPCWSTR    lpFile,
-        __out       PHKEY       phkResult,
-        __in        REGSAM      samDesired, 
-        __in        DWORD       dwOptions,
-        __reserved  DWORD       Reserved
-    ) = RegLoadAppKeyW;
-
-#endif // _WIN32_WINNT >= 0x0600
+#pragma endregion 
 
 //////////////////////////////////////////////////////////////////////////
 
 #define FAKEHKEY			((HKEY)0x40000000)
-#define IsFakeHKEY(hkey)	(hkey == FAKEHKEY)
-#define IsRootHKEY(hkey)	((uint32_t)hkey >= 0x80000000)
+#define ToHKEY(ptr)			((HKEY)((uint32_t)(ptr) | 0x40000000))
+
+inline bool IsFakeHKEY(HKEY hKey)
+{
+	return ((uint32_t)hKey & 0x40000000) != 0;
+}
+
+inline bool IsRootHKEY(HKEY hKey)
+{
+	return ((uint32_t)hKey >= 0x80000000);
+}
 
 HRESULT 
 STDAPICALLTYPE Mine_CoCreateInstance (
@@ -696,7 +454,7 @@ STDAPICALLTYPE Mine_CoCreateInstance (
 	__deref_out LPVOID FAR* ppv
 	)
 {
-	if (CFakeFilterMapper2::ms_pFilterMapper2 != NULL)
+	if (AfxGetFakeFM2()->m_bHooking)
 	{
 		if (ppv == NULL)
 			return E_POINTER;
@@ -710,14 +468,12 @@ STDAPICALLTYPE Mine_CoCreateInstance (
 
 			if (IsEqualIID(riid, IID_IFilterMapper2))
 			{
-				CFakeFilterMapper2::ms_pFilterMapper2->AddRef();
-				*ppv = (IFilterMapper2*)CFakeFilterMapper2::ms_pFilterMapper2;
+				*ppv = (IFilterMapper2*)AfxGetFakeFM2();
 				return S_OK;
 			}
 			else if (IsEqualIID(riid, IID_IUnknown))
 			{
-				CFakeFilterMapper2::ms_pFilterMapper2->AddRef();
-				*ppv = (IUnknown*)CFakeFilterMapper2::ms_pFilterMapper2;
+				*ppv = (IUnknown*)AfxGetFakeFM2();
 				return S_OK;
 			}
 			else
@@ -810,33 +566,6 @@ APIENTRY Mine_RegConnectRegistryW (
 	return E_NOTIMPL;
 }
 
-#if _WIN32_WINNT >= 0x0600
-
-LSTATUS
-APIENTRY Mine_RegConnectRegistryExA (
-    __in_opt LPCSTR lpMachineName,
-    __in HKEY hKey,
-    __in ULONG Flags,
-    __out PHKEY phkResult
-    )
-{
-	TRACE("RegConnectRegistryExA\n");
-	return E_NOTIMPL;
-}
-LSTATUS
-APIENTRY Mine_RegConnectRegistryExW (
-    __in_opt LPCWSTR lpMachineName,
-    __in HKEY hKey,
-    __in ULONG Flags,
-    __out PHKEY phkResult
-    )
-{
-	TRACE("RegConnectRegistryExW\n");
-	return E_NOTIMPL;
-}
-
-#endif // _WIN32_WINNT >= 0x0600
-
 LSTATUS
 APIENTRY Mine_RegCreateKeyA (
     __in HKEY hKey,
@@ -854,8 +583,7 @@ APIENTRY Mine_RegCreateKeyW (
     __out PHKEY phkResult
     )
 {
-	TRACE("RegCreateKeyW\n");
-	return E_NOTIMPL;
+	return RegCreateKeyExW(hKey, lpSubKey, 0, NULL, 0, KEY_ALL_ACCESS, NULL, phkResult, NULL);
 }
 
 LSTATUS
@@ -887,58 +615,20 @@ APIENTRY Mine_RegCreateKeyExW (
     __out_opt LPDWORD lpdwDisposition
     )
 {
-	if (CFakeFilterMapper2::ms_pFilterMapper2 != NULL)
+	if (AfxGetFakeFM2()->m_bHooking)
 	{
 		if (phkResult == NULL)
 			return E_POINTER;
-		
-		*phkResult = FAKEHKEY;
+
+		CRegTreeNode* pNode = AfxGetFakeFM2()->RegNodeFromHKEY(hKey);
+		ASSERT(pNode != NULL);
+		CRegTreeNode* pResult = pNode->OpenNode(lpSubKey);
+		*phkResult = ToHKEY(pResult);
 		return S_OK;
 	}
 	else
 		return Real_RegCreateKeyExW(hKey, lpSubKey, Reserved, lpClass, dwOptions, samDesired, lpSecurityAttributes, phkResult, lpdwDisposition);
 }
-
-#if _WIN32_WINNT >= 0x0600
-
-LSTATUS
-APIENTRY Mine_RegCreateKeyTransactedA (
-    __in HKEY hKey,
-    __in LPCSTR lpSubKey,
-    __reserved DWORD Reserved,
-    __in_opt LPSTR lpClass,
-    __in DWORD dwOptions,
-    __in REGSAM samDesired,
-    __in_opt CONST LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-    __out PHKEY phkResult,
-    __out_opt LPDWORD lpdwDisposition,
-    __in        HANDLE hTransaction,
-    __reserved PVOID  pExtendedParemeter
-    )
-{
-	TRACE("RegCreateKeyTransactedA\n");
-	return E_NOTIMPL;
-}
-LSTATUS
-APIENTRY Mine_RegCreateKeyTransactedW (
-    __in HKEY hKey,
-    __in LPCWSTR lpSubKey,
-    __reserved DWORD Reserved,
-    __in_opt LPWSTR lpClass,
-    __in DWORD dwOptions,
-    __in REGSAM samDesired,
-    __in_opt CONST LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-    __out PHKEY phkResult,
-    __out_opt LPDWORD lpdwDisposition,
-    __in        HANDLE hTransaction,
-    __reserved PVOID  pExtendedParemeter
-    )
-{
-	TRACE("RegCreateKeyTransactedW\n");
-	return E_NOTIMPL;
-}
-
-#endif // _WIN32_WINNT >= 0x0600
 
 LSTATUS
 APIENTRY Mine_RegDeleteKeyA (
@@ -955,93 +645,16 @@ APIENTRY Mine_RegDeleteKeyW (
     __in LPCWSTR lpSubKey
     )
 {
-	if (CFakeFilterMapper2::ms_pFilterMapper2 != NULL && (IsFakeHKEY(hKey) || IsRootHKEY(hKey)))
+	if (AfxGetFakeFM2()->m_bHooking)
+	{
+		CRegTreeNode* pNode = AfxGetFakeFM2()->RegNodeFromHKEY(hKey);
+		ASSERT(pNode != NULL);
+		pNode->CloseNode(lpSubKey);
 		return S_OK;
+	}
 	else
 		return Real_RegDeleteKeyW(hKey, lpSubKey);
 }
-
-#if _WIN32_WINNT >= 0x0600
-
-LSTATUS
-APIENTRY Mine_RegDeleteKeyExA (
-    __in HKEY hKey,
-    __in LPCSTR lpSubKey,
-    __in REGSAM samDesired,
-    __reserved DWORD Reserved
-    )
-{
-	TRACE("RegDeleteKeyExA\n");
-	return E_NOTIMPL;
-}
-LSTATUS
-APIENTRY Mine_RegDeleteKeyExW (
-    __in HKEY hKey,
-    __in LPCWSTR lpSubKey,
-    __in REGSAM samDesired,
-    __reserved DWORD Reserved
-    )
-{
-	TRACE("RegDeleteKeyExW\n");
-	return E_NOTIMPL;
-}
-
-LSTATUS
-APIENTRY Mine_RegDeleteKeyTransactedA (
-    __in HKEY hKey,
-    __in LPCSTR lpSubKey,
-    __in REGSAM samDesired,
-    __reserved DWORD Reserved,
-    __in        HANDLE hTransaction,
-    __reserved PVOID  pExtendedParameter
-    )
-{
-	TRACE("RegDeleteKeyTransactedA\n");
-	return E_NOTIMPL;
-}
-LSTATUS
-APIENTRY Mine_RegDeleteKeyTransactedW (
-    __in HKEY hKey,
-    __in LPCWSTR lpSubKey,
-    __in REGSAM samDesired,
-    __reserved DWORD Reserved,
-    __in        HANDLE hTransaction,
-    __reserved PVOID  pExtendedParameter
-    )
-{
-	TRACE("RegDeleteKeyTransactedW\n");
-	return E_NOTIMPL;
-}
-
-LONG
-APIENTRY Mine_RegDisableReflectionKey (
-    __in HKEY hBase
-    )
-{
-	TRACE("RegDisableReflectionKey\n");
-	return E_NOTIMPL;
-}    
-
-LONG
-APIENTRY Mine_RegEnableReflectionKey (
-    __in HKEY hBase
-    )
-{
-	TRACE("RegEnableReflectionKey\n");
-	return E_NOTIMPL;
-}    
-
-LONG
-APIENTRY Mine_RegQueryReflectionKey (
-    __in HKEY hBase,
-    __out BOOL *bIsReflectionDisabled
-    )
-{
-	TRACE("RegQueryReflectionKey\n");
-	return E_NOTIMPL;
-}    
-
-#endif // _WIN32_WINNT >= 0x0600
     
 LSTATUS
 APIENTRY Mine_RegDeleteValueA (
@@ -1219,8 +832,12 @@ APIENTRY Mine_RegOpenKeyW (
     __out PHKEY phkResult
     )
 {
-	TRACE("RegOpenKeyW\n");
-	return E_NOTIMPL;
+	if (AfxGetFakeFM2()->m_bHooking)
+	{
+		return RegOpenKeyExW(hKey, lpSubKey, 0, KEY_ALL_ACCESS, phkResult);
+	}
+	else
+		return Real_RegOpenKeyW(hKey, lpSubKey, phkResult);
 }
 
 LSTATUS
@@ -1244,50 +861,20 @@ APIENTRY Mine_RegOpenKeyExW (
     __out PHKEY phkResult
     )
 {
-	if (CFakeFilterMapper2::ms_pFilterMapper2 != NULL && samDesired & (KEY_SET_VALUE|KEY_CREATE_SUB_KEY))
+	if (AfxGetFakeFM2()->m_bHooking)
 	{
 		if (phkResult == NULL)
 			return E_POINTER;
-		
-		*phkResult = FAKEHKEY;
+
+		CRegTreeNode* pNode = AfxGetFakeFM2()->RegNodeFromHKEY(hKey);
+		ASSERT(pNode != NULL);
+		CRegTreeNode* pResult = pNode->OpenNode(lpSubKey);
+		*phkResult = ToHKEY(pResult);
 		return S_OK;
 	}
 	else
 		return Real_RegOpenKeyExW(hKey, lpSubKey, ulOptions, samDesired, phkResult);
 }
-
-#if _WIN32_WINNT >= 0x0600
-
-LSTATUS
-APIENTRY Mine_RegOpenKeyTransactedA (
-    __in HKEY hKey,
-    __in_opt LPCSTR lpSubKey,
-    __in DWORD ulOptions,
-    __in REGSAM samDesired,
-    __out PHKEY phkResult,
-    __in        HANDLE hTransaction,
-    __reserved PVOID  pExtendedParemeter
-    )
-{
-	TRACE("RegOpenKeyTransactedA\n");
-	return E_NOTIMPL;
-}
-LSTATUS
-APIENTRY Mine_RegOpenKeyTransactedW (
-    __in HKEY hKey,
-    __in_opt LPCWSTR lpSubKey,
-    __in DWORD ulOptions,
-    __in REGSAM samDesired,
-    __out PHKEY phkResult,
-    __in        HANDLE hTransaction,
-    __reserved PVOID  pExtendedParemeter
-    )
-{
-	TRACE("RegOpenKeyTransactedW\n");
-	return E_NOTIMPL;
-}
-
-#endif // _WIN32_WINNT >= 0x0600
 
 LSTATUS
 APIENTRY Mine_RegQueryInfoKeyA (
@@ -1402,8 +989,17 @@ APIENTRY Mine_RegQueryValueExW (
     __inout_opt LPDWORD lpcbData
     )
 {
-	TRACE("RegQueryValueExW\n");
-	return E_NOTIMPL;
+	if (AfxGetFakeFM2()->m_bHooking)
+	{
+		CRegTreeNode* pNode = AfxGetFakeFM2()->RegNodeFromHKEY(hKey);
+		ASSERT(pNode != NULL);
+		if (pNode->GetValue(lpValueName, lpType, lpData, lpcbData))
+			return S_OK;
+		else
+			return REGDB_E_READREGDB;
+	}
+	else
+		return Real_RegQueryValueExW(hKey, lpValueName, lpReserved, lpType, lpData, lpcbData);
 }
 
 LSTATUS
@@ -1503,8 +1099,12 @@ APIENTRY Mine_RegSetValueW (
     __in DWORD cbData
     )
 {
-	TRACE("RegSetValueW\n");
-	return E_NOTIMPL;
+	HKEY hSubKey;
+	
+	if (SUCCEEDED(RegOpenKeyExW(hKey, lpSubKey, 0, KEY_SET_VALUE, &hSubKey)) && hSubKey != NULL)
+		return RegSetValueExW(hKey, NULL, 0, REG_SZ, (BYTE*)lpData, cbData);
+	else
+		return REGDB_E_KEYMISSING;
 }
 
 
@@ -1531,8 +1131,13 @@ APIENTRY Mine_RegSetValueExW (
     __in DWORD cbData
     )
 {
-	if (CFakeFilterMapper2::ms_pFilterMapper2 != NULL && (IsFakeHKEY(hKey) || IsRootHKEY(hKey)))
+	if (AfxGetFakeFM2()->m_bHooking)
+	{
+		CRegTreeNode* pNode = AfxGetFakeFM2()->RegNodeFromHKEY(hKey);
+		ASSERT(pNode != NULL);
+		pNode->SetValue(lpValueName, dwType, lpData, cbData);
 		return S_OK;
+	}
 	else
 		return Real_RegSetValueExW(hKey, lpValueName, Reserved, dwType, lpData, cbData);
 }
@@ -1556,196 +1161,27 @@ APIENTRY Mine_RegUnLoadKeyW (
 	return E_NOTIMPL;
 }
 
-//
-// Utils wrappers
-//
-#if _WIN32_WINNT >= 0x0600
-
-LSTATUS
-APIENTRY Mine_RegDeleteKeyValueA (
-    __in      HKEY     hKey,
-    __in_opt  LPCSTR lpSubKey,
-    __in_opt  LPCSTR lpValueName
-    )
-{
-	TRACE("RegDeleteKeyValueA\n");
-	return E_NOTIMPL;
-}
-LSTATUS
-APIENTRY Mine_RegDeleteKeyValueW (
-    __in      HKEY     hKey,
-    __in_opt  LPCWSTR lpSubKey,
-    __in_opt  LPCWSTR lpValueName
-    )
-{
-	TRACE("RegDeleteKeyValueW\n");
-	return E_NOTIMPL;
-}
-
-LSTATUS
-APIENTRY Mine_RegSetKeyValueA (
-    __in        HKEY     hKey,
-    __in_opt    LPCSTR  lpSubKey,
-    __in_opt    LPCSTR  lpValueName,
-    __in        DWORD    dwType,
-    __in_bcount_opt(cbData) LPCVOID  lpData,
-    __in        DWORD    cbData
-    )
-{
-	TRACE("RegSetKeyValueA\n");
-	return E_NOTIMPL;
-}
-LSTATUS
-APIENTRY Mine_RegSetKeyValueW (
-    __in        HKEY     hKey,
-    __in_opt    LPCWSTR  lpSubKey,
-    __in_opt    LPCWSTR  lpValueName,
-    __in        DWORD    dwType,
-    __in_bcount_opt(cbData) LPCVOID  lpData,
-    __in        DWORD    cbData
-    )
-{
-	TRACE("RegSetKeyValueW\n");
-	return E_NOTIMPL;
-}
-
-LSTATUS
-APIENTRY Mine_RegDeleteTreeA (
-    __in        HKEY     hKey,
-    __in_opt    LPCSTR  lpSubKey
-    )
-{
-	TRACE("RegDeleteTreeA\n");
-	return E_NOTIMPL;
-}
-LSTATUS
-APIENTRY Mine_RegDeleteTreeW (
-    __in        HKEY     hKey,
-    __in_opt    LPCWSTR  lpSubKey
-    )
-{
-	TRACE("RegDeleteTreeW\n");
-	return E_NOTIMPL;
-}
-
-LSTATUS
-APIENTRY Mine_RegCopyTreeA (
-    __in        HKEY     hKeySrc,
-    __in_opt    LPCSTR  lpSubKey,
-    __in        HKEY     hKeyDest
-    )
-{
-	TRACE("RegCopyTreeA\n");
-	return E_NOTIMPL;
-}
-LSTATUS
-APIENTRY Mine_RegCopyTreeW (
-    __in        HKEY     hKeySrc,
-    __in_opt    LPCWSTR  lpSubKey,
-    __in        HKEY     hKeyDest
-    )
-{
-	TRACE("RegCopyTreeW\n");
-	return E_NOTIMPL;
-}
-
-LSTATUS
-APIENTRY Mine_RegGetValueA (
-    __in HKEY    hkey,
-    __in_opt LPCSTR  lpSubKey,
-    __in_opt LPCSTR  lpValue,
-    __in_opt DWORD    dwFlags,
-    __out_opt LPDWORD pdwType,
-    __out_bcount_part_opt(*pcbData,*pcbData) PVOID   pvData,
-    __inout_opt LPDWORD pcbData
-    )
-{
-	TRACE("RegGetValueA\n");
-	return E_NOTIMPL;
-}
-LSTATUS
-APIENTRY Mine_RegGetValueW (
-    __in HKEY    hkey,
-    __in_opt LPCWSTR  lpSubKey,
-    __in_opt LPCWSTR  lpValue,
-    __in_opt DWORD    dwFlags,
-    __out_opt LPDWORD pdwType,
-    __out_bcount_part_opt(*pcbData,*pcbData) PVOID   pvData,
-    __inout_opt LPDWORD pcbData
-    )
-{
-	TRACE("RegGetValueW\n");
-	return E_NOTIMPL;
-}
-
-LSTATUS
-APIENTRY Mine_RegLoadMUIStringA (
-    __in                    HKEY        hKey,
-    __in_opt                LPCSTR    pszValue,
-    __out_bcount_opt(cbOutBuf)  LPSTR     pszOutBuf,
-    __in                    DWORD       cbOutBuf,
-    __out_opt               LPDWORD     pcbData,
-    __in                    DWORD       Flags,   
-    __in_opt                LPCSTR    pszDirectory
-    )
-{
-	TRACE("RegLoadMUIStringA\n");
-	return E_NOTIMPL;
-}
-LSTATUS
-APIENTRY Mine_RegLoadMUIStringW (
-	__in                    HKEY        hKey,
-	__in_opt                LPCWSTR    pszValue,
-	__out_bcount_opt(cbOutBuf)  LPWSTR     pszOutBuf,
-	__in                    DWORD       cbOutBuf,
-	__out_opt               LPDWORD     pcbData,
-	__in                    DWORD       Flags,   
-	__in_opt                LPCWSTR    pszDirectory
-	)
-{
-	TRACE("RegLoadMUIStringW\n");
-	return E_NOTIMPL;
-}
-
-
-LSTATUS
-APIENTRY Mine_RegLoadAppKeyA (
-        __in        LPCSTR    lpFile,
-        __out       PHKEY       phkResult,
-        __in        REGSAM      samDesired, 
-        __in        DWORD       dwOptions,
-        __reserved  DWORD       Reserved
-    )
-{
-	TRACE("RegLoadAppKeyA\n");
-	return E_NOTIMPL;
-}
-LSTATUS
-APIENTRY Mine_RegLoadAppKeyW (
-        __in        LPCWSTR    lpFile,
-        __out       PHKEY       phkResult,
-        __in        REGSAM      samDesired, 
-        __in        DWORD       dwOptions,
-        __reserved  DWORD       Reserved
-    )
-{
-	TRACE("RegLoadAppKeyW\n");
-	return E_NOTIMPL;
-}
-
-#endif // _WIN32_WINNT >= 0x0600
-
 //////////////////////////////////////////////////////////////////////////
 
-bool CFakeFilterMapper2::ms_bInitialized = false;
-CCriticalSection CFakeFilterMapper2::ms_lockHooking;
-CFakeFilterMapper2* CFakeFilterMapper2::ms_pFilterMapper2 = NULL;
+CFakeFilterMapper2* AfxGetFakeFM2(void)
+{
+	static CFakeFilterMapper2 fakeFM2;
+	
+	return &fakeFM2;
+}
 
 CFakeFilterMapper2::CFakeFilterMapper2( void )
+: m_bHooking(false)
 {
-	if (SUCCEEDED(Real_CoCreateInstance(CLSID_FilterMapper2, NULL, CLSCTX_INPROC_SERVER, IID_IFilterMapper2, (LPVOID*)&m_pFM2))
-		&& !ms_bInitialized)
-	{
+	m_rootKeys.insert(std::make_pair(HKEY_CLASSES_ROOT, L"HKCR"));
+	m_rootKeys.insert(std::make_pair(HKEY_CURRENT_USER, L"HKCU"));
+	m_rootKeys.insert(std::make_pair(HKEY_LOCAL_MACHINE, L"HKLM"));
+}
+
+void CFakeFilterMapper2::Initialize( void )
+{
+	if (SUCCEEDED(Real_CoCreateInstance(CLSID_FilterMapper2, NULL, CLSCTX_INPROC_SERVER, IID_IFilterMapper2, (LPVOID*)&m_pFM2)))
+	{		
 		HookAPI(Real_CoCreateInstance, Mine_CoCreateInstance);
 		HookAPI(Real_RegCloseKey, Mine_RegCloseKey);
 		HookAPI(Real_RegOverridePredefKey, Mine_RegOverridePredefKey);
@@ -1755,29 +1191,12 @@ CFakeFilterMapper2::CFakeFilterMapper2( void )
 		HookAPI(Real_RegDisablePredefinedCacheEx, Mine_RegDisablePredefinedCacheEx);
 		HookAPI(Real_RegConnectRegistryA, Mine_RegConnectRegistryA);
 		HookAPI(Real_RegConnectRegistryW, Mine_RegConnectRegistryW);
-#if _WIN32_WINNT >= 0x0600
-		HookAPI(Real_RegConnectRegistryExA, Mine_RegConnectRegistryExA);
-		HookAPI(Real_RegConnectRegistryExW, Mine_RegConnectRegistryExW);
-#endif // _WIN32_WINNT >= 0x0600
-		//HookAPI(Real_RegCreateKeyA, Mine_RegCreateKeyA);
-		//HookAPI(Real_RegCreateKeyW, Mine_RegCreateKeyW);
+		HookAPI(Real_RegCreateKeyA, Mine_RegCreateKeyA);
+		HookAPI(Real_RegCreateKeyW, Mine_RegCreateKeyW);
 		HookAPI(Real_RegCreateKeyExA, Mine_RegCreateKeyExA);
 		HookAPI(Real_RegCreateKeyExW, Mine_RegCreateKeyExW);
-#if _WIN32_WINNT >= 0x0600
-		HookAPI(Real_RegCreateKeyTransactedA, Mine_RegCreateKeyTransactedA);
-		HookAPI(Real_RegCreateKeyTransactedW, Mine_RegCreateKeyTransactedW);
-#endif // _WIN32_WINNT >= 0x0600
 		HookAPI(Real_RegDeleteKeyA, Mine_RegDeleteKeyA);
 		HookAPI(Real_RegDeleteKeyW, Mine_RegDeleteKeyW);
-#if _WIN32_WINNT >= 0x0600
-		HookAPI(Real_RegDeleteKeyExA, Mine_RegDeleteKeyExA);
-		HookAPI(Real_RegDeleteKeyExW, Mine_RegDeleteKeyExW);
-		HookAPI(Real_RegDeleteKeyTransactedA, Mine_RegDeleteKeyTransactedA);
-		HookAPI(Real_RegDeleteKeyTransactedW, Mine_RegDeleteKeyTransactedW);
-		HookAPI(Real_RegDisableReflectionKey, Mine_RegDisableReflectionKey);    
-		HookAPI(Real_RegEnableReflectionKey, Mine_RegEnableReflectionKey);    
-		HookAPI(Real_RegQueryReflectionKey, Mine_RegQueryReflectionKey);    
-#endif // _WIN32_WINNT >= 0x0600   
 		HookAPI(Real_RegDeleteValueA, Mine_RegDeleteValueA);
 		HookAPI(Real_RegDeleteValueW, Mine_RegDeleteValueW);
 		HookAPI(Real_RegEnumKeyA, Mine_RegEnumKeyA);
@@ -1791,14 +1210,10 @@ CFakeFilterMapper2::CFakeFilterMapper2( void )
 		HookAPI(Real_RegLoadKeyA, Mine_RegLoadKeyA);
 		HookAPI(Real_RegLoadKeyW, Mine_RegLoadKeyW);
 		HookAPI(Real_RegNotifyChangeKeyValue, Mine_RegNotifyChangeKeyValue);
-		//HookAPI(Real_RegOpenKeyA, Mine_RegOpenKeyA);
-		//HookAPI(Real_RegOpenKeyW, Mine_RegOpenKeyW);
+		HookAPI(Real_RegOpenKeyA, Mine_RegOpenKeyA);
+		HookAPI(Real_RegOpenKeyW, Mine_RegOpenKeyW);
 		HookAPI(Real_RegOpenKeyExA, Mine_RegOpenKeyExA);
 		HookAPI(Real_RegOpenKeyExW, Mine_RegOpenKeyExW);
-#if _WIN32_WINNT >= 0x0600
-		HookAPI(Real_RegOpenKeyTransactedA, Mine_RegOpenKeyTransactedA);
-		HookAPI(Real_RegOpenKeyTransactedW, Mine_RegOpenKeyTransactedW);
-#endif // _WIN32_WINNT >= 0x0600
 		HookAPI(Real_RegQueryInfoKeyA, Mine_RegQueryInfoKeyA);
 		HookAPI(Real_RegQueryInfoKeyW, Mine_RegQueryInfoKeyW);
 		HookAPI(Real_RegQueryValueA, Mine_RegQueryValueA);
@@ -1822,29 +1237,13 @@ CFakeFilterMapper2::CFakeFilterMapper2( void )
 		HookAPI(Real_RegSetValueExW, Mine_RegSetValueExW);
 		HookAPI(Real_RegUnLoadKeyA, Mine_RegUnLoadKeyA);
 		HookAPI(Real_RegUnLoadKeyW, Mine_RegUnLoadKeyW);
-#if _WIN32_WINNT >= 0x0600
-		HookAPI(Real_RegDeleteKeyValueA, Mine_RegDeleteKeyValueA);
-		HookAPI(Real_RegDeleteKeyValueW, Mine_RegDeleteKeyValueW);
-		HookAPI(Real_RegSetKeyValueA, Mine_RegSetKeyValueA);
-		HookAPI(Real_RegSetKeyValueW, Mine_RegSetKeyValueW);
-		HookAPI(Real_RegDeleteTreeA, Mine_RegDeleteTreeA);
-		HookAPI(Real_RegDeleteTreeW, Mine_RegDeleteTreeW);
-		HookAPI(Real_RegCopyTreeA, Mine_RegCopyTreeA);
-		HookAPI(Real_RegCopyTreeW, Mine_RegCopyTreeW);
-		HookAPI(Real_RegGetValueA, Mine_RegGetValueA);
-		HookAPI(Real_RegGetValueW, Mine_RegGetValueW);
-		HookAPI(Real_RegLoadMUIStringA, Mine_RegLoadMUIStringA);
-		HookAPI(Real_RegLoadMUIStringW, Mine_RegLoadMUIStringW);
-		HookAPI(Real_RegLoadAppKeyA, Mine_RegLoadAppKeyA);
-		HookAPI(Real_RegLoadAppKeyW, Mine_RegLoadAppKeyW);
-#endif // _WIN32_WINNT >= 0x0600
-		ms_bInitialized = true;
 	}
 }
 
-CFakeFilterMapper2::~CFakeFilterMapper2( void )
+void CFakeFilterMapper2::Uninitialize( void )
 {
 	m_pFM2 = NULL;
+	m_regDB.DumpToFile(L"reg.db");
 }
 
 HRESULT CFakeFilterMapper2::Register( LPCTSTR lpszFileName )
@@ -1860,17 +1259,34 @@ HRESULT CFakeFilterMapper2::Register( LPCTSTR lpszFileName )
 		pfnRegSvr = (DllRegisterServerFunc)GetProcAddress(hDLL, "DllRegisterServer");
 		if (pfnRegSvr != NULL)
 		{
-			ms_lockHooking.Lock();
-			ASSERT(ms_pFilterMapper2 == NULL);
-			ms_pFilterMapper2 = this;
+			m_lockHooking.Lock();
+			m_bHooking = true;
 			pfnRegSvr();
-			ms_pFilterMapper2 = NULL;
-			ms_lockHooking.Unlock();
+			m_bHooking = false;
+			m_lockHooking.Unlock();
 			hr = S_OK;
 		}
 		FreeLibrary(hDLL);
 	}
 	return hr;
+}
+
+CRegTreeNode* CFakeFilterMapper2::RegNodeFromHKEY( HKEY hKey )
+{
+	if (IsRootHKEY(hKey))
+	{
+		std::map<HKEY, CStringW>::const_iterator it = m_rootKeys.find(hKey);
+		if (it != m_rootKeys.end())
+			return m_regDB.GetChild(it->second);
+		else
+			return NULL;
+	}
+	else if (IsFakeHKEY(hKey))
+	{
+		return (CRegTreeNode*)((uint32_t)hKey & 0x3FFFFFFF);
+	}
+	else
+		return NULL;	
 }
 
 HRESULT STDMETHODCALLTYPE CFakeFilterMapper2::CreateCategory( REFCLSID clsidCategory, DWORD dwCategoryMerit, LPCWSTR Description )
@@ -1888,13 +1304,13 @@ HRESULT STDMETHODCALLTYPE CFakeFilterMapper2::UnregisterFilter( const CLSID *pcl
 HRESULT STDMETHODCALLTYPE CFakeFilterMapper2::RegisterFilter( REFCLSID clsidFilter, LPCWSTR Name, IMoniker **ppMoniker, const CLSID *pclsidCategory, LPCOLESTR szInstance, const REGFILTER2 *prf2 )
 {
 	TRACE("CFilterMapper2::RegisterFilter\n");
-	return E_NOTIMPL;
+	return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE CFakeFilterMapper2::EnumMatchingFilters( IEnumMoniker **ppEnum, DWORD dwFlags, BOOL bExactMatch, DWORD dwMerit, BOOL bInputNeeded, DWORD cInputTypes, const GUID *pInputTypes, const REGPINMEDIUM *pMedIn, const CLSID *pPinCategoryIn, BOOL bRender, BOOL bOutputNeeded, DWORD cOutputTypes, const GUID *pOutputTypes, const REGPINMEDIUM *pMedOut, const CLSID *pPinCategoryOut )
 {
 	TRACE("CFilterMapper2::EnumMatchingFilters\n");
-	return E_NOTIMPL;
+	return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE CFakeFilterMapper2::QueryInterface( REFIID riid, void** ppvObject )
