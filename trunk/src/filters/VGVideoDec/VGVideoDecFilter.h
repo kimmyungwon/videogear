@@ -13,8 +13,6 @@ public:
 	static const AMOVIESETUP_MEDIATYPE ms_PinTypesOut[];
 	static const UINT ms_nPinTypesOutCount;
 	static CUnknown* CALLBACK CreateInstance(LPUNKNOWN pUnk, HRESULT *pHr);
-	/* ffmpeg */
-	static PixelFormat ff_get_format(AVCodecContext* s, const PixelFormat* fmt);
 public:
 	CVGVideoDecFilter(__inout_opt LPUNKNOWN pUnk);
 	virtual ~CVGVideoDecFilter(void);
@@ -34,4 +32,5 @@ private:
 	AVCodec*		m_pAVCodec;
 	AVCodecContext*	m_pAVCodecCtx;
 	AVFrame*		m_pAVFrame;
+	SwsContext*		m_pSwsCtx;
 };

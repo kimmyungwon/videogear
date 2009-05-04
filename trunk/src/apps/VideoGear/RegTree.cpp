@@ -1,8 +1,8 @@
 #include "stdafx.h"
 #include "RegTree.h"
 
-CRegTreeNode::CRegTreeNode( const CStringW& strName, CRegTreeNode* pParent )
-: m_strName(strName), m_pParent(pParent)
+CRegTreeNode::CRegTreeNode( bool bIsRoot, const CStringW& strName, CRegTreeNode* pParent )
+: m_bIsRoot(bIsRoot), m_strName(strName), m_pParent(pParent)
 {
 
 }
@@ -15,7 +15,7 @@ CRegTreeNode::~CRegTreeNode( void )
 
 CRegTreeNode* CRegTreeNode::GetChild( CStringW strName, bool bExistsOnly )
 {
-	CAutoPtr<CRegTreeNode> child(new CRegTreeNode(strName, this));
+	CAutoPtr<CRegTreeNode> child(new CRegTreeNode(false, strName, this));
 
 	strName.MakeLower();
 	children_t::iterator it = m_children.find(strName);
@@ -83,6 +83,14 @@ void CRegTreeNode::CloseNode( CStringW strPath )
 		RemoveChild(strPath);
 }
 
+CStringW CRegTreeNode::GetPath( void )
+{
+	if (m_pParent != NULL && !m_pParent->m_bIsRoot)
+		return m_pParent->GetPath() + L"\\" + m_strName;
+	else
+		return m_strName;
+}
+
 bool CRegTreeNode::GetValue( CStringW strKey, DWORD* lpType, BYTE* lpData, DWORD* lpcbData )
 {
 	values_t::iterator it = m_values.find(strKey.MakeLower());
@@ -110,37 +118,55 @@ void CRegTreeNode::SetValue( CStringW strKey, DWORD dwType, const BYTE* lpData, 
 	memcpy(pValue->data.m_p, lpData, cbData);
 	m_values.insert(strKey.MakeLower(), pValue);
 }
+
+void CRegTreeNode::Save( FILE* fp )
+{
+	fwprintf_s(fp, L"[%s]\r\n", (LPCWSTR)GetPath());
+	for (values_t::iterator it = m_values.begin(); it != m_values.end(); it++)
+	{
+		if (it->second->key.IsEmpty())
+			fwprintf_s(fp, L"@=");
+		else
+			fwprintf_s(fp, L"\"%s\"=", (LPCWSTR)it->second->key);
+
+		switch (it->second->type)
+		{
+		case REG_SZ:
+			fwprintf_s(fp, L"\"%s\"", (LPCWSTR)it->second->data.m_p);
+			break;
+		}
+
+		fwprintf_s(fp, L"\r\n");
+	}
+	fwprintf_s(fp, L"\r\n");
+	for (children_t::iterator it = m_children.begin(); it != m_children.end(); it++)
+		it->second->Save(fp);
+}
 //////////////////////////////////////////////////////////////////////////
 
 CRegTree::CRegTree( void )
-: CRegTreeNode(L"<Computer>", NULL)
+: CRegTreeNode(true, L"Computer", NULL)
 {
-
 }
 
-void CRegTree::DumpToFile( LPCWSTR lpszFileName )
+void CRegTree::LoadFromFile( LPCWSTR lpszFileName )
+{
+	FILE* fp;
+
+	if (_wfopen_s(&fp, lpszFileName, L"r, ccs=UTF-8") == 0)
+	{
+		fclose(fp);
+	}
+}
+
+void CRegTree::SaveToFile( LPCWSTR lpszFileName )
 {
 	FILE* fp;
 	
-	_wfopen_s(&fp, lpszFileName, L"w, ccs=UTF-8");
-	for (children_t::iterator it = m_children.begin(); it != m_children.end(); it++)
-		Dump(fp, it->second, 0);
-	fclose(fp);
-}
-
-void CRegTree::Dump( FILE* fp, CRegTreeNode* pNode, uint32_t nLevel )
-{
-	ASSERT(pNode != NULL);
-	for (uint32_t i = 1; i <= nLevel; i++)
-		fwprintf(fp, L"+---");
-	fwprintf(fp, L"[%s]\r\n", pNode->GetName());
-	nLevel++;
-	for (values_t::iterator it = pNode->m_values.begin(); it != pNode->m_values.end(); it++)
+	if (_wfopen_s(&fp, lpszFileName, L"w, ccs=UTF-8") == 0)
 	{
-		for (uint32_t i = 1; i <= nLevel; i++)
-			fwprintf(fp, L"+---");
-		fwprintf(fp, L"<%s>\r\n", it->second->key);
+		for (children_t::iterator it = m_children.begin(); it != m_children.end(); it++)
+			it->second->Save(fp);
+		fclose(fp);
 	}
-	for (children_t::iterator it = pNode->m_children.begin(); it != pNode->m_children.end(); it++) 
-		Dump(fp, it->second, nLevel);
 }

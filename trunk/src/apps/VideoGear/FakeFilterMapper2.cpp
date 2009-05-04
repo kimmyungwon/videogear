@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "VideoGear.h"
 #include "FakeFilterMapper2.h"
 #include <APIHook.h>
 
@@ -849,8 +850,14 @@ APIENTRY Mine_RegOpenKeyExA (
     __out PHKEY phkResult
     )
 {
-	TRACE("RegOpenKeyExA\n");
-	return E_NOTIMPL;
+	USES_CONVERSION;
+	
+	if (AfxGetFakeFM2()->m_bHooking)
+	{
+		return RegOpenKeyExW(hKey, A2W(lpSubKey), ulOptions, samDesired, phkResult);
+	}
+	else
+		return Real_RegOpenKeyExA(hKey, lpSubKey, ulOptions, samDesired, phkResult);
 }
 LSTATUS
 APIENTRY Mine_RegOpenKeyExW (
@@ -911,8 +918,18 @@ APIENTRY Mine_RegQueryInfoKeyW (
     __out_opt PFILETIME lpftLastWriteTime
     )
 {
-	TRACE("RegQueryInfoKeyW\n");
-	return E_NOTIMPL;
+	if (AfxGetFakeFM2()->m_bHooking)
+	{
+		CRegTreeNode* pNode = AfxGetFakeFM2()->RegNodeFromHKEY(hKey);
+		ASSERT(pNode != NULL);
+		if (lpcSubKeys != NULL)
+			*lpcSubKeys = pNode->GetChildCount();
+		if (lpcValues != NULL)
+			*lpcValues = pNode->GetValueCount();
+		return S_OK;
+	}
+	else
+		return E_NOTIMPL;
 }
 
 LSTATUS
@@ -1173,9 +1190,10 @@ CFakeFilterMapper2* AfxGetFakeFM2(void)
 CFakeFilterMapper2::CFakeFilterMapper2( void )
 : m_bHooking(false)
 {
-	m_rootKeys.insert(std::make_pair(HKEY_CLASSES_ROOT, L"HKCR"));
-	m_rootKeys.insert(std::make_pair(HKEY_CURRENT_USER, L"HKCU"));
-	m_rootKeys.insert(std::make_pair(HKEY_LOCAL_MACHINE, L"HKLM"));
+	m_rootKeys.insert(std::make_pair(HKEY_CLASSES_ROOT, L"HKEY_CLASSES_ROOT"));
+	m_rootKeys.insert(std::make_pair(HKEY_CURRENT_USER, L"HKEY_CURRENT_USER"));
+	m_rootKeys.insert(std::make_pair(HKEY_LOCAL_MACHINE, L"HKEY_LOCAL_MACHINE"));
+	m_regDB.LoadFromFile(AfxGetExePath() + L"reg.db");
 }
 
 void CFakeFilterMapper2::Initialize( void )
@@ -1243,7 +1261,8 @@ void CFakeFilterMapper2::Initialize( void )
 void CFakeFilterMapper2::Uninitialize( void )
 {
 	m_pFM2 = NULL;
-	m_regDB.DumpToFile(L"reg.db");
+
+	m_regDB.SaveToFile(AfxGetExePath() + L"reg.db");
 }
 
 HRESULT CFakeFilterMapper2::Register( LPCTSTR lpszFileName )

@@ -11,6 +11,19 @@
 #define new DEBUG_NEW
 #endif
 
+CStringW AfxGetExePath(void)
+{
+	WCHAR szPath[MAX_PATH];
+	CPathW path;
+	
+	GetModuleFileNameW(NULL, szPath, _countof(szPath));
+	path.m_strPath = szPath;
+	path.RemoveFileSpec();
+	path.AddBackslash();
+	return path.m_strPath;
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 // CVideoGearApp
 

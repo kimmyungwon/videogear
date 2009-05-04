@@ -11,6 +11,7 @@ struct FfmpegCodecs
 const FfmpegCodecs g_ffCodecs[] = 
 {
 	/* MPEG4 */
+	{&MEDIASUBTYPE_XVID, CODEC_ID_MPEG4, MAKEFOURCC('X', 'V', 'I', 'D')},
 	{&MEDIASUBTYPE_xvid, CODEC_ID_MPEG4, MAKEFOURCC('x', 'v', 'i', 'd')},
 	/* H264 */
 	{&MEDIASUBTYPE_H264, CODEC_ID_H264, MAKEFOURCC('H', '2', '6', '4')},
@@ -26,7 +27,7 @@ struct VideoOutputFormats
 
 const VideoOutputFormats g_vidOutFmts[] =
 {
-	{&MEDIASUBTYPE_YUY2, 1, 16, '2YUY'}
+	{&MEDIASUBTYPE_YUY2, 1, 16, '2YUY'},
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -35,6 +36,7 @@ const VideoOutputFormats g_vidOutFmts[] =
 const AMOVIESETUP_MEDIATYPE CVGVideoDecFilter::ms_PinTypesIn[] = 
 {
 	/* XVID */
+	{&MEDIATYPE_Video, &MEDIASUBTYPE_XVID},
 	{&MEDIATYPE_Video, &MEDIASUBTYPE_xvid},
 	/* H264 */
 	{&MEDIATYPE_Video, &MEDIASUBTYPE_H264},
@@ -151,7 +153,7 @@ HRESULT CVGVideoDecFilter::GetMediaType( int iPosition, __inout CMediaType* pMed
 		BITMAPINFOHEADER& bih = vih->bmiHeader;
 		bih.biSize = sizeof(BITMAPINFOHEADER);
 		bih.biWidth = m_lWidth;
-		bih.biWidth = m_lHeight;
+		bih.biHeight = m_lHeight;
 		bih.biPlanes = g_vidOutFmts[iPosition].biPlanes;
 		bih.biBitCount = g_vidOutFmts[iPosition].biBitCount;
 		bih.biCompression = g_vidOutFmts[iPosition].biCompression;
@@ -175,7 +177,11 @@ HRESULT CVGVideoDecFilter::GetMediaType( int iPosition, __inout CMediaType* pMed
 
 HRESULT CVGVideoDecFilter::CheckTransform( const CMediaType* mtIn, const CMediaType* mtOut )
 {
-	return S_OK;
+	m_pSwsCtx = sws_getContext(m_lWidth, m_lHeight, m_pAVCodecCtx->pix_fmt, m_lWidth, m_lHeight, PIX_FMT_YUYV422, SWS_FAST_BILINEAR|SWS_CPU_CAPS_MMX, NULL, NULL, NULL);
+	if (m_pSwsCtx != NULL)
+		return S_OK;
+	else
+		return VFW_E_TYPE_NOT_ACCEPTED;
 }
 
 HRESULT CVGVideoDecFilter::DecideBufferSize( IMemAllocator* pAllocator, __inout ALLOCATOR_PROPERTIES* pprop )
@@ -204,6 +210,13 @@ HRESULT CVGVideoDecFilter::DecideBufferSize( IMemAllocator* pAllocator, __inout 
 
 HRESULT CVGVideoDecFilter::Transform( IMediaSample* pIn, IMediaSample* pOut )
 {
+	BYTE* pBufIn, pBufOut;
+	BYTE* p
+	
+	pIn->GetPointer(&pBufIn);
+	pOut->GetPointer(&pBufOut);
+	avcodec_decode_video2(m_pAVCodecCtx, m_pAVFrame, )
+	
 	return E_NOTIMPL;
 }
 

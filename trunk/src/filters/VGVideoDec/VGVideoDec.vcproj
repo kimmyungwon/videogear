@@ -59,7 +59,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="winmm.lib libavutil.a libavcodec.a libmingwex.a libgcc.a"
+				AdditionalDependencies="winmm.lib libavutil.a libavcodec.a libswscale.a libmingwex.a libgcc.a"
 				OutputFile="$(OutDir)\$(ProjectName).ax"
 				LinkIncremental="2"
 				ModuleDefinitionFile="VGVideoDec.def"
@@ -87,6 +87,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="regsvr32 /u /s $(TargetPath)&#x0D;&#x0A;regsvr32 /s $(TargetPath)&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration

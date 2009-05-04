@@ -44,5 +44,5 @@
 #include <boost/ptr_container/ptr_map.hpp>
 
 #include <atlbase.h>
-#include <rpc.h>
+#include <atlpath.h>
 #include <dshow.h>
