@@ -3,16 +3,42 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VideoGear", "apps\VideoGear\VideoGear.vcproj", "{A9D113C7-3082-4690-959C-165DB80170BE}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VGVideoDec", "filters\VGVideoDec\VGVideoDec.vcproj", "{0AFC3A12-DECF-4CA3-8A49-CFF88F8ACCB1}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "baseclasses", "filters\BaseClasses\baseclasses.vcproj", "{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug_MBCS|Win32 = Debug_MBCS|Win32
 		Debug|Win32 = Debug|Win32
+		Release_MBCS|Win32 = Release_MBCS|Win32
 		Release|Win32 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A9D113C7-3082-4690-959C-165DB80170BE}.Debug_MBCS|Win32.ActiveCfg = Debug|Win32
+		{A9D113C7-3082-4690-959C-165DB80170BE}.Debug_MBCS|Win32.Build.0 = Debug|Win32
 		{A9D113C7-3082-4690-959C-165DB80170BE}.Debug|Win32.ActiveCfg = Debug|Win32
 		{A9D113C7-3082-4690-959C-165DB80170BE}.Debug|Win32.Build.0 = Debug|Win32
+		{A9D113C7-3082-4690-959C-165DB80170BE}.Release_MBCS|Win32.ActiveCfg = Release|Win32
+		{A9D113C7-3082-4690-959C-165DB80170BE}.Release_MBCS|Win32.Build.0 = Release|Win32
 		{A9D113C7-3082-4690-959C-165DB80170BE}.Release|Win32.ActiveCfg = Release|Win32
 		{A9D113C7-3082-4690-959C-165DB80170BE}.Release|Win32.Build.0 = Release|Win32
+		{0AFC3A12-DECF-4CA3-8A49-CFF88F8ACCB1}.Debug_MBCS|Win32.ActiveCfg = Debug|Win32
+		{0AFC3A12-DECF-4CA3-8A49-CFF88F8ACCB1}.Debug_MBCS|Win32.Build.0 = Debug|Win32
+		{0AFC3A12-DECF-4CA3-8A49-CFF88F8ACCB1}.Debug|Win32.ActiveCfg = Debug|Win32
+		{0AFC3A12-DECF-4CA3-8A49-CFF88F8ACCB1}.Debug|Win32.Build.0 = Debug|Win32
+		{0AFC3A12-DECF-4CA3-8A49-CFF88F8ACCB1}.Release_MBCS|Win32.ActiveCfg = Release|Win32
+		{0AFC3A12-DECF-4CA3-8A49-CFF88F8ACCB1}.Release_MBCS|Win32.Build.0 = Release|Win32
+		{0AFC3A12-DECF-4CA3-8A49-CFF88F8ACCB1}.Release|Win32.ActiveCfg = Release|Win32
+		{0AFC3A12-DECF-4CA3-8A49-CFF88F8ACCB1}.Release|Win32.Build.0 = Release|Win32
+		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}.Debug_MBCS|Win32.ActiveCfg = Debug_MBCS|Win32
+		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}.Debug_MBCS|Win32.Build.0 = Debug_MBCS|Win32
+		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}.Debug|Win32.Build.0 = Debug|Win32
+		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}.Release_MBCS|Win32.ActiveCfg = Release_MBCS|Win32
+		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}.Release_MBCS|Win32.Build.0 = Release_MBCS|Win32
+		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}.Release|Win32.ActiveCfg = Release|Win32
+		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
