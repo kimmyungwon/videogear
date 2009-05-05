@@ -4,8 +4,8 @@
 
 #include "stdafx.h"
 #include "VideoGear.h"
-
 #include "MainFrm.h"
+#include "Splitter.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -24,7 +24,11 @@ END_MESSAGE_MAP()
 
 CMainFrame::CMainFrame()
 {
-	// TODO: 在此添加成员初始化代码
+	CFileSource src;
+	CSplitter spl;
+
+	src.Open(_T("e:\\test.avi"));
+	spl.SetSource(&src);
 }
 
 CMainFrame::~CMainFrame()

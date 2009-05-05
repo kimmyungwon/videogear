@@ -8,10 +8,10 @@
 	>
 	<Tool
 		Name="VCCLCompilerTool"
-		AdditionalIncludeDirectories="&quot;$(SolutionDir)..\inc&quot;;&quot;$(SolutionDir)filters\BaseClasses&quot;"
+		AdditionalIncludeDirectories="&quot;$(SolutionDir)..\inc&quot;"
 	/>
 	<Tool
 		Name="VCLinkerTool"
-		AdditionalLibraryDirectories="$(SolutionDir)..\lib"
+		AdditionalLibraryDirectories="&quot;$(SolutionDir)..\lib&quot;"
 	/>
 </VisualStudioPropertySheet>

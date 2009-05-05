@@ -23,9 +23,8 @@ END_MESSAGE_MAP()
 
 CVideoGearApp::CVideoGearApp()
 {
-
-	// TODO: 在此处添加构造代码，
-	// 将所有重要的初始化放置在 InitInstance 中
+	avcodec_register_all();
+	av_register_all();
 }
 
 // 唯一的一个 CVideoGearApp 对象

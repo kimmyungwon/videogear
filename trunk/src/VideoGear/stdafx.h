@@ -35,8 +35,11 @@
 #endif
 #endif
 
+#include <stdint.h>
+extern "C" {
 #include <libavformat\avformat.h>
 #include <libavcodec\avcodec.h>
 #include <libswscale\swscale.h>
+};
 #include <d3d9.h>
 #include <d3dx9.h>

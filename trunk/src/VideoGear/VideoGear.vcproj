@@ -66,6 +66,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="libmingwex.a libmoldname90d.a libgcc.a libavutil.a libavformat.a libavcodec.a"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -188,6 +189,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Source.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Splitter.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.cpp"
 				>
 				<FileConfiguration
@@ -227,6 +236,14 @@
 			</File>
 			<File
 				RelativePath=".\Resource.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Source.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Splitter.h"
 				>
 			</File>
 			<File
