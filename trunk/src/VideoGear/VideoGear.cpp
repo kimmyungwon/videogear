@@ -23,7 +23,6 @@ END_MESSAGE_MAP()
 
 CVideoGearApp::CVideoGearApp()
 {
-	avcodec_register_all();
 	av_register_all();
 }
 

@@ -25,6 +25,16 @@ int64_t CSource::FFSeek( void *opaque, int64_t offset, int whence )
 		return -1;
 }
 
+int CSource::FFReadPause( void *opaque, int pause )
+{
+	return AVERROR(ENOSYS);
+}
+
+int64_t CSource::FFReadSeek( void *opaque, int stream_index, int64_t timestamp, int flags )
+{
+	return AVERROR(ENOSYS);
+}
+
 CSource::CSource(void)
 : m_pFFByteIO(NULL)
 {
@@ -40,16 +50,21 @@ HRESULT CSource::Initialize( void )
 	if (m_pFFByteIO != NULL)
 		Uninitialize();
 
-	UINT nSize;
+	UINT nMaxPacketSize, nSize;
 	BYTE* pBuffer;
 
-	nSize = GetMaxPacketSize();
-	if (nSize == 0)
-		nSize = SOURCE_BUFFER_SIZE;
-	pBuffer = (BYTE*)av_mallocz(nSize > 0 ? nSize : SOURCE_BUFFER_SIZE);
+	nMaxPacketSize = GetMaxPacketSize();
+	nSize = nMaxPacketSize > 0 ? nMaxPacketSize : SOURCE_BUFFER_SIZE;
+	pBuffer = (BYTE*)av_malloc(nSize > 0 ? nSize : SOURCE_BUFFER_SIZE);
+	if (pBuffer == NULL)
+		return E_OUTOFMEMORY;
 	m_pFFByteIO = av_alloc_put_byte(pBuffer, nSize, 0, this, FFReadPacket, FFWritePacket, FFSeek);
 	if (m_pFFByteIO != NULL)
 	{
+		m_pFFByteIO->is_streamed = 0;
+		m_pFFByteIO->max_packet_size = nMaxPacketSize;
+		m_pFFByteIO->read_pause = FFReadPause;
+		m_pFFByteIO->read_seek = FFReadSeek;
 		return S_OK;
 	}
 	else
