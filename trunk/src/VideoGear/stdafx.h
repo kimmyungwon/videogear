@@ -35,6 +35,7 @@
 #endif
 #endif
 
+#include <boost\ptr_container\ptr_vector.hpp>
 #include <stdint.h>
 extern "C" {
 #include <libavformat\avformat.h>

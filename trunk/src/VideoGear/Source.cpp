@@ -1,174 +1,97 @@
 #include "StdAfx.h"
 #include "Source.h"
 
-int CSource::FFReadPacket( void *opaque, uint8_t *buf, int buf_size )
+int FFReadPacket( void *opaque, uint8_t *buf, int buf_size )
 {
 	if (opaque != NULL && buf_size > 0)
-		return (int)((CSource*)opaque)->Read((BYTE*)buf, buf_size);
+		return (int)((CStream*)opaque)->Read((BYTE*)buf, buf_size);
 	else
 		return 0;
 }
 
-int CSource::FFWritePacket( void *opaque, uint8_t *buf, int buf_size )
+int FFWritePacket( void *opaque, uint8_t *buf, int buf_size )
 {
 	if (opaque != NULL && buf_size > 0)
-		return (int)((CSource*)opaque)->Write((BYTE*)buf, buf_size);
+		return (int)((CStream*)opaque)->Write((BYTE*)buf, buf_size);
 	else
 		return 0;	
 }
 
-int64_t CSource::FFSeek( void *opaque, int64_t offset, int whence )
+int64_t FFSeek( void *opaque, int64_t offset, int whence )
 {
 	if (opaque != NULL)
-		return ((CSource*)opaque)->Seek((LONGLONG)offset, whence);
+		return ((CStream*)opaque)->Seek((LONGLONG)offset, whence);
 	else
 		return -1;
 }
 
-int CSource::FFReadPause( void *opaque, int pause )
+int FFReadPause( void *opaque, int pause )
 {
 	return AVERROR(ENOSYS);
 }
 
-int64_t CSource::FFReadSeek( void *opaque, int stream_index, int64_t timestamp, int flags )
+int64_t FFReadSeek( void *opaque, int stream_index, int64_t timestamp, int flags )
 {
 	return AVERROR(ENOSYS);
-}
-
-CSource::CSource(void)
-: m_pFFByteIO(NULL)
-{
-}
-
-CSource::~CSource(void)
-{
-	Uninitialize();
-}
-
-HRESULT CSource::Initialize( void )
-{
-	if (m_pFFByteIO != NULL)
-		Uninitialize();
-
-	UINT nMaxPacketSize, nSize;
-	BYTE* pBuffer;
-
-	nMaxPacketSize = GetMaxPacketSize();
-	nSize = nMaxPacketSize > 0 ? nMaxPacketSize : SOURCE_BUFFER_SIZE;
-	pBuffer = (BYTE*)av_malloc(nSize > 0 ? nSize : SOURCE_BUFFER_SIZE);
-	if (pBuffer == NULL)
-		return E_OUTOFMEMORY;
-	m_pFFByteIO = av_alloc_put_byte(pBuffer, nSize, 0, this, FFReadPacket, FFWritePacket, FFSeek);
-	if (m_pFFByteIO != NULL)
-	{
-		m_pFFByteIO->is_streamed = 0;
-		m_pFFByteIO->max_packet_size = nMaxPacketSize;
-		m_pFFByteIO->read_pause = FFReadPause;
-		m_pFFByteIO->read_seek = FFReadSeek;
-		return S_OK;
-	}
-	else
-	{
-		av_free(pBuffer);
-		return E_OUTOFMEMORY;
-	}
-}
-
-void CSource::Uninitialize( void )
-{
-	if (m_pFFByteIO != NULL)
-	{
-		if (m_pFFByteIO->buffer != NULL)
-		{
-			av_free(m_pFFByteIO->buffer); 
-			m_pFFByteIO->buffer = NULL;
-		}
-		av_free(m_pFFByteIO);
-		m_pFFByteIO = NULL;
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-CFileSource::CFileSource( void )
-: m_hFile(INVALID_HANDLE_VALUE)
+CSource::CSource( CStream* pStream, bool bOwnsObject /*= false*/ )
+: m_pStream(pStream), m_bOwnsObject(bOwnsObject)
 {
 
 }
 
-CFileSource::~CFileSource( void )
+const CString& CSource::GetFileName( void ) const
 {
-	Close();
+	ASSERT(m_pStream != NULL);
+	return m_pStream->GetName();
 }
 
-HRESULT CFileSource::Open( LPCTSTR pszFileName )
+CStringA CSource::GetFileNameA( void ) const
 {
-	Close();
-	Uninitialize();
+	ASSERT(m_pStream != NULL);
+	USES_CONVERSION;
+	return T2A(m_pStream->GetName());
+}
 
-	m_hFile = CreateFile(pszFileName, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
-	if (m_hFile != INVALID_HANDLE_VALUE)
+HRESULT CSource::Reload( void )
+{
+	ASSERT(m_pStream != NULL);
+	return m_pStream->Open(m_pStream->GetName());
+}
+//////////////////////////////////////////////////////////////////////////
+
+CFFSource::CFFSource( CStream* pStream, bool bOwnsObject /*= false*/ )
+: CSource(pStream, bOwnsObject)
+{
+	if (m_pStream != NULL)
 	{
-		HRESULT hr = Initialize();
-		if (SUCCEEDED(hr))
-			m_strFileName = pszFileName;
-		else
-		{
-			CloseHandle(m_hFile);
-			m_hFile = NULL;
-		}
-		return hr;
-	}
-	else
-		return HRESULT_FROM_WIN32(GetLastError());
-}
+		UINT nMaxPacketSize, nSize;
+		BYTE* pBuffer;
 
-void CFileSource::Close( void )
-{
-	m_strFileName.Empty();
-	if (m_hFile != INVALID_HANDLE_VALUE)
-	{
-		CloseHandle(m_hFile);
-		m_hFile = INVALID_HANDLE_VALUE;
+		nMaxPacketSize = m_pStream->GetMaxPacketSize();
+		nSize = nMaxPacketSize > 0 ? nMaxPacketSize : SOURCE_BUFFER_SIZE;
+		pBuffer = (BYTE*)av_malloc(nSize > 0 ? nSize : SOURCE_BUFFER_SIZE);
+		if (pBuffer == NULL)
+			return;
+		init_put_byte(this, pBuffer, nSize, 0, m_pStream, FFReadPacket, FFWritePacket, FFSeek);
+		is_streamed = 0;
+		max_packet_size = nMaxPacketSize;
+		read_pause = FFReadPause;
+		read_seek = FFReadSeek;
 	}
 }
 
-UINT CFileSource::Read( BYTE* pBuffer, UINT cbBuffer )
+CFFSource::~CFFSource(void)
 {
-	if (m_hFile != NULL)
+	if (buffer != NULL)
+		av_freep(&buffer); 
+	if (m_bOwnsObject && m_pStream != NULL)
 	{
-		DWORD dwRead = 0;
-		ReadFile(m_hFile, (LPVOID)pBuffer, cbBuffer, &dwRead, NULL);
-		return dwRead;
+		m_pStream->Close();
+		delete m_pStream;
+		m_pStream = NULL;
 	}
-	else
-		return 0;
-}
-
-UINT CFileSource::Write( const BYTE* pBuffer, UINT cbBuffer )
-{
-	if (m_hFile != NULL)
-	{
-		DWORD dwWritten = 0;
-		WriteFile(m_hFile, (LPVOID)pBuffer, cbBuffer, &dwWritten, NULL);
-		return dwWritten;
-	}
-	else
-		return 0;
-}
-
-LONGLONG CFileSource::Seek( LONGLONG llOffset, int nOrigin )
-{
-	if (m_hFile != NULL)
-	{
-		LARGE_INTEGER liOffset, liPos;
-
-		liOffset.QuadPart = llOffset;
-		if (SetFilePointerEx(m_hFile, liOffset, &liPos, nOrigin))
-			return liPos.QuadPart;
-		else
-			return -1;
-	}
-	else
-		return -1;
 }

@@ -24,11 +24,17 @@ END_MESSAGE_MAP()
 
 CMainFrame::CMainFrame()
 {
-	CFileSource src;
-	CSplitter spl;
+	CFileStream* pFile;
+	CFFSource* pFFSrc;
+	CFFSplitter* pFFSplt;
 
-	src.Open(_T("e:\\test.avi"));
-	spl.SetSource(&src);
+	pFile = new CFileStream;
+	pFile->Open(_T("e:\\test.avi"));
+	pFFSrc = new CFFSource(pFile, true);
+	pFFSplt = new CFFSplitter;
+	pFFSplt->SetSource(pFFSrc);
+	delete pFFSplt;
+	delete pFFSrc;
 }
 
 CMainFrame::~CMainFrame()

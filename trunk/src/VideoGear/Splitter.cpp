@@ -1,75 +1,81 @@
 #include "StdAfx.h"
 #include "Splitter.h"
 
-int match_ext(const char *filename, const char *extensions)
+UINT CSplitter::GetOutputCount( void ) const
 {
-	const char *ext, *p;
-	char ext1[32], *q;
+	return m_outputs.size();
+}
 
-	if(!filename)
-		return 0;
+COutput* CSplitter::GetOutput( UINT nIndex )
+{
+	if (nIndex < m_outputs.size())
+		return &m_outputs[nIndex];
+	else
+		return NULL;
+}
 
-	ext = strrchr(filename, '.');
-	if (ext) {
-		ext++;
-		p = extensions;
-		for(;;) {
-			q = ext1;
-			while (*p != '\0' && *p != ',' && q-ext1<sizeof(ext1)-1)
-				*q++ = *p++;
-			*q = '\0';
-			if (!strcmp(ext1, ext))
-				return 1;
-			if (*p == '\0')
+void CSplitter::AddOutput( COutput* pOutput )
+{
+	m_outputs.push_back(pOutput);
+}
+
+void CSplitter::RemoveAllOutputs( void )
+{
+	m_outputs.clear();
+}
+//////////////////////////////////////////////////////////////////////////
+
+class CFFDecoder
+{
+public:
+	CFFDecoder(CFFSplitter* pSplt)
+		: m_pSplitter(pSplt)
+	{}
+
+	void Execute(bool& bTerminated)
+	{
+		AVFormatContext* pFmtCtx = m_pSplitter->m_pFmtCtx;
+		AVPacket* pPacket;
+
+		while (!bTerminated)
+		{
+			pPacket = new AVPacket;
+			if (av_read_frame(pFmtCtx, pPacket) < 0)
 				break;
-			p++;
+			CFFOutput* pOut = (CFFOutput*)m_pSplitter->GetOutput(pPacket->stream_index);
+			if (pOut != NULL)
+				pOut->Delivery(pPacket);
+			av_free_packet(pPacket);
 		}
 	}
-	return 0;
-}
+private:
+	CFFSplitter* m_pSplitter;
+};
 
-static AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score_max)
-{
-	AVInputFormat *fmt1, *fmt;
-	int score;
+//////////////////////////////////////////////////////////////////////////
 
-	fmt = NULL;
-	for(fmt1 = first_iformat; fmt1 != NULL; fmt1 = fmt1->next) {
-		if (!is_opened == !(fmt1->flags & AVFMT_NOFILE))
-			continue;
-		score = 0;
-		if (fmt1->read_probe) {
-			score = fmt1->read_probe(pd);
-		} else if (fmt1->extensions) {
-			if (match_ext(pd->filename, fmt1->extensions)) {
-				score = 50;
-			}
-		}
-		if (score > *score_max) {
-			*score_max = score;
-			fmt = fmt1;
-		}else if (score == *score_max)
-			fmt = NULL;
-	}
-	return fmt;
-}
-
-CSplitter::CSplitter(void)
-: m_pSource(NULL), m_pFmtCtx(NULL)
+CFFSplitter::CFFSplitter(void)
+: m_pSource(NULL), m_pFmtCtx(NULL), m_pDecodeThread(NULL)
 {
 }
 
-CSplitter::~CSplitter(void)
+CFFSplitter::~CFFSplitter(void)
 {
 	SetSource(NULL);
 }
 
-HRESULT CSplitter::SetSource( CSource* pSrc )
+HRESULT CFFSplitter::SetSource( CFFSource* pSrc )
 {
 	if (m_pSource != pSrc)
 	{
 		if (m_pSource != NULL)
 		{		
+			if (m_pDecodeThread != NULL)
+			{
+				delete m_pDecodeThread;
+				m_pDecodeThread = NULL;
+			}
+			RemoveAllOutputs();
 			if (m_pFmtCtx != NULL)
 			{
 				av_close_input_stream(m_pFmtCtx);
@@ -79,21 +85,20 @@ HRESULT CSplitter::SetSource( CSource* pSrc )
 		}
 		if (pSrc != NULL)
 		{
-			USES_CONVERSION;
 			AVInputFormat* pFmt = NULL;
-			CStringA strFileNameA;
 			
 			pFmt = DetectInputFormat(pSrc);
 			if (pFmt == NULL)
 				return ERROR_BAD_FORMAT;
-			strFileNameA = T2A(pSrc->GetName());
-			if (av_open_input_stream(&m_pFmtCtx, pSrc->GetIOContext(), strFileNameA, pFmt, NULL) != 0)
+			if (av_open_input_stream(&m_pFmtCtx, pSrc, pSrc->GetFileNameA(), pFmt, NULL) != 0)
 			{
 				av_free(m_pFmtCtx);
 				m_pFmtCtx = NULL;
 				return ERROR_BAD_FORMAT;
 			}
 			m_pSource = pSrc;
+			ParseOutput();
+			m_pDecodeThread = new CThread<CFFDecoder>(new CFFDecoder(this));
 		}
 	}
 	return S_OK;
@@ -102,16 +107,15 @@ HRESULT CSplitter::SetSource( CSource* pSrc )
 #define PROBE_BUF_MIN 2048
 #define PROBE_BUF_MAX (1<<20)
 
-AVInputFormat* CSplitter::DetectInputFormat( CSource* pSrc )
+AVInputFormat* CFFSplitter::DetectInputFormat( CFFSource* pSrc )
 {
 	ASSERT(pSrc != NULL);
 
-	USES_CONVERSION;
 	CStringA strFileNameA;
 	AVProbeData pd;
 	AVInputFormat* pFmt;
 	
-	strFileNameA = T2A(pSrc->GetName());
+	strFileNameA = pSrc->GetFileNameA();
 	pd.filename = strFileNameA;
 	pd.buf = NULL;
 	pd.buf_size = 0;
@@ -121,18 +125,17 @@ AVInputFormat* CSplitter::DetectInputFormat( CSource* pSrc )
 	{
 		for (int nProbeSize = PROBE_BUF_MIN; nProbeSize <= PROBE_BUF_MAX && pFmt == NULL; nProbeSize <<= 1)
 		{
-			int nScore = nProbeSize < PROBE_BUF_MAX ? AVPROBE_SCORE_MAX / 4 : 0;
 			// 读取数据
 			pd.buf = (unsigned char*)av_realloc(pd.buf, nProbeSize + AVPROBE_PADDING_SIZE);
-			pd.buf_size = get_buffer(pSrc->GetIOContext(), pd.buf, nProbeSize);
+			pd.buf_size = get_buffer(pSrc, pd.buf, nProbeSize);
 			memset(&pd.buf[pd.buf_size], 0, AVPROBE_PADDING_SIZE);
-			if (url_fseek(pSrc->GetIOContext(), 0, SEEK_SET) < 0)
+			if (url_fseek(pSrc, 0, SEEK_SET) < 0)
 			{
-				if (FAILED(pSrc->Open(pSrc->GetName())))
+				if (FAILED(pSrc->Reload()))
 					break;
 			}
 			// 猜测文件类型
-			pFmt = av_probe_input_format2(&pd, 1, &nScore);
+			pFmt = av_probe_input_format(&pd, 1);
 		}
 		av_free(pd.buf);
 		pd.buf = NULL;
@@ -145,4 +148,14 @@ AVInputFormat* CSplitter::DetectInputFormat( CSource* pSrc )
 	}
 
 	return pFmt;
+}
+
+void CFFSplitter::ParseOutput( void )
+{
+	ASSERT(m_pFmtCtx != NULL);
+	for (UINT i = 0; i < m_pFmtCtx->nb_streams; i++)
+	{
+		CFFOutput* pOut = new CFFOutput(m_pFmtCtx->streams[i]);
+		AddOutput(pOut);
+	}
 }

@@ -123,14 +123,16 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
+				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
 				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG"
 				MinimalRebuild="false"
 				RuntimeLibrary="0"
-				EnableFunctionLevelLinking="true"
+				EnableFunctionLevelLinking="false"
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
-				DebugInformationFormat="3"
+				DebugInformationFormat="0"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -146,8 +148,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="libmingwex.a libmoldname90.a libgcc.a libavutil.a libavformat.a libavcodec.a"
 				LinkIncremental="1"
-				GenerateDebugInformation="true"
+				GenerateDebugInformation="false"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -189,6 +192,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Output.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Packet.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Source.cpp"
 				>
 			</File>
@@ -217,6 +228,14 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\Stream.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Thread.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\VideoGear.cpp"
 				>
 			</File>
@@ -232,6 +251,14 @@
 			>
 			<File
 				RelativePath=".\MainFrm.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Output.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Packet.h"
 				>
 			</File>
 			<File
@@ -251,7 +278,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Stream.h"
+				>
+			</File>
+			<File
 				RelativePath=".\targetver.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Thread.h"
 				>
 			</File>
 			<File
