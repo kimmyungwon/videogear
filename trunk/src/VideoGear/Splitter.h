@@ -8,6 +8,7 @@ class CSplitter
 {
 public:
 	virtual ~CSplitter(void)	{}
+	virtual HRESULT SetSource(CSource* pSrc) = 0;
 	UINT GetOutputCount(void) const;
 	COutput* GetOutput(UINT nIndex);
 protected:
@@ -25,12 +26,15 @@ class CFFSplitter : public CSplitter
 public:
 	CFFSplitter(void);
 	virtual ~CFFSplitter(void);
-	HRESULT SetSource(CFFSource* pSrc);
+	virtual HRESULT SetSource(CSource* pSrc);
 protected:
-	AVInputFormat* DetectInputFormat(CFFSource* pSrc);
+	HRESULT InitIOContext(void);
+	void FreeIOContext(void);
+	AVInputFormat* DetectInputFormat(void);
 	void ParseOutput(void);
 private:
-	CFFSource* m_pSource;
+	CSource* m_pSource;
+	ByteIOContext m_ffIOCtx;
 	AVFormatContext* m_pFmtCtx;
 	CThread<CFFDecoder>* m_pDecodeThread;
 };

@@ -228,10 +228,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\Stream.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\Thread.cpp"
 				>
 			</File>
@@ -251,6 +247,10 @@
 			>
 			<File
 				RelativePath=".\MainFrm.h"
+				>
+			</File>
+			<File
+				RelativePath=".\MediaType.h"
 				>
 			</File>
 			<File
@@ -275,10 +275,6 @@
 			</File>
 			<File
 				RelativePath=".\stdafx.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Stream.h"
 				>
 			</File>
 			<File

@@ -1,8 +1,8 @@
 #include "StdAfx.h"
 #include "Packet.h"
 
-CPacket::CPacket( int nType )
-: m_nType(nType)
+CPacket::CPacket( MediaType type )
+: m_type(type)
 {
 }
 

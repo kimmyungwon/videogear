@@ -23,6 +23,7 @@ void CSplitter::RemoveAllOutputs( void )
 {
 	m_outputs.clear();
 }
+
 //////////////////////////////////////////////////////////////////////////
 
 class CFFDecoder
@@ -35,22 +36,60 @@ public:
 	void Execute(bool& bTerminated)
 	{
 		AVFormatContext* pFmtCtx = m_pSplitter->m_pFmtCtx;
-		AVPacket* pPacket;
-
+		
 		while (!bTerminated)
 		{
-			pPacket = new AVPacket;
-			if (av_read_frame(pFmtCtx, pPacket) < 0)
+			AVPacket packet;
+
+			if (av_read_frame(pFmtCtx, &packet) < 0)
 				break;
-			CFFOutput* pOut = (CFFOutput*)m_pSplitter->GetOutput(pPacket->stream_index);
-			if (pOut != NULL)
-				pOut->Delivery(pPacket);
-			av_free_packet(pPacket);
+			COutput* pOut = m_pSplitter->GetOutput(packet.stream_index);
+			/*if (pOut != NULL)
+				pOut->Delivery(pPacket);*/
+			av_free_packet(&packet);
 		}
 	}
 private:
 	CFFSplitter* m_pSplitter;
 };
+
+//////////////////////////////////////////////////////////////////////////
+
+#define IO_BUFFER_SIZE	32768
+
+int FFReadPacket( void *opaque, uint8_t *buf, int buf_size )
+{
+	if (opaque != NULL && buf_size > 0)
+		return (int)((CSource*)opaque)->Read((BYTE*)buf, buf_size);
+	else
+		return 0;
+}
+
+int FFWritePacket( void *opaque, uint8_t *buf, int buf_size )
+{
+	if (opaque != NULL && buf_size > 0)
+		return (int)((CSource*)opaque)->Write((BYTE*)buf, buf_size);
+	else
+		return 0;	
+}
+
+int64_t FFSeek( void *opaque, int64_t offset, int whence )
+{
+	if (opaque != NULL)
+		return ((CSource*)opaque)->Seek((LONGLONG)offset, whence);
+	else
+		return -1;
+}
+
+int FFReadPause( void *opaque, int pause )
+{
+	return AVERROR(ENOSYS);
+}
+
+int64_t FFReadSeek( void *opaque, int stream_index, int64_t timestamp, int flags )
+{
+	return AVERROR(ENOSYS);
+}
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -64,7 +103,7 @@ CFFSplitter::~CFFSplitter(void)
 	SetSource(NULL);
 }
 
-HRESULT CFFSplitter::SetSource( CFFSource* pSrc )
+HRESULT CFFSplitter::SetSource( CSource* pSrc )
 {
 	if (m_pSource != pSrc)
 	{
@@ -81,22 +120,37 @@ HRESULT CFFSplitter::SetSource( CFFSource* pSrc )
 				av_close_input_stream(m_pFmtCtx);
 				m_pFmtCtx = NULL;
 			}
+			FreeIOContext();
 			m_pSource = NULL;
 		}
 		if (pSrc != NULL)
 		{
+			HRESULT hr;
 			AVInputFormat* pFmt = NULL;
 			
-			pFmt = DetectInputFormat(pSrc);
-			if (pFmt == NULL)
-				return ERROR_BAD_FORMAT;
-			if (av_open_input_stream(&m_pFmtCtx, pSrc, pSrc->GetFileNameA(), pFmt, NULL) != 0)
-			{
-				av_free(m_pFmtCtx);
-				m_pFmtCtx = NULL;
-				return ERROR_BAD_FORMAT;
-			}
 			m_pSource = pSrc;
+			hr = InitIOContext();
+			if (FAILED(hr))
+			{
+				m_pSource = NULL;
+				return hr;
+			}
+		
+			pFmt = DetectInputFormat();
+			if (pFmt == NULL)
+			{
+				FreeIOContext();
+				m_pSource = NULL;
+				return E_FAIL;
+			}
+
+			if (av_open_input_stream(&m_pFmtCtx, &m_ffIOCtx, m_pSource->GetNameA(), pFmt, NULL) < 0)
+			{
+				FreeIOContext();
+				m_pSource = NULL;
+				return E_FAIL;
+			}
+
 			ParseOutput();
 			m_pDecodeThread = new CThread<CFFDecoder>(new CFFDecoder(this));
 		}
@@ -104,18 +158,47 @@ HRESULT CFFSplitter::SetSource( CFFSource* pSrc )
 	return S_OK;
 }
 
+HRESULT CFFSplitter::InitIOContext( void )
+{
+	UINT nMaxPacketSize, nSize;
+	BYTE* pBuffer;
+
+	nMaxPacketSize = m_pSource->GetMaxPacketSize();
+	nSize = nMaxPacketSize > 0 ? nMaxPacketSize : IO_BUFFER_SIZE;
+	pBuffer = (BYTE*)av_malloc(nSize);
+	if (pBuffer == NULL)
+		return E_OUTOFMEMORY;
+	if (init_put_byte(&m_ffIOCtx, pBuffer, nSize, 0, m_pSource, FFReadPacket, FFWritePacket, FFSeek) < 0)
+	{
+		av_free(pBuffer);
+		return E_FAIL;
+	}
+	m_ffIOCtx.is_streamed = 0;
+	m_ffIOCtx.max_packet_size = nMaxPacketSize;
+	return S_OK;
+}
+
+void CFFSplitter::FreeIOContext( void )
+{
+	if (m_ffIOCtx.buffer != NULL)
+	{
+		av_free(m_ffIOCtx.buffer);
+		m_ffIOCtx.buffer = NULL;
+	}
+	m_ffIOCtx.buf_ptr = NULL;
+	m_ffIOCtx.opaque = NULL;
+}
+
 #define PROBE_BUF_MIN 2048
 #define PROBE_BUF_MAX (1<<20)
 
-AVInputFormat* CFFSplitter::DetectInputFormat( CFFSource* pSrc )
+AVInputFormat* CFFSplitter::DetectInputFormat( void )
 {
-	ASSERT(pSrc != NULL);
-
 	CStringA strFileNameA;
 	AVProbeData pd;
 	AVInputFormat* pFmt;
 	
-	strFileNameA = pSrc->GetFileNameA();
+	strFileNameA = m_pSource->GetNameA();
 	pd.filename = strFileNameA;
 	pd.buf = NULL;
 	pd.buf_size = 0;
@@ -127,11 +210,11 @@ AVInputFormat* CFFSplitter::DetectInputFormat( CFFSource* pSrc )
 		{
 			// 读取数据
 			pd.buf = (unsigned char*)av_realloc(pd.buf, nProbeSize + AVPROBE_PADDING_SIZE);
-			pd.buf_size = get_buffer(pSrc, pd.buf, nProbeSize);
+			pd.buf_size = get_buffer(&m_ffIOCtx, pd.buf, nProbeSize);
 			memset(&pd.buf[pd.buf_size], 0, AVPROBE_PADDING_SIZE);
-			if (url_fseek(pSrc, 0, SEEK_SET) < 0)
+			if (url_fseek(&m_ffIOCtx, 0, SEEK_SET) < 0)
 			{
-				if (FAILED(pSrc->Reload()))
+				if (FAILED(m_pSource->Open(m_pSource->GetName())))
 					break;
 			}
 			// 猜测文件类型
@@ -155,7 +238,8 @@ void CFFSplitter::ParseOutput( void )
 	ASSERT(m_pFmtCtx != NULL);
 	for (UINT i = 0; i < m_pFmtCtx->nb_streams; i++)
 	{
-		CFFOutput* pOut = new CFFOutput(m_pFmtCtx->streams[i]);
+		COutput* pOut = new CFFOutput;
+		((CFFOutput*)pOut)->Initialize(m_pFmtCtx->streams[i]);
 		AddOutput(pOut);
 	}
 }

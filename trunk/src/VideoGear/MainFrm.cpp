@@ -24,17 +24,16 @@ END_MESSAGE_MAP()
 
 CMainFrame::CMainFrame()
 {
-	CFileStream* pFile;
-	CFFSource* pFFSrc;
+	CFileSource* pSrc;
 	CFFSplitter* pFFSplt;
 
-	pFile = new CFileStream;
-	pFile->Open(_T("e:\\test.avi"));
-	pFFSrc = new CFFSource(pFile, true);
+	pSrc = new CFileSource;
+	pSrc->Open(_T("e:\\test.avi"));
 	pFFSplt = new CFFSplitter;
-	pFFSplt->SetSource(pFFSrc);
+	pFFSplt->SetSource(pSrc);
+	Sleep(10000);
 	delete pFFSplt;
-	delete pFFSrc;
+	delete pSrc;
 }
 
 CMainFrame::~CMainFrame()

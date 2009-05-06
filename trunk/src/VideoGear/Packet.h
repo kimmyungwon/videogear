@@ -1,24 +1,19 @@
 #pragma once
 
+#include "MediaType.h"
+
 class CPacket
 {
 public:
-	enum {
-		TYPE_UNKNOWN = -1,
-		TYPE_VIDEO,
-		TYPE_AUDIO,
-		TYPE_SUBTITLE
-	};
-
-	CPacket(int nType);
+	CPacket(MediaType type);
 	virtual ~CPacket(void);
-	int GetType(void) const	{ return m_nType; }
+	MediaType GetType(void) const	{ return m_type; }
 private:
-	int m_nType;
+	MediaType m_type;
 };
 
 class CFFPacket : public CPacket
 {
 public:
-	CFFPacket(int nType);
+	CFFPacket(MediaType nType);
 };
