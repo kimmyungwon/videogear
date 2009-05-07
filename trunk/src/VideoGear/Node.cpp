@@ -8,12 +8,6 @@ CPin::CPin( CNode* pOwner, PinDirection dir, MediaType mtMajor, MediaType mtSub 
 
 }
 
-HRESULT CPin::GetNode( CNode*& pNode )
-{
-	pNode = m_pOwner;
-	return S_OK;
-}
-
 HRESULT CPin::Connect( CPin* pPin )
 {
 	if (pPin == NULL)
@@ -25,21 +19,42 @@ HRESULT CPin::Connect( CPin* pPin )
 	if (m_pConnected != NULL)
 		return VGERR_ALREADY_CONNECTED;
 
+	CPin* pPinOut;
+	CPin* pPinIn;
+	CNode* pNodeOut;
+	CNode* pNodeIn;
+	
 	if (m_dir == PDIR_INPUT)
 	{
-		RIF(m_pOwner->CheckInput(pPin));
-		RIF(m_pOwner->CompleteConnect(m_dir, pPin));
-		return S_OK;
+		pPinOut = pPin;
+		pPinIn = this;
 	}
 	else
 	{
-		return pPin->Connect(this);
+		pPinOut = this;
+		pPinIn = pPin;
 	}
+	pNodeOut = pPinOut->GetNode();
+	if (pPinOut == NULL)
+		return E_UNEXPECTED;
+	pNodeIn = pPinIn->GetNode();
+	if (pPinIn == NULL)
+		return E_UNEXPECTED;
+	RIF(pNodeIn->CheckInput(pPinOut));
+	RIF(pNodeOut->CompleteConnect(pPinOut, pPinIn));
+	RIF(pNodeIn->CompleteConnect(pPinIn, pPinOut));
+	pPinOut->m_pConnected = pPinIn;
+	pPinIn->m_pConnected = pPinOut;
+	return S_OK;
 }
 
 HRESULT CPin::Disconnect( void )
 {
-	return E_NOTIMPL;
+	if (m_pConnected != NULL)
+	{
+		
+	}
+	return S_OK;
 }
 
 //////////////////////////////////////////////////////////////////////////

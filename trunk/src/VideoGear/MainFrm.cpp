@@ -6,7 +6,6 @@
 #include "VideoGear.h"
 #include "MainFrm.h"
 #include "Splitter.h"
-#include "Decoder.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

@@ -29,7 +29,7 @@ protected:
 	void ParseOutput(void);
 	/* CNode */
 	virtual HRESULT CheckInput(CPin* pPinIn);
-	virtual HRESULT CompleteConnect(PinDirection dir, CPin* pPinIn);
+	virtual HRESULT CompleteConnect(PinDirection dir, CPin* pPin, CPin* pPinRecv);
 private:
 	CSource* m_pSource;
 	ByteIOContext m_ffIOCtx;

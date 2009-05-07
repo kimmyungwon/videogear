@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Defines.h"
+
 enum PinDirection {
 	PDIR_INPUT,
 	PDIR_OUTPUT
@@ -31,7 +33,7 @@ private:
 
 class CNode
 {
-	friend class CNode;
+	friend class CPin;
 public:
 	CNode(void);
 	virtual ~CNode(void);
@@ -44,7 +46,8 @@ protected:
 	HRESULT RemoveAllPins(void);
 	/* жиди */
 	virtual HRESULT CheckInput(CPin* pPinIn) = 0;
-	virtual HRESULT CompleteConnect(PinDirection dir, CPin* pPinIn) = 0;
+	virtual HRESULT CompleteConnect(CPin* pPin, CPin* pPinRecv) = 0;
+	virtual HRESULT BreakConnect(CPin* pPin) = 0;
 private:
 	typedef boost::ptr_vector<CPin> PinList;
 
