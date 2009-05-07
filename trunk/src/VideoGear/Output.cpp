@@ -9,14 +9,15 @@ COutput::~COutput(void)
 {
 }
 
-void COutput::Initialize( int nType )
+void COutput::Initialize( MediaType type )
 {
-
+	m_type = type;
 }
 
 void COutput::Delivery( CPacket* pPacket )
 {
-	m_packq.push_back(pPacket);
+	CAutoLock lock(&m_packQLock);
+	m_packQ.push_back(pPacket);
 }
 //////////////////////////////////////////////////////////////////////////
 

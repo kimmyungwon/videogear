@@ -26,10 +26,10 @@ void CSplitter::RemoveAllOutputs( void )
 
 //////////////////////////////////////////////////////////////////////////
 
-class CFFDecoder
+class CFFDemuxeWorker
 {
 public:
-	CFFDecoder(CFFSplitter* pSplt)
+	CFFDemuxeWorker(CFFSplitter* pSplt)
 		: m_pSplitter(pSplt)
 	{}
 
@@ -44,8 +44,8 @@ public:
 			if (av_read_frame(pFmtCtx, &packet) < 0)
 				break;
 			COutput* pOut = m_pSplitter->GetOutput(packet.stream_index);
-			/*if (pOut != NULL)
-				pOut->Delivery(pPacket);*/
+			if (pOut != NULL)
+				pOut->Delivery(new CFFPacket(&packet));
 			av_free_packet(&packet);
 		}
 	}
@@ -152,7 +152,7 @@ HRESULT CFFSplitter::SetSource( CSource* pSrc )
 			}
 
 			ParseOutput();
-			m_pDecodeThread = new CThread<CFFDecoder>(new CFFDecoder(this));
+			m_pDecodeThread = new CThread<CFFDemuxeWorker>(new CFFDemuxeWorker(this));
 		}
 	}
 	return S_OK;

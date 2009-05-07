@@ -22,7 +22,7 @@ private:
 
 class CFFSplitter : public CSplitter
 {
-	friend class CFFDecoder;
+	friend class CFFDemuxeWorker;
 public:
 	CFFSplitter(void);
 	virtual ~CFFSplitter(void);

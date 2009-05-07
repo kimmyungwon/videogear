@@ -188,6 +188,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\Decoder.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\MainFrm.cpp"
 				>
 			</File>
@@ -245,6 +249,10 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\Decoder.h"
+				>
+			</File>
 			<File
 				RelativePath=".\MainFrm.h"
 				>
@@ -312,10 +320,66 @@
 				>
 			</File>
 		</Filter>
-		<File
-			RelativePath=".\ReadMe.txt"
+		<Filter
+			Name="ffmpeg"
 			>
-		</File>
+			<Filter
+				Name="libavcodec"
+				>
+				<File
+					RelativePath="..\..\inc\libavcodec\avcodec.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="libavformat"
+				>
+				<File
+					RelativePath="..\..\inc\libavformat\avformat.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\inc\libavformat\avio.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="libavutil"
+				>
+				<File
+					RelativePath="..\..\inc\libavutil\avutil.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\inc\libavutil\common.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\inc\libavutil\intfloat_readwrite.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\inc\libavutil\log.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\inc\libavutil\mathematics.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\inc\libavutil\mem.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\inc\libavutil\pixfmt.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\inc\libavutil\rational.h"
+					>
+				</File>
+			</Filter>
+		</Filter>
 	</Files>
 	<Globals>
 	</Globals>
