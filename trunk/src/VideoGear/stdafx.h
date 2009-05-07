@@ -35,6 +35,7 @@
 #endif
 #endif
 
+#include <map>
 #include <boost\ptr_container\ptr_vector.hpp>
 #include <stdint.h>
 extern "C" {

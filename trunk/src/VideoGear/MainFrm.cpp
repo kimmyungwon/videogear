@@ -25,20 +25,6 @@ END_MESSAGE_MAP()
 
 CMainFrame::CMainFrame()
 {
-	CFileSource* pSrc;
-	CSplitter* pSplt;
-	CDecoder* pDec;
-
-	pSrc = new CFileSource;
-	pSrc->Open(_T("e:\\test.avi"));
-	pSplt = new CFFSplitter;
-	pSplt->SetSource(pSrc);
-	pDec = new CFFDecoder;
-	pDec->SetOutput(pSplt->GetOutput(0));
-	Sleep(10000);
-	delete pDec;
-	delete pSplt;
-	delete pSrc;
 }
 
 CMainFrame::~CMainFrame()

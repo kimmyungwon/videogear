@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Output.h"
 #include "Thread.h"
 
 class CDecoder

@@ -8,25 +8,32 @@ class CSplitter : public CNode
 {
 public:
 	virtual ~CSplitter(void)	{}
-	virtual HRESULT SetSource(CSource* pSrc) = 0;
 };
 
-class CFFSplitter : public CSplitter
+class CFFSplitterOutputPin : public CPin
+{
+public:
+	CFFSplitterOutputPin(AVStream& ffStream);
+};
+
+class CFFSplitter : public CNode
 {
 	friend class CFFDemuxeWorker;
 public:
 	CFFSplitter(void);
 	virtual ~CFFSplitter(void);
-	/* CSplitter */
-	virtual HRESULT SetSource(CSource* pSrc);
 protected:
 	HRESULT InitIOContext(void);
 	void FreeIOContext(void);
 	AVInputFormat* DetectInputFormat(void);
 	void ParseOutput(void);
+	/* CNode */
+	virtual HRESULT CheckInput(CPin* pPinIn);
+	virtual HRESULT CompleteConnect(PinDirection dir, CPin* pPinIn);
 private:
 	CSource* m_pSource;
 	ByteIOContext m_ffIOCtx;
 	AVFormatContext* m_pFmtCtx;
+	std::map<UINT, CPin*> m_streamIdxToPin;
 	CThread<CFFDemuxeWorker>* m_pDecodeThread;
 };

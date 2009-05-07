@@ -1,7 +1,5 @@
 #pragma once
 
-#include "MediaType.h"
-
 class CPacket
 {
 public:

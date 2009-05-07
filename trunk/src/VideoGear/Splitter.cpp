@@ -213,8 +213,8 @@ void CFFSplitter::ParseOutput( void )
 	ASSERT(m_pFmtCtx != NULL);
 	for (UINT i = 0; i < m_pFmtCtx->nb_streams; i++)
 	{
-		COutput* pOut = new CFFOutput;
-		((CFFOutput*)pOut)->Initialize(m_pFmtCtx->streams[i]);
-		AddOutput(pOut);
+		CFFSplitterOutputPin* pPin = new CFFSplitterOutputPin(m_pFmtCtx->streams[i]);
+		AddPin(pPin);
+		m_streamIdxToPin.insert(std::make_pair(i, pPin));
 	}
 }

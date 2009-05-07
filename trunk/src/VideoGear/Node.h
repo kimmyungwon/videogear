@@ -17,7 +17,10 @@ class CPin
 	friend class CNode;
 public:
 	CPin(CNode* pOwner, PinDirection dir, MediaType mtMajor, MediaType mtSub);
-	virtual ~CPin(void)	{}
+	virtual ~CPin(void) {}
+	CNode* GetNode(void)	{ return m_pOwner; }
+	PinDirection GetDirection(void)	{ return m_dir; }
+	HRESULT Connect(CPin* pPin);
 	HRESULT Disconnect(void);
 private:
 	CNode* m_pOwner;
@@ -28,15 +31,20 @@ private:
 
 class CNode
 {
+	friend class CNode;
 public:
 	CNode(void);
 	virtual ~CNode(void);
+	UINT GetPinCount(void);
 	HRESULT GetPin(UINT nIndex, CPin*& pPin);
 protected:
 	void AddPin(CPin* pPin);
 	HRESULT RemovePin(const CPin* pPin);
 	HRESULT RemovePin(UINT nIndex);
 	HRESULT RemoveAllPins(void);
+	/* жиди */
+	virtual HRESULT CheckInput(CPin* pPinIn) = 0;
+	virtual HRESULT CompleteConnect(PinDirection dir, CPin* pPinIn) = 0;
 private:
 	typedef boost::ptr_vector<CPin> PinList;
 

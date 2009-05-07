@@ -8,10 +8,40 @@ CPin::CPin( CNode* pOwner, PinDirection dir, MediaType mtMajor, MediaType mtSub 
 
 }
 
+HRESULT CPin::GetNode( CNode*& pNode )
+{
+	pNode = m_pOwner;
+	return S_OK;
+}
+
+HRESULT CPin::Connect( CPin* pPin )
+{
+	if (pPin == NULL)
+		return E_POINTER;
+	if (m_pOwner == NULL)
+		return E_UNEXPECTED;
+	if (m_dir == pPin->GetDirection())
+		return VGERR_INVALID_DIRECTION;
+	if (m_pConnected != NULL)
+		return VGERR_ALREADY_CONNECTED;
+
+	if (m_dir == PDIR_INPUT)
+	{
+		RIF(m_pOwner->CheckInput(pPin));
+		RIF(m_pOwner->CompleteConnect(m_dir, pPin));
+		return S_OK;
+	}
+	else
+	{
+		return pPin->Connect(this);
+	}
+}
+
 HRESULT CPin::Disconnect( void )
 {
 	return E_NOTIMPL;
 }
+
 //////////////////////////////////////////////////////////////////////////
 
 CNode::CNode(void)

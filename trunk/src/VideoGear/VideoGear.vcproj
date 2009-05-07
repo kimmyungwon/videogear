@@ -200,10 +200,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\Output.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\Packet.cpp"
 				>
 			</File>
@@ -266,15 +262,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\MediaType.h"
-				>
-			</File>
-			<File
 				RelativePath=".\Node.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Output.h"
 				>
 			</File>
 			<File
