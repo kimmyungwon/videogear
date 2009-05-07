@@ -1,31 +1,6 @@
 #include "StdAfx.h"
 #include "Splitter.h"
 
-UINT CSplitter::GetOutputCount( void ) const
-{
-	return m_outputs.size();
-}
-
-COutput* CSplitter::GetOutput( UINT nIndex )
-{
-	if (nIndex < m_outputs.size())
-		return &m_outputs[nIndex];
-	else
-		return NULL;
-}
-
-void CSplitter::AddOutput( COutput* pOutput )
-{
-	m_outputs.push_back(pOutput);
-}
-
-void CSplitter::RemoveAllOutputs( void )
-{
-	m_outputs.clear();
-}
-
-//////////////////////////////////////////////////////////////////////////
-
 class CFFDemuxeWorker
 {
 public:

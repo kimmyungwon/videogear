@@ -9,6 +9,7 @@
 
 #include "resource.h"       // 主符号
 
+#define RIF(cond)	{HRESULT hr = (cond); if (FAILED(hr)) return hr;}
 
 // CVideoGearApp:
 // 有关此类的实现，请参阅 VideoGear.cpp

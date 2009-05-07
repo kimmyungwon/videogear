@@ -196,6 +196,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Node.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Output.cpp"
 				>
 			</File>
@@ -254,11 +258,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Defines.h"
+				>
+			</File>
+			<File
 				RelativePath=".\MainFrm.h"
 				>
 			</File>
 			<File
 				RelativePath=".\MediaType.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Node.h"
 				>
 			</File>
 			<File

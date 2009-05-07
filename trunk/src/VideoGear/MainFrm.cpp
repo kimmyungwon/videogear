@@ -6,6 +6,7 @@
 #include "VideoGear.h"
 #include "MainFrm.h"
 #include "Splitter.h"
+#include "Decoder.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -25,14 +26,18 @@ END_MESSAGE_MAP()
 CMainFrame::CMainFrame()
 {
 	CFileSource* pSrc;
-	CFFSplitter* pFFSplt;
+	CSplitter* pSplt;
+	CDecoder* pDec;
 
 	pSrc = new CFileSource;
 	pSrc->Open(_T("e:\\test.avi"));
-	pFFSplt = new CFFSplitter;
-	pFFSplt->SetSource(pSrc);
+	pSplt = new CFFSplitter;
+	pSplt->SetSource(pSrc);
+	pDec = new CFFDecoder;
+	pDec->SetOutput(pSplt->GetOutput(0));
 	Sleep(10000);
-	delete pFFSplt;
+	delete pDec;
+	delete pSplt;
 	delete pSrc;
 }
 

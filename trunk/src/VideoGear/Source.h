@@ -1,6 +1,6 @@
 #pragma once
 
-class CSource : public CObject
+class CSource
 {
 public:
 	virtual ~CSource(void)	{}
