@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Defines.h"
+#include "Packet.h"
 
 enum PinDirection {
 	PDIR_INPUT,
@@ -8,26 +9,36 @@ enum PinDirection {
 };
 
 enum MediaType{
-	MTYPE_UNKNOWN = -1,
+	MTYPE_NONE,
+	MTYPE_STREAM,
 	MTYPE_VIDEO,
 	MTYPE_AUDIO,
 	MTYPE_SUBTITLE
 };
 
+enum MediaSubType
+{
+	MSTYPE_NONE
+};	
+
 class CPin
 {
 	friend class CNode;
 public:
-	CPin(CNode* pOwner, PinDirection dir, MediaType mtMajor, MediaType mtSub);
+	CPin(CNode* pOwner, PinDirection dir, MediaType mtMajor, MediaSubType mtSub);
 	virtual ~CPin(void) {}
 	CNode* GetNode(void)	{ return m_pOwner; }
 	PinDirection GetDirection(void)	{ return m_dir; }
 	HRESULT Connect(CPin* pPin);
+	CPin* ConnectedTo(void)	{ return m_pConnected; }
 	HRESULT Disconnect(void);
-private:
+	virtual HRESULT Deliver(CPacket* pPacket);
+	virtual HRESULT Receive(CPacket* pPacket);
+protected:
 	CNode* m_pOwner;
 	PinDirection m_dir;
-	MediaType m_mtMajor, m_mtSub;
+	MediaType m_mtMajor;
+	MediaSubType m_mtSub;
 	CPin* m_pConnected;
 };
 
@@ -37,8 +48,8 @@ class CNode
 public:
 	CNode(void);
 	virtual ~CNode(void);
-	UINT GetPinCount(void);
-	HRESULT GetPin(UINT nIndex, CPin*& pPin);
+	UINT GetPinCount(void)	{ return m_pins.size(); }
+	CPin* GetPin(UINT nIndex);
 protected:
 	void AddPin(CPin* pPin);
 	HRESULT RemovePin(const CPin* pPin);

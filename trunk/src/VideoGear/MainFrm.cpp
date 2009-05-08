@@ -5,7 +5,6 @@
 #include "stdafx.h"
 #include "VideoGear.h"
 #include "MainFrm.h"
-#include "Splitter.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -24,6 +23,8 @@ END_MESSAGE_MAP()
 
 CMainFrame::CMainFrame()
 {
+	m_source.Open(_T("e:\\test.avi"));
+	m_source.GetPin(0)->Connect(m_splitter.GetPin(0));
 }
 
 CMainFrame::~CMainFrame()

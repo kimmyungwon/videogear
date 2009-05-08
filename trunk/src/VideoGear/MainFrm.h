@@ -4,6 +4,7 @@
 
 #pragma once
 #include "VideoView.h"
+#include "Splitter.h"
 
 class CMainFrame : public CFrameWnd
 {
@@ -33,6 +34,8 @@ public:
 #endif
 
 	CVideoView    m_wndView;
+	CFileSource	  m_source;
+	CFFSplitter   m_splitter;
 
 // 生成的消息映射函数
 protected:

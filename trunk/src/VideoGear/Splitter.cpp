@@ -18,9 +18,9 @@ public:
 
 			if (av_read_frame(pFmtCtx, &packet) < 0)
 				break;
-			COutput* pOut = m_pSplitter->GetOutput(packet.stream_index);
+			CPin* pOut = m_pSplitter->FindOutputPinByStreamIndex(packet.stream_index);
 			if (pOut != NULL)
-				pOut->Delivery(new CFFPacket(&packet));
+				pOut->Deliver(new CFFPacket(&packet));
 			av_free_packet(&packet);
 		}
 	}
@@ -68,69 +68,30 @@ int64_t FFReadSeek( void *opaque, int stream_index, int64_t timestamp, int flags
 
 //////////////////////////////////////////////////////////////////////////
 
+CFFSplitterOutputPin::CFFSplitterOutputPin( CNode* pOwner, AVStream* ffStream )
+: CPin(pOwner, PDIR_OUTPUT, MTYPE_VIDEO, MSTYPE_NONE)
+{
+
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 CFFSplitter::CFFSplitter(void)
 : m_pSource(NULL), m_pFmtCtx(NULL), m_pDecodeThread(NULL)
 {
+	m_pInput = new CPin(this, PDIR_INPUT, MTYPE_STREAM, MSTYPE_NONE);
+	AddPin(m_pInput);
 }
 
 CFFSplitter::~CFFSplitter(void)
 {
-	SetSource(NULL);
+	RemoveAllPins();
 }
 
-HRESULT CFFSplitter::SetSource( CSource* pSrc )
+CFFSplitterOutputPin* CFFSplitter::FindOutputPinByStreamIndex( UINT nIndex )
 {
-	if (m_pSource != pSrc)
-	{
-		if (m_pSource != NULL)
-		{		
-			if (m_pDecodeThread != NULL)
-			{
-				delete m_pDecodeThread;
-				m_pDecodeThread = NULL;
-			}
-			RemoveAllOutputs();
-			if (m_pFmtCtx != NULL)
-			{
-				av_close_input_stream(m_pFmtCtx);
-				m_pFmtCtx = NULL;
-			}
-			FreeIOContext();
-			m_pSource = NULL;
-		}
-		if (pSrc != NULL)
-		{
-			HRESULT hr;
-			AVInputFormat* pFmt = NULL;
-			
-			m_pSource = pSrc;
-			hr = InitIOContext();
-			if (FAILED(hr))
-			{
-				m_pSource = NULL;
-				return hr;
-			}
-		
-			pFmt = DetectInputFormat();
-			if (pFmt == NULL)
-			{
-				FreeIOContext();
-				m_pSource = NULL;
-				return E_FAIL;
-			}
-
-			if (av_open_input_stream(&m_pFmtCtx, &m_ffIOCtx, m_pSource->GetNameA(), pFmt, NULL) < 0)
-			{
-				FreeIOContext();
-				m_pSource = NULL;
-				return E_FAIL;
-			}
-
-			ParseOutput();
-			m_pDecodeThread = new CThread<CFFDemuxeWorker>(new CFFDemuxeWorker(this));
-		}
-	}
-	return S_OK;
+	std::map<UINT, CPin*>::iterator it = m_streamIdxToPin.find(nIndex);
+	return it != m_streamIdxToPin.end() ? static_cast<CFFSplitterOutputPin*>(it->second) : NULL;
 }
 
 HRESULT CFFSplitter::InitIOContext( void )
@@ -213,8 +174,100 @@ void CFFSplitter::ParseOutput( void )
 	ASSERT(m_pFmtCtx != NULL);
 	for (UINT i = 0; i < m_pFmtCtx->nb_streams; i++)
 	{
-		CFFSplitterOutputPin* pPin = new CFFSplitterOutputPin(m_pFmtCtx->streams[i]);
+		CFFSplitterOutputPin* pPin = new CFFSplitterOutputPin(this, m_pFmtCtx->streams[i]);
 		AddPin(pPin);
 		m_streamIdxToPin.insert(std::make_pair(i, pPin));
 	}
 }
+
+void CFFSplitter::RemoveAllOutputs( void )
+{	
+	m_streamIdxToPin.clear();
+	for (UINT i = 0; i < GetPinCount();)
+	{
+		CPin* pPin = GetPin(i);
+		ASSERT(pPin != NULL);
+		if (pPin->GetDirection() == PDIR_OUTPUT)
+			RemovePin(i);
+		else
+			i++;
+	}
+}
+
+HRESULT CFFSplitter::CheckInput( CPin* pPinIn )
+{
+	ASSERT(pPinIn != NULL);
+	ASSERT(pPinIn->GetDirection() == PDIR_OUTPUT);
+
+	CSource* pSource = static_cast<CSource*>(pPinIn->GetNode());
+	if (pSource == NULL)
+		return E_INVALIDARG;
+	return S_OK;
+}
+
+HRESULT CFFSplitter::CompleteConnect( CPin* pPin, CPin* pPinRecv )
+{
+	if (pPin == m_pInput)
+	{
+		ASSERT(pPinRecv != NULL);
+		ASSERT(pPinRecv->GetDirection() == PDIR_OUTPUT);
+		
+		CSource* pSource;
+		HRESULT hr;
+		AVInputFormat* pFmt = NULL;
+
+		pSource = static_cast<CSource*>(pPinRecv->GetNode());
+		if (pSource == NULL)
+			return E_INVALIDARG;
+		m_pSource = pSource;
+		hr = InitIOContext();
+		if (FAILED(hr))
+		{
+			m_pSource = NULL;
+			return hr;
+		}
+		pFmt = DetectInputFormat();
+		if (pFmt == NULL)
+		{
+			FreeIOContext();
+			m_pSource = NULL;
+			return E_FAIL;
+		}
+		if (av_open_input_stream(&m_pFmtCtx, &m_ffIOCtx, m_pSource->GetNameA(), pFmt, NULL) < 0)
+		{
+			FreeIOContext();
+			m_pSource = NULL;
+			return E_FAIL;
+		}
+		ParseOutput();
+		m_pDecodeThread = new CThread<CFFDemuxeWorker>(new CFFDemuxeWorker(this));
+		return S_OK;
+	}
+	else
+		return S_OK;
+}
+
+HRESULT CFFSplitter::BreakConnect( CPin* pPin )
+{
+	ASSERT(pPin != NULL);
+	ASSERT(pPin->GetNode() == this);
+
+	if (pPin->GetDirection() == PDIR_INPUT)
+	{
+		if (m_pDecodeThread != NULL)
+		{
+			delete m_pDecodeThread;
+			m_pDecodeThread = NULL;
+		}
+		RemoveAllOutputs();
+		if (m_pFmtCtx != NULL)
+		{
+			av_close_input_stream(m_pFmtCtx);
+			m_pFmtCtx = NULL;
+		}
+		FreeIOContext();
+		m_pSource = NULL;
+	}
+	return S_OK;
+}
+

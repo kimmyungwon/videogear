@@ -28,6 +28,7 @@ HRESULT CFileSource::Open( LPCTSTR pszFileName )
 	if (m_hFile != INVALID_HANDLE_VALUE)
 	{
 		m_strFileName = pszFileName;
+		AddPin(new CPin(this, PDIR_OUTPUT, MTYPE_STREAM, MSTYPE_NONE));
 		return S_OK;
 	}
 	else
@@ -36,6 +37,7 @@ HRESULT CFileSource::Open( LPCTSTR pszFileName )
 
 void CFileSource::Close( void )
 {
+	RemoveAllPins();
 	m_strFileName.Empty();
 	if (m_hFile != INVALID_HANDLE_VALUE)
 	{

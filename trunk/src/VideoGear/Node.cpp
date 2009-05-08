@@ -2,7 +2,7 @@
 #include "Node.h"
 #include "VideoGear.h"
 
-CPin::CPin( CNode* pOwner, PinDirection dir, MediaType mtMajor, MediaType mtSub )
+CPin::CPin( CNode* pOwner, PinDirection dir, MediaType mtMajor, MediaSubType mtSub )
 : m_pOwner(pOwner), m_dir(dir), m_mtMajor(mtMajor), m_mtSub(m_mtSub), m_pConnected(NULL)
 {
 
@@ -14,6 +14,8 @@ HRESULT CPin::Connect( CPin* pPin )
 		return E_POINTER;
 	if (m_pOwner == NULL)
 		return E_UNEXPECTED;
+	if (m_pConnected != NULL)
+		return VGERR_ALREADY_CONNECTED;
 	if (m_dir == pPin->GetDirection())
 		return VGERR_INVALID_DIRECTION;
 	if (m_pConnected != NULL)
@@ -42,21 +44,55 @@ HRESULT CPin::Connect( CPin* pPin )
 		return E_UNEXPECTED;
 	RIF(pNodeIn->CheckInput(pPinOut));
 	RIF(pNodeOut->CompleteConnect(pPinOut, pPinIn));
-	RIF(pNodeIn->CompleteConnect(pPinIn, pPinOut));
 	pPinOut->m_pConnected = pPinIn;
+	RIF(pNodeIn->CompleteConnect(pPinIn, pPinOut));
 	pPinIn->m_pConnected = pPinOut;
 	return S_OK;
 }
 
 HRESULT CPin::Disconnect( void )
 {
+	if (m_pOwner == NULL)
+		return E_UNEXPECTED;
 	if (m_pConnected != NULL)
 	{
-		
+		CNode* pNodeRecv;
+
+		pNodeRecv = m_pConnected->GetNode();
+		if (pNodeRecv == NULL)
+			return E_UNEXPECTED;
+		RIF(pNodeRecv->BreakConnect(m_pConnected));
+		m_pConnected->m_pConnected = NULL;
+		RIF(m_pOwner->BreakConnect(this));
+		m_pConnected = NULL;
 	}
 	return S_OK;
 }
 
+HRESULT CPin::Deliver( CPacket* pPacket )
+{
+	CAutoPtr<CPacket> pPtr;
+	
+	pPtr.Attach(pPacket);
+	if (pPacket == NULL)
+		return E_POINTER;
+	if (m_dir != PDIR_OUTPUT)
+		return VGERR_NOT_SUPPORTED;
+	if (m_pConnected == NULL)
+		return VGERR_NOT_CONNECTED;
+	HRESULT hr = m_pConnected->Receive(pPacket);
+	if (SUCCEEDED(hr))
+		pPtr.Detach();
+	return hr;
+}
+
+HRESULT CPin::Receive( CPacket* pPacket )
+{
+	if (pPacket == NULL)
+		return E_POINTER;
+	delete pPacket;
+	return S_OK;
+}
 //////////////////////////////////////////////////////////////////////////
 
 CNode::CNode(void)
@@ -67,18 +103,9 @@ CNode::~CNode(void)
 {
 }
 
-HRESULT CNode::GetPin( UINT nIndex, CPin*& pPin )
+CPin* CNode::GetPin( UINT nIndex )
 {
-	if (nIndex < m_pins.size())
-	{
-		pPin = &m_pins[nIndex];
-		return S_OK;
-	}
-	else
-	{
-		pPin = NULL;
-		return E_FAIL;
-	}
+	return nIndex < m_pins.size() ? &m_pins[nIndex] : NULL;
 }
 
 void CNode::AddPin( CPin* pPin )
@@ -102,7 +129,7 @@ HRESULT CNode::RemovePin( UINT nIndex )
 	if (nIndex < m_pins.size())
 	{
 		RIF(m_pins[nIndex].Disconnect());
-		m_pins.erase(m_pins.erase(m_pins.begin() + nIndex));
+		m_pins.erase(m_pins.begin() + nIndex);
 		return S_OK;
 	}
 	else
@@ -117,4 +144,5 @@ HRESULT CNode::RemoveAllPins( void )
 	}		
 	return S_OK;
 }
+
 
