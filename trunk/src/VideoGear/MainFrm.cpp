@@ -23,7 +23,7 @@ END_MESSAGE_MAP()
 
 CMainFrame::CMainFrame()
 {
-	m_player.RenderFile(_T("e:\\test.rm"));
+	m_player.RenderFile(_T("e:\\test.rmvb"));
 	m_player.Play();
 }
 

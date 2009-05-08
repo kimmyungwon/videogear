@@ -45,5 +45,6 @@ extern "C" {
 #include <libavcodec\avcodec.h>
 #include <libswscale\swscale.h>
 };
+#include <intrin.h>
 #include <d3d9.h>
 #include <d3dx9.h>

@@ -38,10 +38,12 @@ protected:
 	void Demuxe(bool& bTerminated);
 	/* 视频解码 */
 	void DecodeVideo(bool& bTerminated);
+	/* 色彩空间转换 */
+	void ConvertAndAdd(AVFrame* pFrame);
 	/* 音频解码 */
 	void DecodeAudio(bool& bTerminated);
 private:
-	typedef std::list<AVPacket> PacketQueue;
+	typedef std::list<AVPacket*> PacketQueue;
 	typedef std::list<AVFrame*> FrameQueue;
 	struct DecoderContext
 	{
@@ -57,6 +59,7 @@ private:
 	CSource* m_pSource; 
 	ByteIOContext* m_pffIOCtx;
 	AVFormatContext* m_pffFmtCtx;
+	SwsContext* m_pSwsCtx;
 	CThread* m_pDemuxerThread;
 	DecoderContext m_vidDecCtx;
 	DecoderContext m_audDecCtx;

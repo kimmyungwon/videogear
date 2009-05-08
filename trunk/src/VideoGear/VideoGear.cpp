@@ -18,11 +18,11 @@ BEGIN_MESSAGE_MAP(CVideoGearApp, CWinApp)
 	ON_COMMAND(ID_APP_ABOUT, &CVideoGearApp::OnAppAbout)
 END_MESSAGE_MAP()
 
-
 // CVideoGearApp ππ‘Ï
 
 CVideoGearApp::CVideoGearApp()
 {
+	avcodec_init();
 	av_register_all();
 }
 

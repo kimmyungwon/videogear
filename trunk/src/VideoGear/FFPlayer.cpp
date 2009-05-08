@@ -2,6 +2,7 @@
 #include "FFPlayer.h"
 #include "VideoGear.h"
 #include "Defines.h"
+#include "Cpuid.h"
 
 #define IO_BUFFER_SIZE	32768
 
@@ -87,6 +88,7 @@ CFFPlayer::CFFPlayer(void)
 	m_pSource = NULL;  
 	m_pffIOCtx = NULL;
 	m_pffFmtCtx = NULL;
+	m_pSwsCtx = NULL;
 	m_pDemuxerThread = NULL;
 	m_vidDecCtx.Stream = NULL;
 	m_vidDecCtx.Thread = NULL;
@@ -97,6 +99,8 @@ CFFPlayer::CFFPlayer(void)
 CFFPlayer::~CFFPlayer(void)
 {
 	Clean();
+	sws_freeContext(m_pSwsCtx);
+	m_pSwsCtx = NULL;
 }
 
 HRESULT CFFPlayer::RenderFile( LPCTSTR pszFile )
@@ -150,9 +154,10 @@ HRESULT CFFPlayer::Play( void )
 }
 
 #define CleanPacketQueue(q)	while (q.size() > 0) { \
-								AVPacket* pPacket = &q.front();	\
-								av_free_packet(pPacket); \
+								AVPacket* pPacket = q.front();	\
 								q.pop_front(); \
+								av_free_packet(pPacket); \
+								SAFE_DELETE(pPacket); \
 							}
 
 #define CleanFrameQueue(q)	while (q.size() > 0) { \
@@ -173,7 +178,6 @@ HRESULT CFFPlayer::Stop( void )
 	m_vidDecCtx.FramesLock.Enter();
 	CleanFrameQueue(m_vidDecCtx.Frames);
 	m_vidDecCtx.FramesLock.Leave();
-	m_vidDecCtx.Stream = NULL;
 
 	SAFE_DELETE(m_audDecCtx.Thread);
 	m_audDecCtx.PacketsLock.Enter();
@@ -182,7 +186,6 @@ HRESULT CFFPlayer::Stop( void )
 	m_audDecCtx.FramesLock.Enter();
 	CleanFrameQueue(m_audDecCtx.Frames);
 	m_audDecCtx.FramesLock.Leave();
-	m_audDecCtx.Stream = NULL;
 
 	m_State = PS_STOPPED;
 	return S_OK;
@@ -192,13 +195,12 @@ HRESULT CFFPlayer::Clean( void )
 {
 	if (m_State != PS_IDLE)
 		RIF(Stop());
+	if (m_vidDecCtx.Stream != NULL && m_vidDecCtx.Stream->codec != NULL)
+		avcodec_close(m_vidDecCtx.Stream->codec);
+	if (m_audDecCtx.Stream != NULL && m_audDecCtx.Stream->codec != NULL)
+		avcodec_close(m_audDecCtx.Stream->codec);
 	if (m_pffFmtCtx != NULL)
 	{
-		for (UINT i = 0; i < m_pffFmtCtx->nb_streams; i++)
-		{
-			AVStream* pStream = m_pffFmtCtx->streams[i];
-			avcodec_close(pStream->codec);
-		}
 		av_close_input_stream(m_pffFmtCtx);
 		m_pffFmtCtx = NULL;
 	}
@@ -305,25 +307,32 @@ HRESULT CFFPlayer::RenderOutputs( AVInputFormat* pInFmt )
 	{
 		AVStream* pStream = m_pffFmtCtx->streams[i];
 		AVCodec* pCodec = avcodec_find_decoder(pStream->codec->codec_id);
-		if (pCodec != NULL && avcodec_open(pStream->codec, pCodec) >= 0)
+		if (pCodec != NULL)
 		{
-			switch (pCodec->type)
+			nRendered++;
+			switch (pStream->codec->codec_type)
 			{
 			case CODEC_TYPE_VIDEO:
-				if (m_vidDecCtx.Stream == NULL)
-					m_vidDecCtx.Stream = pStream;
+				if (m_vidDecCtx.Stream == NULL && pCodec != NULL && avcodec_open(pStream->codec, pCodec) >= 0)
+				{
+					m_pSwsCtx = sws_getCachedContext(m_pSwsCtx, pStream->codec->width, pStream->codec->height, pStream->codec->pix_fmt,
+						pStream->codec->width, pStream->codec->height, PIX_FMT_YUYV422, SWS_FAST_BILINEAR | GetSwsFlags(), NULL, NULL, NULL);
+					if (m_pSwsCtx != NULL)
+					{
+						m_vidDecCtx.Stream = pStream;
+					}
+					else
+					{
+						avcodec_close(pStream->codec);
+						nRendered--;
+					}
+				}
 				break;
 			case CODEC_TYPE_AUDIO:
-				if (m_audDecCtx.Stream == NULL)
+				if (m_audDecCtx.Stream == NULL && pCodec != NULL && avcodec_open(pStream->codec, pCodec) >= 0)
 					m_audDecCtx.Stream = pStream;
 				break;
 			}
-			nRendered++;
-		}
-		else
-		{
-			USES_CONVERSION;
-			TRACE("Stream%d(%s) cannot be rendered", pStream->index, A2T(pStream->codec->codec_name));
 		}
 	}
 	if (m_pffFmtCtx->nb_streams > 0)
@@ -339,26 +348,29 @@ void CFFPlayer::Demuxe( bool& bTerminated )
 {
 	while (!bTerminated)
 	{
-		AVPacket packet;
-		
-		if (av_read_frame(m_pffFmtCtx, &packet) < 0)
+		AVPacket* pPacket = new AVPacket;	
+		if (av_read_frame(m_pffFmtCtx, pPacket) < 0)
+		{
+			SAFE_DELETE(pPacket);
 			break;
+		}
 
-		if (m_vidDecCtx.Stream != NULL && packet.stream_index == m_vidDecCtx.Stream->index)
+		if (m_vidDecCtx.Stream != NULL && pPacket->stream_index == m_vidDecCtx.Stream->index)
 		{
 			m_vidDecCtx.PacketsLock.Enter();
-			m_vidDecCtx.Packets.push_back(packet);
+			m_vidDecCtx.Packets.push_back(pPacket);
 			m_vidDecCtx.PacketsLock.Leave();
 		}
-		else if (m_audDecCtx.Stream != NULL && packet.stream_index == m_audDecCtx.Stream->index)
+		else if (m_audDecCtx.Stream != NULL && pPacket->stream_index == m_audDecCtx.Stream->index)
 		{
 			m_audDecCtx.PacketsLock.Enter();
-			m_audDecCtx.Packets.push_back(packet);
+			m_audDecCtx.Packets.push_back(pPacket);
 			m_audDecCtx.PacketsLock.Leave();
 		}
 		else
 		{
-			av_free_packet(&packet);
+			av_free_packet(pPacket);
+			SAFE_DELETE(pPacket);
 		}
 	}
 }
@@ -367,7 +379,7 @@ void CFFPlayer::DecodeVideo( bool& bTerminated )
 {
 	while (!bTerminated)
 	{
-		AVPacket packet;
+		AVPacket* pPacket;
 		AVFrame* pFrame;
 		int nGotPicture = 0, nBytesUsed = 0;
 		
@@ -382,24 +394,64 @@ void CFFPlayer::DecodeVideo( bool& bTerminated )
 			Sleep(1);
 			continue;
 		}
-		packet = m_vidDecCtx.Packets.front();
+		pPacket = m_vidDecCtx.Packets.front();
 		m_vidDecCtx.Packets.pop_front();
 		m_vidDecCtx.PacketsLock.Leave();
 
 		pFrame = avcodec_alloc_frame();
 		ASSERT(pFrame != NULL);
-		nBytesUsed = avcodec_decode_video2(m_vidDecCtx.Stream->codec, pFrame, &nGotPicture, &packet);
+		nBytesUsed = avcodec_decode_video2(m_vidDecCtx.Stream->codec, pFrame, &nGotPicture, pPacket);
 		if (nGotPicture > 0)
 		{
-			m_vidDecCtx.FramesLock.Enter();
-			m_vidDecCtx.Frames.push_back(pFrame);
-			m_vidDecCtx.FramesLock.Leave();
+			TRACE("%I64d, %I64d\n", pPacket->pts, pPacket->duration);
+			ConvertAndAdd(pFrame);
 		}
-		av_free_packet(&packet);
+		else
+			av_free(pFrame);
+		av_free_packet(pPacket);
+		SAFE_DELETE(pPacket);
 	}
+}
+
+void CFFPlayer::ConvertAndAdd( AVFrame* pFrame )
+{
+	m_vidDecCtx.FramesLock.Enter();
+	m_vidDecCtx.Frames.push_back(pFrame);
+	m_vidDecCtx.FramesLock.Leave();
 }
 
 void CFFPlayer::DecodeAudio( bool& bTerminated )
 {
+	/*while (!bTerminated)
+	{
+		AVPacket* pPacket;
+		int nBytesUsed = 0;
 
+		if (!m_audDecCtx.PacketsLock.TryEnter())
+		{
+			Sleep(1);
+			continue;
+		}
+		if (m_audDecCtx.Packets.size() == 0)
+		{
+			m_audDecCtx.PacketsLock.Leave();		
+			Sleep(1);
+			continue;
+		}
+		pPacket = m_audDecCtx.Packets.front();
+		m_audDecCtx.Packets.pop_front();
+		m_audDecCtx.PacketsLock.Leave();
+
+		ASSERT(pFrame != NULL);
+		nBytesUsed = avcodec_decode_audio3(m_vidDecCtx.Stream->codec, pFrame, &nGotPicture, pPacket);
+		if (nGotPicture > 0)
+		{
+			TRACE("%I64d, %I64d\n", pPacket->pts, pPacket->duration);
+			m_audDecCtx.FramesLock.Enter();
+			m_audDecCtx.Frames.push_back(pFrame);
+			m_audDecCtx.FramesLock.Leave();
+		}
+		av_free_packet(pPacket);
+		SAFE_DELETE(pPacket);
+	}*/
 }
