@@ -14,6 +14,7 @@ class CFFSplitterOutputPin : public CPin
 {
 public:
 	CFFSplitterOutputPin(CNode* pOwner, AVStream* ffStream);
+	AVStream* GetStream(void)	{ return m_pStream; }
 private:
 	AVStream* m_pStream;
 };
@@ -35,6 +36,9 @@ protected:
 	virtual HRESULT CheckInput(CPin* pPinIn);
 	virtual HRESULT CompleteConnect(CPin* pPin, CPin* pPinRecv);
 	virtual HRESULT BreakConnect(CPin* pPin);
+	virtual HRESULT DoRun(void);
+	virtual HRESULT DoStop(void);
+	virtual HRESULT DoPause(void);
 private:
 	CPin* m_pInput;
 	CSource* m_pSource;

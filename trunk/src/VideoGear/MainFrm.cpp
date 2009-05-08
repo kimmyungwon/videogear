@@ -23,8 +23,8 @@ END_MESSAGE_MAP()
 
 CMainFrame::CMainFrame()
 {
-	m_source.Open(_T("e:\\test.avi"));
-	m_source.GetPin(0)->Connect(m_splitter.GetPin(0));
+	m_player.RenderFile(_T("e:\\test.avi"));
+	m_player.Play();
 }
 
 CMainFrame::~CMainFrame()

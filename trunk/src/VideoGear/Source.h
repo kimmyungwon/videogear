@@ -1,8 +1,6 @@
 #pragma once
 
-#include "Node.h"
-
-class CSource : public CNode
+class CSource
 {
 public:
 	virtual ~CSource(void)	{}
@@ -14,11 +12,6 @@ public:
 	virtual UINT Read(BYTE* pBuffer, UINT cbBuffer) = 0;
 	virtual UINT Write(const BYTE* pBuffer, UINT cbBuffer) = 0;
 	virtual LONGLONG Seek(LONGLONG llOffset, int nOrigin) = 0;	
-protected:
-	/* CNode */
-	virtual HRESULT CheckInput(CPin* pPinIn)	{ return S_OK; }
-	virtual HRESULT CompleteConnect(CPin* pPin, CPin* pPinRecv)	{ return S_OK; }
-	virtual HRESULT BreakConnect(CPin* pPin)	{ return S_OK; }
 };
 
 class CFileSource : public CSource

@@ -17,10 +17,21 @@ public:
 			AVPacket packet;
 
 			if (av_read_frame(pFmtCtx, &packet) < 0)
+			{
+				TRACE("EndOfStream\n");
 				break;
-			CPin* pOut = m_pSplitter->FindOutputPinByStreamIndex(packet.stream_index);
+			}
+			TRACE("PTS: %I64d\n", packet.pts);
+			CFFSplitterOutputPin* pOut = m_pSplitter->FindOutputPinByStreamIndex(packet.stream_index);
 			if (pOut != NULL)
-				pOut->Deliver(new CFFPacket(&packet));
+			{
+				CPacket* pPacket = new CFFPacket(pOut->GetStream()->time_base, &packet);
+				HRESULT hr = pOut->Deliver(pPacket);
+				while (hr == VGERR_QUEUE_FULL && !bTerminated)
+					Sleep(1);
+				if (FAILED(hr))
+					delete pPacket;
+			}
 			av_free_packet(&packet);
 		}
 	}
@@ -69,9 +80,21 @@ int64_t FFReadSeek( void *opaque, int stream_index, int64_t timestamp, int flags
 //////////////////////////////////////////////////////////////////////////
 
 CFFSplitterOutputPin::CFFSplitterOutputPin( CNode* pOwner, AVStream* ffStream )
-: CPin(pOwner, PDIR_OUTPUT, MTYPE_VIDEO, MSTYPE_NONE)
+: CPin(pOwner, PDIR_OUTPUT), m_pStream(ffStream)
 {
-
+	switch (m_pStream->codec->codec_type)
+	{
+	case CODEC_TYPE_VIDEO:
+		m_mediaType.major = MTYPE_VIDEO;
+		break;
+	case CODEC_TYPE_AUDIO:
+		m_mediaType.major = MTYPE_AUDIO;
+		break;
+	case CODEC_TYPE_SUBTITLE:
+		m_mediaType.major = MTYPE_SUBTITLE;
+		break;
+	}
+	m_mediaType.minor = MTYPE_FFMPEG | m_pStream->codec->codec_id;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -79,7 +102,7 @@ CFFSplitterOutputPin::CFFSplitterOutputPin( CNode* pOwner, AVStream* ffStream )
 CFFSplitter::CFFSplitter(void)
 : m_pSource(NULL), m_pFmtCtx(NULL), m_pDecodeThread(NULL)
 {
-	m_pInput = new CPin(this, PDIR_INPUT, MTYPE_STREAM, MSTYPE_NONE);
+	m_pInput = new CPin(this, PDIR_INPUT, MediaType(MTYPE_STREAM, MTYPE_NONE));
 	AddPin(m_pInput);
 }
 
@@ -240,7 +263,6 @@ HRESULT CFFSplitter::CompleteConnect( CPin* pPin, CPin* pPinRecv )
 			return E_FAIL;
 		}
 		ParseOutput();
-		m_pDecodeThread = new CThread<CFFDemuxeWorker>(new CFFDemuxeWorker(this));
 		return S_OK;
 	}
 	else
@@ -271,3 +293,36 @@ HRESULT CFFSplitter::BreakConnect( CPin* pPin )
 	return S_OK;
 }
 
+HRESULT CFFSplitter::DoRun( void )
+{
+	if (m_pInput->ConnectedTo() == NULL)
+		return VGERR_NOT_SUPPORTED;
+	if (GetState() == STATE_STOPPED)
+		m_pDecodeThread = new CThread<CFFDemuxeWorker>(new CFFDemuxeWorker(this));
+	else
+	{
+		if (m_pDecodeThread == NULL)
+			return E_UNEXPECTED;
+		m_pDecodeThread->Resume();
+	}
+	return S_OK;
+}
+
+HRESULT CFFSplitter::DoStop( void )
+{
+	if (m_pDecodeThread == NULL)
+		return VGERR_NOT_SUPPORTED;
+	if (GetState() == STATE_PAUSED)
+		m_pDecodeThread->Resume();
+	delete m_pDecodeThread;
+	m_pDecodeThread = NULL;
+	return S_OK;
+}
+
+HRESULT CFFSplitter::DoPause( void )
+{
+	if (m_pDecodeThread == NULL)
+		return VGERR_NOT_SUPPORTED;
+	m_pDecodeThread->Suspend();
+	return S_OK;
+}

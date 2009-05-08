@@ -188,23 +188,15 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\FFPlayer.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\MainFrm.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\Node.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Packet.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\Source.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Splitter.cpp"
 				>
 			</File>
 			<File
@@ -250,15 +242,11 @@
 				>
 			</File>
 			<File
+				RelativePath=".\FFPlayer.h"
+				>
+			</File>
+			<File
 				RelativePath=".\MainFrm.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Node.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Packet.h"
 				>
 			</File>
 			<File
@@ -267,10 +255,6 @@
 			</File>
 			<File
 				RelativePath=".\Source.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Splitter.h"
 				>
 			</File>
 			<File

@@ -2,10 +2,9 @@
 #include "Node.h"
 #include "VideoGear.h"
 
-CPin::CPin( CNode* pOwner, PinDirection dir, MediaType mtMajor, MediaSubType mtSub )
-: m_pOwner(pOwner), m_dir(dir), m_mtMajor(mtMajor), m_mtSub(m_mtSub), m_pConnected(NULL)
+CPin::CPin( CNode* pOwner, PinDirection dir, const MediaType& mt )
+: m_pOwner(pOwner), m_dir(dir), m_mediaType(mt), m_pConnected(NULL)
 {
-
 }
 
 HRESULT CPin::Connect( CPin* pPin )
@@ -14,6 +13,8 @@ HRESULT CPin::Connect( CPin* pPin )
 		return E_POINTER;
 	if (m_pOwner == NULL)
 		return E_UNEXPECTED;
+	if (m_pOwner->GetState() != STATE_STOPPED)
+		return VGERR_NOT_STOPPED;
 	if (m_pConnected != NULL)
 		return VGERR_ALREADY_CONNECTED;
 	if (m_dir == pPin->GetDirection())
@@ -54,6 +55,8 @@ HRESULT CPin::Disconnect( void )
 {
 	if (m_pOwner == NULL)
 		return E_UNEXPECTED;
+	if (m_pOwner->GetState() != STATE_STOPPED)
+		return VGERR_NOT_STOPPED;
 	if (m_pConnected != NULL)
 	{
 		CNode* pNodeRecv;
@@ -71,31 +74,23 @@ HRESULT CPin::Disconnect( void )
 
 HRESULT CPin::Deliver( CPacket* pPacket )
 {
-	CAutoPtr<CPacket> pPtr;
-	
-	pPtr.Attach(pPacket);
 	if (pPacket == NULL)
 		return E_POINTER;
 	if (m_dir != PDIR_OUTPUT)
 		return VGERR_NOT_SUPPORTED;
 	if (m_pConnected == NULL)
 		return VGERR_NOT_CONNECTED;
-	HRESULT hr = m_pConnected->Receive(pPacket);
-	if (SUCCEEDED(hr))
-		pPtr.Detach();
-	return hr;
+	return m_pConnected->Receive(pPacket);
 }
 
 HRESULT CPin::Receive( CPacket* pPacket )
 {
-	if (pPacket == NULL)
-		return E_POINTER;
-	delete pPacket;
-	return S_OK;
+	return E_NOTIMPL;
 }
 //////////////////////////////////////////////////////////////////////////
 
 CNode::CNode(void)
+: m_state(STATE_STOPPED)
 {
 }
 
@@ -106,6 +101,38 @@ CNode::~CNode(void)
 CPin* CNode::GetPin( UINT nIndex )
 {
 	return nIndex < m_pins.size() ? &m_pins[nIndex] : NULL;
+}
+
+HRESULT CNode::Run( void )
+{
+	if (m_state != STATE_RUNNING)
+	{	
+		RIF(DoRun());
+		m_state = STATE_RUNNING;
+	}
+	return S_OK;
+}
+
+HRESULT CNode::Stop( void )
+{
+	if (m_state != STATE_STOPPED)
+	{	
+		RIF(DoStop());
+		m_state = STATE_STOPPED;
+	}
+	return S_OK;	
+}
+
+HRESULT CNode::Pause( void )
+{
+	if (m_state == STATE_RUNNING)
+	{	
+		RIF(DoPause());
+		m_state = STATE_PAUSED;
+		return S_OK;
+	}
+	else
+		return E_FAIL;
 }
 
 void CNode::AddPin( CPin* pPin )
@@ -144,5 +171,8 @@ HRESULT CNode::RemoveAllPins( void )
 	}		
 	return S_OK;
 }
+
+
+
 
 

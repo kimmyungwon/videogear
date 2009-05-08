@@ -15,7 +15,7 @@ CPacket::~CPacket(void)
 	}
 }
 
-void CPacket::Initialize( const BYTE* pData, UINT cbData, LONGLONG llPTS, LONGLONG llDuration )
+void CPacket::Initialize( const BYTE* pData, UINT cbData, double dPTS, double dDuration )
 {
 	if (m_pData != NULL)
 	{
@@ -25,14 +25,15 @@ void CPacket::Initialize( const BYTE* pData, UINT cbData, LONGLONG llPTS, LONGLO
 	m_pData = new BYTE[cbData];
 	m_cbData = cbData;
 	memcpy_s(m_pData, m_cbData, pData, cbData);
-	m_llPTS = llPTS;
-	m_llDuration = llDuration;
+	m_dPTS = dPTS;
+	m_dDuration = dDuration;
 }
 //////////////////////////////////////////////////////////////////////////
 
-CFFPacket::CFFPacket( AVPacket* pPacket )
+CFFPacket::CFFPacket( AVRational& timebase, AVPacket* pPacket )
 {
 	ASSERT(pPacket != NULL);
 
-	Initialize(pPacket->data, pPacket->size, pPacket->pts, pPacket->duration);
+	Initialize(pPacket->data, pPacket->size, pPacket->pts * timebase.num * 1000.0 / timebase.den, 
+		pPacket->duration * timebase.num * 1000.0 / (double)timebase.den);
 }
