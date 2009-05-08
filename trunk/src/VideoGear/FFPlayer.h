@@ -39,7 +39,7 @@ protected:
 	/* 视频解码 */
 	void DecodeVideo(bool& bTerminated);
 	/* 色彩空间转换 */
-	void ConvertAndAdd(AVFrame* pFrame);
+	void ConvertAndAdd(AVFrame* pFrame, int nWidth, int nHeight);
 	/* 音频解码 */
 	void DecodeAudio(bool& bTerminated);
 private:

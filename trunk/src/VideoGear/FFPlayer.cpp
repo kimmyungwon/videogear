@@ -404,7 +404,7 @@ void CFFPlayer::DecodeVideo( bool& bTerminated )
 		if (nGotPicture > 0)
 		{
 			TRACE("%I64d, %I64d\n", pPacket->pts, pPacket->duration);
-			ConvertAndAdd(pFrame);
+			ConvertAndAdd(pFrame, m_vidDecCtx.Stream->codec->width, m_vidDecCtx.Stream->codec->height);
 		}
 		else
 			av_free(pFrame);
@@ -413,11 +413,19 @@ void CFFPlayer::DecodeVideo( bool& bTerminated )
 	}
 }
 
-void CFFPlayer::ConvertAndAdd( AVFrame* pFrame )
+void CFFPlayer::ConvertAndAdd( AVFrame* pFrame, int nWidth, int nHeight )
 {
-	m_vidDecCtx.FramesLock.Enter();
-	m_vidDecCtx.Frames.push_back(pFrame);
-	m_vidDecCtx.FramesLock.Leave();
+	AVPicture pic;
+
+	if (avpicture_alloc(&pic, PIX_FMT_YUYV422, nWidth, nHeight) >= 0)
+	{
+		if (sws_scale(m_pSwsCtx, pFrame->data, pFrame->linesize, 0, nHeight, pic.data, pic.linesize) >= 0)
+		{
+			
+		}
+		avpicture_free(&pic);
+	}
+	av_free(pFrame);
 }
 
 void CFFPlayer::DecodeAudio( bool& bTerminated )
