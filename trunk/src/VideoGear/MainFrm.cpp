@@ -23,7 +23,7 @@ END_MESSAGE_MAP()
 
 CMainFrame::CMainFrame()
 {
-	m_player.RenderFile(_T("e:\\test.avi"));
+	m_player.RenderFile(_T("e:\\test.rm"));
 	m_player.Play();
 }
 

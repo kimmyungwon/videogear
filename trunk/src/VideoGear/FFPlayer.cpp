@@ -139,6 +139,7 @@ HRESULT CFFPlayer::Play( void )
 		}
 		if (m_vidDecCtx.Thread != NULL || m_audDecCtx.Thread != NULL)
 			m_pDemuxerThread = new CThread(new CFFDemuxer(*this));
+		m_State = PS_RUNNING;
 		return S_OK;
 	}
 	else
@@ -226,7 +227,7 @@ HRESULT CFFPlayer::RenderSource( void )
 	AVInputFormat* pInFmt;
 	HRESULT hr;
 
-	/*nMaxPacketSize = m_pSource->GetMaxPacketSize();
+	nMaxPacketSize = m_pSource->GetMaxPacketSize();
 	nSize = nMaxPacketSize > 0 ? nMaxPacketSize : IO_BUFFER_SIZE;
 	pBuffer = (BYTE*)av_malloc(nSize);
 	if (pBuffer == NULL)
@@ -238,9 +239,9 @@ HRESULT CFFPlayer::RenderSource( void )
 		return E_OUTOFMEMORY;
 	}
 	m_pffIOCtx->is_streamed = 0;
-	m_pffIOCtx->max_packet_size = nMaxPacketSize;*/
+	m_pffIOCtx->max_packet_size = nMaxPacketSize;
 	/* 检查文件格式 */
-	/*strNameA = m_pSource->GetNameA();
+	strNameA = m_pSource->GetNameA();
 	ffPrb.filename = strNameA;
 	ffPrb.buf = NULL;
 	ffPrb.buf_size = 0;
@@ -277,13 +278,9 @@ HRESULT CFFPlayer::RenderSource( void )
 			av_freep(&pBuffer);
 			return VGERR_NOT_SUPPORTED;
 		}
-	}*/
+	}
 
-	strNameA = m_pSource->GetNameA();
-	av_open_input_file(&m_pffFmtCtx, strNameA, NULL, 0, NULL);
-
-	//hr = RenderOutputs(pInFmt);
-	hr = RenderOutputs(NULL);
+	hr = RenderOutputs(pInFmt);
 	if (FAILED(hr))
 	{
 		av_freep(&m_pffIOCtx);
@@ -295,13 +292,13 @@ HRESULT CFFPlayer::RenderSource( void )
 HRESULT CFFPlayer::RenderOutputs( AVInputFormat* pInFmt )
 {
 	ASSERT_POINTER(m_pSource, CSource);
-	//ASSERT_POINTER(m_pffIOCtx, ByteIOContext);
-	//ASSERT_POINTER(pInFmt, AVInputFormat);
+	ASSERT_POINTER(m_pffIOCtx, ByteIOContext);
+	ASSERT_POINTER(pInFmt, AVInputFormat);
 
 	UINT nRendered = 0;
 
-	/*if (av_open_input_stream(&m_pffFmtCtx, m_pffIOCtx, m_pSource->GetNameA(), pInFmt, NULL) < 0)
-		return VGERR_NOT_SUPPORTED;*/
+	if (av_open_input_stream(&m_pffFmtCtx, m_pffIOCtx, m_pSource->GetNameA(), pInFmt, NULL) < 0)
+		return VGERR_NOT_SUPPORTED;
 	if (av_find_stream_info(m_pffFmtCtx) < 0)
 		return VGERR_NOT_SUPPORTED;
 	for (UINT i = 0; i < m_pffFmtCtx->nb_streams; i++)
@@ -372,7 +369,7 @@ void CFFPlayer::DecodeVideo( bool& bTerminated )
 	{
 		AVPacket packet;
 		AVFrame* pFrame;
-		int nGotPicture, nBytesUsed;
+		int nGotPicture = 0, nBytesUsed = 0;
 		
 		if (!m_vidDecCtx.PacketsLock.TryEnter())
 		{
@@ -392,10 +389,12 @@ void CFFPlayer::DecodeVideo( bool& bTerminated )
 		pFrame = avcodec_alloc_frame();
 		ASSERT(pFrame != NULL);
 		nBytesUsed = avcodec_decode_video2(m_vidDecCtx.Stream->codec, pFrame, &nGotPicture, &packet);
-		m_vidDecCtx.FramesLock.Enter();
-		m_vidDecCtx.Frames.push_back(pFrame);
-		pFrame = NULL;
-		m_vidDecCtx.FramesLock.Leave();
+		if (nGotPicture > 0)
+		{
+			m_vidDecCtx.FramesLock.Enter();
+			m_vidDecCtx.Frames.push_back(pFrame);
+			m_vidDecCtx.FramesLock.Leave();
+		}
 		av_free_packet(&packet);
 	}
 }
