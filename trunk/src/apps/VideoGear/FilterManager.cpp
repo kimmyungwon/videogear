@@ -5,6 +5,13 @@
 #include "..\..\filters\transform\mpcvideodec\MPCVideoDecFilter.h"
 #include "..\..\filters\transform\mpadecfilter\MpaDecFilter.h"
 
+bool operator<(const CLSID& left, const CLSID& right)
+{
+	return memcmp(&left, &right, sizeof(CLSID)) < 0;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 template<typename ClassT>
 HRESULT CreateInstance(LPUNKNOWN pUnk, IBaseFilter** ppv)
 {
@@ -23,7 +30,7 @@ HRESULT CreateInstance(LPUNKNOWN pUnk, IBaseFilter** ppv)
 	return hr;
 }
 
-namespace Avi
+namespace AVI
 {
 	const AMOVIESETUP_MEDIATYPE sudPinTypesIn[] =
 	{
@@ -40,6 +47,26 @@ namespace Avi
 	const FilterSetupInfo sudFilters[] =
 	{
 		{&__uuidof(CAviSplitterFilter), L"MPC - Avi Splitter", CreateInstance<CAviSplitterFilter>, _countof(sudpPins), sudpPins}
+	};
+}
+
+namespace MKV
+{
+	const AMOVIESETUP_MEDIATYPE sudPinTypesIn[] =
+	{	
+		{&MEDIATYPE_Stream, &MEDIASUBTYPE_Matroska},
+		{&MEDIATYPE_Stream, &MEDIASUBTYPE_NULL}
+	};
+
+	const AMOVIESETUP_PIN sudpPins[] =
+	{
+		{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, _countof(sudPinTypesIn), sudPinTypesIn},
+		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, 0, NULL}
+	};
+
+	const FilterSetupInfo sudFilters[] =
+	{
+		{&__uuidof(CMatroskaSplitterFilter), L"MPC - Matroska Splitter", CreateInstance<CMatroskaSplitterFilter>, _countof(sudpPins), sudpPins},
 	};
 }
 
@@ -138,18 +165,48 @@ namespace AudioDec
 
 CFilterManager::CFilterManager(void)
 {
-	RegisterFilter(_countof(Avi::sudFilters), Avi::sudFilters);
+	RegisterFilter(_countof(AVI::sudFilters), AVI::sudFilters);
+	RegisterFilter(_countof(MKV::sudFilters), MKV::sudFilters);
 	RegisterFilter(_countof(VideoDec::sudFilters), VideoDec::sudFilters);
 	RegisterFilter(_countof(AudioDec::sudFilters), AudioDec::sudFilters);
 }
 
 CFilterManager::~CFilterManager(void)
 {
+	while (m_filters.size() > 0)
+	{
+		CFilter* pFilter = m_filters.begin()->second;
+		m_filters.erase(m_filters.begin());
+		delete pFilter;
+	}
+}
+
+HRESULT CFilterManager::EnumMatchingFilters( const CAtlList<CMediaType>& mts, std::list<CFilter*>& filters )
+{
+	UINT nInitCount = filters.size();
+	for (FilterList::const_iterator it = m_filters.begin(); it != m_filters.end(); it++)
+	{
+		CFilter* pFilter = it->second;
+		POSITION pos = mts.GetHeadPosition(); 
+		while (pos != NULL)
+		{
+			const CMediaType& mt = mts.GetNext(pos);
+			if (pFilter->CheckInputType(mt) == S_OK)
+				filters.push_back(pFilter);
+			break;
+		}
+	}
+	return filters.size() - nInitCount > 0 ? S_OK : S_FALSE;
 }
 
 HRESULT CFilterManager::RegisterFilter( UINT uiFilterCount, const FilterSetupInfo* pSetupInfo )
 {
 	for (UINT i = 0; i < uiFilterCount; i++)
-		m_filters.push_back(new CInternalFilter(*pSetupInfo[i].pClsID, pSetupInfo[i].pszName, pSetupInfo[i].pfnCreateInstance));
+	{
+		const FilterSetupInfo& setupInfo = pSetupInfo[i];
+		CFilter* pFilter = new CInternalFilter(*setupInfo.pClsID, setupInfo.pszName, setupInfo.pfnCreateInstance, 
+			setupInfo.uiPinCount, setupInfo.pPins);
+		m_filters.insert(std::make_pair(*pSetupInfo->pClsID, pFilter));
+	}
 	return S_OK;
 }

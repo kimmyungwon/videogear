@@ -16,8 +16,10 @@ class CFilterManager
 public:
 	CFilterManager(void);
 	virtual ~CFilterManager(void);
+	HRESULT EnumMatchingFilters(const CAtlList<CMediaType>& mts, std::list<CFilter*>& filters);
 protected:
 	HRESULT RegisterFilter(UINT uiFilterCount, const FilterSetupInfo* pSetupInfo);
 private:
-	boost::ptr_vector<CFilter> m_filters;
+	typedef std::map<CLSID, CFilter*> FilterList;
+	FilterList m_filters;
 };

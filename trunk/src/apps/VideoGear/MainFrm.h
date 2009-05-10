@@ -4,6 +4,7 @@
 
 #pragma once
 #include "VideoView.h"
+#include "FGManager.h"
 
 class CMainFrame : public CFrameWnd
 {
@@ -32,7 +33,9 @@ public:
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 
-	CVideoView    m_wndView;
+private:
+	CVideoView	m_wndView;
+	CComPtr<IFilterGraph2>	m_pGraph;
 
 // 生成的消息映射函数
 protected:

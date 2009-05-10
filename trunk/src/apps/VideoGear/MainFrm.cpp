@@ -24,7 +24,7 @@ END_MESSAGE_MAP()
 
 CMainFrame::CMainFrame()
 {
-	// TODO: 在此添加成员初始化代码
+	m_pGraph = new CFGManager;
 }
 
 CMainFrame::~CMainFrame()
@@ -43,6 +43,13 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		TRACE0("未能创建视图窗口\n");
 		return -1;
 	}
+
+	if(SUCCEEDED(m_pGraph->RenderFile(L"E:\\test.mkv", NULL)))
+	{
+		CComQIPtr<IMediaControl> pMC = m_pGraph;
+		pMC->Run();
+	}
+
 	return 0;
 }
 
