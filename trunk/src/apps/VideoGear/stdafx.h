@@ -23,9 +23,9 @@
 #include <afxwin.h>         // MFC 核心组件和标准组件
 #include <afxext.h>         // MFC 扩展
 
+#include <boost\ptr_container\ptr_vector.hpp>
 #include <DShow.h>
 #include <streams.h>
-
 #include <InitGuid.h>
 #include <moreuuids.h>
 

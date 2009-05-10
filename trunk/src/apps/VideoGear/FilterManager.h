@@ -1,6 +1,15 @@
 #pragma once
 
-typedef HRESULT (*PFNCreateInstanceProc)(LPUNKNOWN, IBaseFilter**);
+#include "Filter.h"
+
+struct FilterSetupInfo
+{
+	const CLSID* pClsID;
+	LPCWSTR pszName;
+	PFNCreateInstance pfnCreateInstance;
+	UINT uiPinCount;
+	const AMOVIESETUP_PIN* pPins;
+};
 
 class CFilterManager
 {
@@ -8,5 +17,7 @@ public:
 	CFilterManager(void);
 	virtual ~CFilterManager(void);
 protected:
-	HRESULT RegisterFilter(LPCWSTR pszName, PFNCreateInstanceProc pfnCreateInst, const AMOVIESETUP_PIN* pPins, size_t nPinCount);
+	HRESULT RegisterFilter(UINT uiFilterCount, const FilterSetupInfo* pSetupInfo);
+private:
+	boost::ptr_vector<CFilter> m_filters;
 };
