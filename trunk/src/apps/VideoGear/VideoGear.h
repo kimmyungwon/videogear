@@ -36,4 +36,5 @@ public:
 
 extern CVideoGearApp theApp;
 
+#define SAFE_DELETE(ptr)	{if((ptr) != NULL) {delete (ptr); (ptr) = NULL;}}
 #define RIF(cond)	{HRESULT hr = (cond); if (FAILED(hr)) return hr;}

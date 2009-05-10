@@ -18,13 +18,13 @@ IMPLEMENT_DYNAMIC(CMainFrame, CFrameWnd)
 BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_WM_CREATE()
 	ON_WM_SETFOCUS()
+	ON_COMMAND(ID_FILE_OPEN, &CMainFrame::OnFileOpen)
 END_MESSAGE_MAP()
 
 // CMainFrame 构造/析构
 
 CMainFrame::CMainFrame()
 {
-	m_pGraph = new CFGManager;
 }
 
 CMainFrame::~CMainFrame()
@@ -44,11 +44,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;
 	}
 
-	if(SUCCEEDED(m_pGraph->RenderFile(L"E:\\test.mkv", NULL)))
-	{
-		CComQIPtr<IMediaControl> pMC = m_pGraph;
-		pMC->Run();
-	}
+	m_wndView.DragAcceptFiles(TRUE);
 
 	return 0;
 }
@@ -96,4 +92,8 @@ BOOL CMainFrame::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO*
 
 	// 否则，执行默认处理
 	return CFrameWnd::OnCmdMsg(nID, nCode, pExtra, pHandlerInfo);
+}
+
+void CMainFrame::OnFileOpen()
+{
 }

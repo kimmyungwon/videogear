@@ -45,6 +45,11 @@ HRESULT CInternalFilter::CheckInputType( const CMediaType& mt )
 
 bool CInternalFilter::CheckInputType( const MediaType& mt )
 {
-	std::list<MediaType>::const_iterator it = std::find(m_mtsIn.begin(), m_mtsIn.end(), mt);
-	return it != m_mtsIn.end();
+	for (std::list<MediaType>::const_iterator it = m_mtsIn.begin(); it != m_mtsIn.end(); it++)
+	{
+		if ((it->major == mt.major || it->major == GUID_NULL || mt.major == GUID_NULL)
+			&& (it->minor == mt.minor || it->minor == GUID_NULL || mt.minor == GUID_NULL))
+			return true;
+	}
+	return false;
 }

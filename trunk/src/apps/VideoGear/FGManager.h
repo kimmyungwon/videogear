@@ -1,15 +1,18 @@
 #pragma once
 
+#include "IGraphBuilder2.h"
+#include "AppConfig.h"
+
 class CFGManager
 	: public CUnknown
-	, public IFilterGraph2
+	, public IGraphBuilder2
 {
 public:
 	CFGManager(void);
 	~CFGManager(void);
-	virtual HRESULT STDMETHODCALLTYPE NukeDownstream(IPin *ppinOut);
-	virtual HRESULT STDMETHODCALLTYPE RenderFilter(IBaseFilter *pFilter);
-	virtual HRESULT STDMETHODCALLTYPE ConnectDirectEx(IPin *ppinOut, IBaseFilter *pFilter, const AM_MEDIA_TYPE *pmt);
+	virtual HRESULT STDMETHODCALLTYPE RenderFile(LPCWSTR lpcwstrFile, LPCWSTR lpcwstrPlayList);
+protected:
+	DECLARE_IUNKNOWN
 	/* CUnknown */
 	STDMETHODIMP NonDelegatingQueryInterface(REFIID riid, __deref_out void **ppv);
 	/* IFIlterGraph */
@@ -24,7 +27,7 @@ public:
 	/* IGraphBuilder */
 	virtual HRESULT STDMETHODCALLTYPE Connect(IPin *ppinOut, IPin *ppinIn);
 	virtual HRESULT STDMETHODCALLTYPE Render(IPin *ppinOut);
-	virtual HRESULT STDMETHODCALLTYPE RenderFile(LPCWSTR lpcwstrFile, LPCWSTR lpcwstrPlayList);
+	//virtual HRESULT STDMETHODCALLTYPE RenderFile(LPCWSTR lpcwstrFile, LPCWSTR lpcwstrPlayList);
 	virtual HRESULT STDMETHODCALLTYPE AddSourceFilter(LPCWSTR lpcwstrFileName, LPCWSTR lpcwstrFilterName, IBaseFilter **ppFilter);
 	virtual HRESULT STDMETHODCALLTYPE SetLogFile(DWORD_PTR hFile);
 	virtual HRESULT STDMETHODCALLTYPE Abort(void);
@@ -33,8 +36,13 @@ public:
 	virtual HRESULT STDMETHODCALLTYPE AddSourceFilterForMoniker(IMoniker *pMoniker, IBindCtx *pCtx, LPCWSTR lpcwstrFilterName, IBaseFilter **ppFilter);
 	virtual HRESULT STDMETHODCALLTYPE ReconnectEx(IPin *ppin, const AM_MEDIA_TYPE *pmt);
 	virtual HRESULT STDMETHODCALLTYPE RenderEx(IPin *pPinOut, DWORD dwFlags, DWORD *pvContext);
-protected:
-	DECLARE_IUNKNOWN
+	/* IGraphBuilder2 */
+	virtual HRESULT STDMETHODCALLTYPE NukeDownstream(IPin *ppinOut);
+	virtual HRESULT STDMETHODCALLTYPE ClearGraph(void);
+	virtual HRESULT STDMETHODCALLTYPE RenderFilter(IBaseFilter *pFilter);
+	virtual HRESULT STDMETHODCALLTYPE ConnectDirectEx(IPin *ppinOut, IBaseFilter *pFilter, const AM_MEDIA_TYPE *pmt);
 private:
 	CComPtr<IFilterGraph2> m_pGraph;
+	VideoRenderer m_cfgVR;
+	CComPtr<IBaseFilter> m_pVideoRenderer;
 };

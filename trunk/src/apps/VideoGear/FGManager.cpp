@@ -14,79 +14,21 @@ CFGManager::~CFGManager(void)
 	m_pGraph.Release();
 }
 
-HRESULT STDMETHODCALLTYPE CFGManager::NukeDownstream( IPin *ppinOut )
-{
-	if (ppinOut == NULL)
-		return E_POINTER;
-
-	CComPtr<IPin> ppinTo;
-	PIN_INFO piTo;
-	CComPtr<IEnumPins> pEnumPins;
-
-	RIF(ppinOut->ConnectedTo(&ppinTo));
-	RIF(ppinTo->QueryPinInfo(&piTo));
-	RIF(piTo.pFilter->EnumPins(&pEnumPins));
-	for (CComPtr<IPin> pPin; pEnumPins->Next(1, &pPin, NULL) == S_OK; pPin.Release())
-	{
-		RIF(Disconnect(pPin));
-	}
-	RIF(RemoveFilter(piTo.pFilter));
-	return S_OK;
-}
-
-HRESULT STDMETHODCALLTYPE CFGManager::RenderFilter( IBaseFilter *pFilter )
-{
-	if (pFilter == NULL)
-		return E_POINTER;
-	
-	CComPtr<IEnumPins> pEnumPins;
-	int nTotal = 0, nRendered = 0;
-
-	RIF(pFilter->EnumPins(&pEnumPins));
-	for (CComPtr<IPin> pPin; pEnumPins->Next(1, &pPin, NULL) == S_OK; pPin.Release())
-	{
-		if (!IsPinDir(pPin, PINDIR_OUTPUT) || IsPinConnected(pPin))
-			continue;
-		nTotal++;
-		if (SUCCEEDED(Render(pPin)))
-			nRendered++;
-	}
-	if (nTotal > 0)
-		if (nRendered > 0)
-			return nRendered == nTotal ? S_OK : S_FALSE;
-		else
-			return VFW_E_CANNOT_RENDER;
-	else
-		return S_OK;
-}
-
-HRESULT STDMETHODCALLTYPE CFGManager::ConnectDirectEx( IPin *ppinOut, IBaseFilter *pFilter, const AM_MEDIA_TYPE *pmt )
-{
-	if (ppinOut == NULL || pFilter == NULL)
-		return E_POINTER;
-	if (IsPinConnected(ppinOut))
-		return VFW_E_ALREADY_CONNECTED;
-
-	CComPtr<IEnumPins> pEnumPins;
-
-	RIF(pFilter->EnumPins(&pEnumPins));
-	for (CComPtr<IPin> ppinIn; pEnumPins->Next(1, &ppinIn, NULL) == S_OK; ppinIn.Release())
-	{
-		if (!IsPinDir(ppinIn, PINDIR_INPUT) || IsPinConnected(ppinIn))
-			continue;
-		HRESULT hr = ConnectDirect(ppinOut, ppinIn, pmt);
-		if (SUCCEEDED(hr))
-			return hr;
-	}
-	return VFW_E_CANNOT_CONNECT;
-}
-
 STDMETHODIMP CFGManager::NonDelegatingQueryInterface( REFIID riid, __deref_out void **ppv )
 {
-	return	QI(IFilterGraph2)
-			QI(IGraphBuilder)
-			QI(IFilterGraph)
-			m_pGraph->QueryInterface(riid, ppv);
+	if (riid == IID_IMFVideoDisplayControl)
+	{
+		CComQIPtr<IMFGetService> pGetSrv = m_pVideoRenderer;
+		if (pGetSrv == NULL)
+			return E_NOINTERFACE;
+		return pGetSrv->GetService(MR_VIDEO_RENDER_SERVICE, IID_IMFVideoDisplayControl, ppv);
+	}
+	else
+		return	QI(IGraphBuilder2)
+				QI(IFilterGraph2)
+				QI(IGraphBuilder)
+				QI(IFilterGraph)
+				m_pGraph->QueryInterface(riid, ppv);
 }
 
 HRESULT STDMETHODCALLTYPE CFGManager::AddFilter( IBaseFilter *pFilter, LPCWSTR pName )
@@ -96,6 +38,8 @@ HRESULT STDMETHODCALLTYPE CFGManager::AddFilter( IBaseFilter *pFilter, LPCWSTR p
 
 HRESULT STDMETHODCALLTYPE CFGManager::RemoveFilter( IBaseFilter *pFilter )
 {
+	if (pFilter == m_pVideoRenderer)
+		m_pVideoRenderer = NULL;
 	return m_pGraph->RemoveFilter(pFilter);
 }
 
@@ -172,12 +116,14 @@ HRESULT STDMETHODCALLTYPE CFGManager::Render(IPin *ppinOut)
 			if (FAILED((*it)->CreateInstance(NULL, &pFilter))
 				|| FAILED(AddFilter(pFilter, (*it)->GetName())))
 				continue;
-			if (SUCCEEDED(ConnectDirectEx(ppinOut, pFilter, NULL))
-				&& SUCCEEDED(RenderFilter(pFilter)))
+			if (SUCCEEDED(ConnectDirectEx(ppinOut, pFilter, NULL)))
 			{
-				return S_OK;
-			}
-			NukeDownstream(ppinOut);
+				if (SUCCEEDED(RenderFilter(pFilter)))
+					return S_OK;
+				NukeDownstream(ppinOut);
+			}			
+			else
+				RemoveFilter(pFilter);
 		}
 	}
 
@@ -186,12 +132,30 @@ HRESULT STDMETHODCALLTYPE CFGManager::Render(IPin *ppinOut)
 
 HRESULT STDMETHODCALLTYPE CFGManager::RenderFile(LPCWSTR lpcwstrFile, LPCWSTR lpcwstrPlayList)
 {
+	CComPtr<IBaseFilter> pAudioRenderer;
 	CComPtr<IBaseFilter> pSource;
 	HRESULT hr;
 	
+	RIF(ClearGraph());
+
+	if (SUCCEEDED(m_pVideoRenderer.CoCreateInstance(CLSID_EnhancedVideoRenderer)))
+	{
+		RIF(AddFilter(m_pVideoRenderer, L"Enhanced Video Renderer"));
+		m_cfgVR = VR_EVR;
+	}
+	else
+	{
+		RIF(m_pVideoRenderer.CoCreateInstance(CLSID_VideoMixingRenderer9));
+		RIF(AddFilter(m_pVideoRenderer, L"Video Mixing Renderer 9"));
+		m_cfgVR = VR_EVR;
+	}
+	RIF(pAudioRenderer.CoCreateInstance(CLSID_DSoundRender));
+	RIF(AddFilter(pAudioRenderer, L"Default DirectSound Renderer"));
+
 	RIF(AddSourceFilter(lpcwstrFile, NULL, &pSource));
 	if (SUCCEEDED(hr = RenderFilter(pSource)))
 	{	
+		DumpGraph(m_pGraph, 0);
 		return hr;
 	}
 	else
@@ -235,3 +199,81 @@ HRESULT STDMETHODCALLTYPE CFGManager::RenderEx(IPin *pPinOut, DWORD dwFlags, DWO
 	return m_pGraph->RenderEx(pPinOut, dwFlags, pvContext);
 }
 
+HRESULT STDMETHODCALLTYPE CFGManager::NukeDownstream( IPin *ppinOut )
+{
+	if (ppinOut == NULL)
+		return E_POINTER;
+
+	CComPtr<IPin> ppinTo;
+	PIN_INFO piTo;
+	CComPtr<IEnumPins> pEnumPins;
+
+	RIF(ppinOut->ConnectedTo(&ppinTo));
+	RIF(ppinTo->QueryPinInfo(&piTo));
+	RIF(piTo.pFilter->EnumPins(&pEnumPins));
+	for (CComPtr<IPin> pPin; pEnumPins->Next(1, &pPin, NULL) == S_OK; pPin.Release())
+	{
+		RIF(Disconnect(pPin));
+	}
+	RIF(RemoveFilter(piTo.pFilter));
+	return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE CFGManager::ClearGraph( void )
+{
+	CComPtr<IEnumFilters> pEnumFilters;
+
+	RIF(EnumFilters(&pEnumFilters));
+	for (CComPtr<IBaseFilter> pFilter; pEnumFilters->Next(1, &pFilter, NULL) == S_OK; pFilter.Release())
+	{
+		RIF(RemoveFilter(pFilter));
+	}
+	return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE CFGManager::RenderFilter( IBaseFilter *pFilter )
+{
+	if (pFilter == NULL)
+		return E_POINTER;
+
+	CComPtr<IEnumPins> pEnumPins;
+	int nTotal = 0, nRendered = 0;
+
+	RIF(pFilter->EnumPins(&pEnumPins));
+	for (CComPtr<IPin> pPin; pEnumPins->Next(1, &pPin, NULL) == S_OK; pPin.Release())
+	{
+		if (!IsPinDir(pPin, PINDIR_OUTPUT) || IsPinConnected(pPin))
+			continue;
+		nTotal++;
+		if (SUCCEEDED(Render(pPin)))
+			nRendered++;
+	}
+	if (nTotal > 0)
+		if (nRendered > 0)
+			return nRendered == nTotal ? S_OK : S_FALSE;
+		else
+			return VFW_E_CANNOT_RENDER;
+	else
+		return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE CFGManager::ConnectDirectEx( IPin *ppinOut, IBaseFilter *pFilter, const AM_MEDIA_TYPE *pmt )
+{
+	if (ppinOut == NULL || pFilter == NULL)
+		return E_POINTER;
+	if (IsPinConnected(ppinOut))
+		return VFW_E_ALREADY_CONNECTED;
+
+	CComPtr<IEnumPins> pEnumPins;
+
+	RIF(pFilter->EnumPins(&pEnumPins));
+	for (CComPtr<IPin> ppinIn; pEnumPins->Next(1, &ppinIn, NULL) == S_OK; ppinIn.Release())
+	{
+		if (!IsPinDir(ppinIn, PINDIR_INPUT) || IsPinConnected(ppinIn))
+			continue;
+		HRESULT hr = ConnectDirect(ppinOut, ppinIn, pmt);
+		if (SUCCEEDED(hr))
+			return hr;
+	}
+	return VFW_E_CANNOT_CONNECT;
+}

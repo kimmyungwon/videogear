@@ -4,7 +4,6 @@
 
 #pragma once
 #include "VideoView.h"
-#include "FGManager.h"
 
 class CMainFrame : public CFrameWnd
 {
@@ -35,7 +34,6 @@ public:
 
 private:
 	CVideoView	m_wndView;
-	CComPtr<IFilterGraph2>	m_pGraph;
 
 // 生成的消息映射函数
 protected:
@@ -43,6 +41,8 @@ protected:
 	afx_msg void OnSetFocus(CWnd *pOldWnd);
 	DECLARE_MESSAGE_MAP()
 
+public:
+	afx_msg void OnFileOpen();
 };
 
 

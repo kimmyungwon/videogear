@@ -25,11 +25,17 @@
 #include <atlbase.h>
 #include <atlcoll.h>
 
+#include <math.h>
 #include <algorithm>
+#include <vector>
 #include <list>
 #include <set>
 #include <map>
+#include <boost\ptr_container\ptr_vector.hpp>
+
+#include <d3d9.h>
 #include <DShow.h>
+#include <evr9.h>
 #include <streams.h>
 #include <InitGuid.h>
 #include <moreuuids.h>

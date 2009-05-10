@@ -2,6 +2,7 @@
 #include "FilterManager.h"
 #include "..\..\filters\parser\avisplitter\AviSplitter.h"
 #include "..\..\filters\parser\matroskasplitter\MatroskaSplitter.h"
+#include "..\..\filters\parser\realmediasplitter\RealMediaSplitter.h"
 #include "..\..\filters\transform\mpcvideodec\MPCVideoDecFilter.h"
 #include "..\..\filters\transform\mpadecfilter\MpaDecFilter.h"
 
@@ -67,6 +68,70 @@ namespace MKV
 	const FilterSetupInfo sudFilters[] =
 	{
 		{&__uuidof(CMatroskaSplitterFilter), L"MPC - Matroska Splitter", CreateInstance<CMatroskaSplitterFilter>, _countof(sudpPins), sudpPins},
+	};
+}
+
+namespace RMDec
+{
+	const AMOVIESETUP_MEDIATYPE sudPinTypesIn[] =
+	{
+		{&MEDIATYPE_Stream, &MEDIASUBTYPE_NULL},
+	};
+
+	const AMOVIESETUP_PIN sudpPins[] =
+	{
+		{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, _countof(sudPinTypesIn), sudPinTypesIn},
+		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, 0, NULL}
+	};
+
+	const AMOVIESETUP_MEDIATYPE sudPinTypesIn2[] =
+	{
+		{&MEDIATYPE_Video, &MEDIASUBTYPE_RV20},
+		{&MEDIATYPE_Video, &MEDIASUBTYPE_RV30},
+		{&MEDIATYPE_Video, &MEDIASUBTYPE_RV40},
+		{&MEDIATYPE_Video, &MEDIASUBTYPE_RV41},
+	};
+
+	const AMOVIESETUP_MEDIATYPE sudPinTypesOut2[] =
+	{
+		{&MEDIATYPE_Video, &MEDIASUBTYPE_NULL},
+	};
+
+	const AMOVIESETUP_PIN sudpPins2[] =
+	{
+		{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, _countof(sudPinTypesIn2), sudPinTypesIn2},
+		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, _countof(sudPinTypesOut2), sudPinTypesOut2}
+	};
+
+	const AMOVIESETUP_MEDIATYPE sudPinTypesIn3[] =
+	{
+		{&MEDIATYPE_Audio, &MEDIASUBTYPE_14_4},
+		{&MEDIATYPE_Audio, &MEDIASUBTYPE_28_8},
+		{&MEDIATYPE_Audio, &MEDIASUBTYPE_ATRC},
+		{&MEDIATYPE_Audio, &MEDIASUBTYPE_COOK},
+		{&MEDIATYPE_Audio, &MEDIASUBTYPE_DNET},
+		{&MEDIATYPE_Audio, &MEDIASUBTYPE_SIPR},
+		{&MEDIATYPE_Audio, &MEDIASUBTYPE_AAC},
+		{&MEDIATYPE_Audio, &MEDIASUBTYPE_RAAC},
+		{&MEDIATYPE_Audio, &MEDIASUBTYPE_RACP},
+	};
+
+	const AMOVIESETUP_MEDIATYPE sudPinTypesOut3[] =
+	{
+		{&MEDIATYPE_Audio, &MEDIASUBTYPE_PCM},
+	};
+
+	const AMOVIESETUP_PIN sudpPins3[] =
+	{
+		{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, _countof(sudPinTypesIn3), sudPinTypesIn3},
+		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, _countof(sudPinTypesOut3), sudPinTypesOut3}
+	};
+
+	const FilterSetupInfo sudFilters[] =
+	{
+		{&__uuidof(CRealMediaSplitterFilter), L"MPC - RealMedia Splitter", CreateInstance<CRealMediaSplitterFilter>, _countof(sudpPins), sudpPins},
+		{&__uuidof(CRealVideoDecoder), L"MPC - RealVideo Decoder", CreateInstance<CRealVideoDecoder>, _countof(sudpPins2), sudpPins2},
+		{&__uuidof(CRealAudioDecoder), L"MPC - RealAudio Decoder", CreateInstance<CRealAudioDecoder>, _countof(sudpPins3), sudpPins3}
 	};
 }
 
@@ -167,6 +232,7 @@ CFilterManager::CFilterManager(void)
 {
 	RegisterFilter(_countof(AVI::sudFilters), AVI::sudFilters);
 	RegisterFilter(_countof(MKV::sudFilters), MKV::sudFilters);
+	RegisterFilter(_countof(RMDec::sudFilters), RMDec::sudFilters);
 	RegisterFilter(_countof(VideoDec::sudFilters), VideoDec::sudFilters);
 	RegisterFilter(_countof(AudioDec::sudFilters), AudioDec::sudFilters);
 }
@@ -175,8 +241,8 @@ CFilterManager::~CFilterManager(void)
 {
 	while (m_filters.size() > 0)
 	{
-		CFilter* pFilter = m_filters.begin()->second;
-		m_filters.erase(m_filters.begin());
+		CFilter* pFilter = m_filters.front();
+		m_filters.pop_front();
 		delete pFilter;
 	}
 }
@@ -186,7 +252,7 @@ HRESULT CFilterManager::EnumMatchingFilters( const CAtlList<CMediaType>& mts, st
 	UINT nInitCount = filters.size();
 	for (FilterList::const_iterator it = m_filters.begin(); it != m_filters.end(); it++)
 	{
-		CFilter* pFilter = it->second;
+		CFilter* pFilter = *it;
 		POSITION pos = mts.GetHeadPosition(); 
 		while (pos != NULL)
 		{
@@ -206,7 +272,7 @@ HRESULT CFilterManager::RegisterFilter( UINT uiFilterCount, const FilterSetupInf
 		const FilterSetupInfo& setupInfo = pSetupInfo[i];
 		CFilter* pFilter = new CInternalFilter(*setupInfo.pClsID, setupInfo.pszName, setupInfo.pfnCreateInstance, 
 			setupInfo.uiPinCount, setupInfo.pPins);
-		m_filters.insert(std::make_pair(*pSetupInfo->pClsID, pFilter));
+		m_filters.push_back(pFilter);
 	}
 	return S_OK;
 }

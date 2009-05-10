@@ -66,7 +66,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="strmiids.lib winmm.lib d3d9.lib strmbaseDU.lib basesplitterDU.lib AviSplitterDU.lib MatroskaSplitterDU.lib MPCVideoDecDU.lib libvorbisidecD.lib decssDU.lib MpaDecFilterDU.lib"
+				AdditionalDependencies="strmiids.lib winmm.lib d3d9.lib strmbaseDU.lib basesplitterDU.lib AviSplitterDU.lib MatroskaSplitterDU.lib RealMediaSplitterDU.lib MPCVideoDecDU.lib libvorbisidecD.lib decssDU.lib MpaDecFilterDU.lib"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -124,13 +124,15 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="true"
 				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG"
 				MinimalRebuild="false"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
-				DebugInformationFormat="3"
+				DebugInformationFormat="0"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -146,9 +148,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="strmiids.lib winmm.lib d3d9.lib strmbaseRU.lib basesplitterRU.lib AviSplitterRU.lib MatroskaSplitterRU.lib MPCVideoDecRU.lib libvorbisidecR.lib decssRU.lib MpaDecFilterRU.lib"
+				AdditionalDependencies="strmiids.lib winmm.lib d3d9.lib strmbaseRU.lib basesplitterRU.lib AviSplitterRU.lib MatroskaSplitterRU.lib RealMediaSplitterRU.lib MPCVideoDecRU.lib libvorbisidecR.lib decssRU.lib MpaDecFilterRU.lib"
 				LinkIncremental="1"
-				GenerateDebugInformation="true"
+				GenerateDebugInformation="false"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -194,6 +196,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\FileUtil.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Filter.cpp"
 				>
 			</File>
@@ -203,6 +209,10 @@
 			</File>
 			<File
 				RelativePath=".\MainFrm.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Player.cpp"
 				>
 			</File>
 			<File
@@ -226,6 +236,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\Thread.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\VideoGear.cpp"
 				>
 			</File>
@@ -240,11 +254,19 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\AppConfig.h"
+				>
+			</File>
+			<File
 				RelativePath=".\DSUtil.h"
 				>
 			</File>
 			<File
 				RelativePath=".\FGManager.h"
+				>
+			</File>
+			<File
+				RelativePath=".\FileUtil.h"
 				>
 			</File>
 			<File
@@ -256,7 +278,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\IGraphBuilder2.h"
+				>
+			</File>
+			<File
 				RelativePath=".\MainFrm.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Player.h"
 				>
 			</File>
 			<File
@@ -269,6 +299,10 @@
 			</File>
 			<File
 				RelativePath=".\targetver.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Thread.h"
 				>
 			</File>
 			<File
@@ -298,11 +332,11 @@
 				>
 			</File>
 		</Filter>
-		<File
-			RelativePath=".\ReadMe.txt"
-			>
-		</File>
 	</Files>
 	<Globals>
+		<Global
+			Name="RESOURCE_FILE"
+			Value="VideoGear.rc"
+		/>
 	</Globals>
 </VisualStudioProject>

@@ -4,7 +4,7 @@
 
 
 #pragma once
-
+#include "Player.h"
 
 // CVideoView 窗口
 
@@ -21,16 +21,21 @@ public:
 public:
 
 // 重写
-	protected:
+protected:
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
+	virtual LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam);
+
+private:
+	CPlayer *m_pPlayer;
 
 // 实现
 public:
 	virtual ~CVideoView();
 
-	// 生成的消息映射函数
-protected:
-	afx_msg void OnPaint();
+// 生成的消息映射函数
 	DECLARE_MESSAGE_MAP()
+protected:
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+	afx_msg void OnDropFiles(HDROP hDropInfo);
 };
 

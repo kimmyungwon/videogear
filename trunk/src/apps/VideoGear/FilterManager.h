@@ -20,6 +20,6 @@ public:
 protected:
 	HRESULT RegisterFilter(UINT uiFilterCount, const FilterSetupInfo* pSetupInfo);
 private:
-	typedef std::map<CLSID, CFilter*> FilterList;
+	typedef std::list<CFilter*> FilterList;
 	FilterList m_filters;
 };
