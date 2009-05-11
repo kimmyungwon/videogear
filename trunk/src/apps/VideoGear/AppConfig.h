@@ -1,18 +1,18 @@
 #pragma once
 
-enum VideoRenderer
+enum VideoRenderMode
 {
-	VR_DEFAULT,
-	VR_VMR9,
-	VR_EVR
+	VRM_DEFAULT,
+	VRM_VMR9,
+	VRM_EVR
 };
 
 class CAppConfig
 {
 public:
-	VideoRenderer m_VideoRenderer;
+	VideoRenderMode m_vmr;
 
 	CAppConfig(void);
 };
 
-extern CAppConfig g_appCfg;
+extern CAppConfig g_AppCfg;

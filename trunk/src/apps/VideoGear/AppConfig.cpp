@@ -1,9 +1,9 @@
 #include "stdafx.h"
 #include "AppConfig.h"
 
-CAppConfig g_appCfg;
+CAppConfig g_AppCfg;
 
 CAppConfig::CAppConfig(void)
 {
-	m_VideoRenderer = VR_VMR9;
+	m_vmr = VRM_VMR9;
 }

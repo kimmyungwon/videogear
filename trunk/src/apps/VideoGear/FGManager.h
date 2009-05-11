@@ -1,49 +1,35 @@
 #pragma once
 
-#include "IGraphBuilder2.h"
 #include "AppConfig.h"
 
 class CFGManager
-	: public CUnknown
-	, public IGraphBuilder2
 {
 public:
-	CFGManager(CWnd *pVidWnd);
-	~CFGManager(void);
-	/* IGraphBuilder */
-	virtual HRESULT STDMETHODCALLTYPE RenderFile(LPCWSTR lpcwstrFile, LPCWSTR lpcwstrPlayList);
+	CFGManager(void);
+	virtual ~CFGManager(void);
+	// 初始化
+	HRESULT Initialize(CWnd *pVidWnd);
+	// 渲染指定的文件
+	HRESULT RenderFile(LPCWSTR pszFile);
 protected:
-	DECLARE_IUNKNOWN
-	/* CUnknown */
-	STDMETHODIMP NonDelegatingQueryInterface(REFIID riid, __deref_out void **ppv);
-	/* IFIlterGraph */
-	virtual HRESULT STDMETHODCALLTYPE AddFilter(IBaseFilter *pFilter, LPCWSTR pName);
-	virtual HRESULT STDMETHODCALLTYPE RemoveFilter(IBaseFilter *pFilter);
-	virtual HRESULT STDMETHODCALLTYPE EnumFilters(IEnumFilters **ppEnum);
-	virtual HRESULT STDMETHODCALLTYPE FindFilterByName(LPCWSTR pName, IBaseFilter **ppFilter);
-	virtual HRESULT STDMETHODCALLTYPE ConnectDirect(IPin *ppinOut, IPin *ppinIn, const AM_MEDIA_TYPE *pmt);
-	virtual HRESULT STDMETHODCALLTYPE Reconnect(IPin *ppin);
-	virtual HRESULT STDMETHODCALLTYPE Disconnect(IPin *ppin);
-	virtual HRESULT STDMETHODCALLTYPE SetDefaultSyncSource(void);
-	/* IGraphBuilder */
-	virtual HRESULT STDMETHODCALLTYPE Connect(IPin *ppinOut, IPin *ppinIn);
-	virtual HRESULT STDMETHODCALLTYPE Render(IPin *ppinOut);
-	//virtual HRESULT STDMETHODCALLTYPE RenderFile(LPCWSTR lpcwstrFile, LPCWSTR lpcwstrPlayList);
-	virtual HRESULT STDMETHODCALLTYPE AddSourceFilter(LPCWSTR lpcwstrFileName, LPCWSTR lpcwstrFilterName, IBaseFilter **ppFilter);
-	virtual HRESULT STDMETHODCALLTYPE SetLogFile(DWORD_PTR hFile);
-	virtual HRESULT STDMETHODCALLTYPE Abort(void);
-	virtual HRESULT STDMETHODCALLTYPE ShouldOperationContinue(void);
-	/* IFilterGraph2 */
-	virtual HRESULT STDMETHODCALLTYPE AddSourceFilterForMoniker(IMoniker *pMoniker, IBindCtx *pCtx, LPCWSTR lpcwstrFilterName, IBaseFilter **ppFilter);
-	virtual HRESULT STDMETHODCALLTYPE ReconnectEx(IPin *ppin, const AM_MEDIA_TYPE *pmt);
-	virtual HRESULT STDMETHODCALLTYPE RenderEx(IPin *pPinOut, DWORD dwFlags, DWORD *pvContext);
-	/* IGraphBuilder2 */
-	virtual HRESULT STDMETHODCALLTYPE NukeDownstream(IUnknown *pUnk);
-	virtual HRESULT STDMETHODCALLTYPE ClearGraph(void);
-	virtual HRESULT STDMETHODCALLTYPE RenderFilter(IBaseFilter *pFilter);
-	virtual HRESULT STDMETHODCALLTYPE ConnectDirectEx(IPin *ppinOut, IBaseFilter *pFilter, const AM_MEDIA_TYPE *pmt);
+	// 按指定文件查找源滤镜并载入
+	HRESULT AddSourceFilter(LPCWSTR pszFile, IBaseFilter **ppFilter);
+	// 分离指定的源滤镜
+	HRESULT SplitSource(IBaseFilter *pSource, IBaseFilter **ppFilter);
+	// 渲染指定的滤镜
+	HRESULT RenderFilter(IBaseFilter *pFilter);
+	// 渲染指定的输出插针
+	HRESULT Render(IPin *ppinOut);
+	// 直接连接输出插针到滤镜
+	HRESULT ConnectDirect(IPin *ppinOut, IBaseFilter *pFilterIn);
+	// 拆除下游滤镜链
+	HRESULT TearDownStream(IUnknown *pUnk);
+	// 清空图表
+	HRESULT ClearGraph(void);
 private:
+	bool m_bInitialized;
 	CWnd *m_pVidWnd;
 	CComPtr<IFilterGraph2> m_pGraph;
+	VideoRenderMode m_vmr;
 	CComPtr<IBaseFilter> m_pVideoRenderer;
 };

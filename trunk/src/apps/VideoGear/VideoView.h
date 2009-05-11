@@ -4,7 +4,6 @@
 
 
 #pragma once
-#include "Player.h"
 
 // CVideoView ´°¿Ú
 
@@ -26,7 +25,7 @@ protected:
 	virtual LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
-	CPlayer *m_pPlayer;
+	//CPlayer *m_pPlayer;
 
 // ÊµÏÖ
 public:

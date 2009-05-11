@@ -21,9 +21,6 @@ protected:
 	HRESULT RegisterFilter(UINT uiFilterCount, const FilterSetupInfo* pSetupInfo);
 private:
 	typedef CAtlMap<CLSID, CAutoPtr<CFilter> > FilterList;
-	typedef CRBMultiMap<GUID, CFilter*> MinorTypes;
-	typedef CAtlMap<GUID, MinorTypes> MajorTypes;
 
 	FilterList m_filters;
-	MajorTypes m_majorTypes;
 };

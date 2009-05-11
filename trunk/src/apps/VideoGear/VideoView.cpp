@@ -15,12 +15,12 @@
 
 CVideoView::CVideoView()
 {
-	m_pPlayer = new CPlayer(this);
+	//m_pPlayer = new CPlayer(this);
 }
 
 CVideoView::~CVideoView()
 {
-	SAFE_DELETE(m_pPlayer);
+	//SAFE_DELETE(m_pPlayer);
 }
 
 BEGIN_MESSAGE_MAP(CVideoView, CWnd)
@@ -48,7 +48,7 @@ BOOL CVideoView::PreCreateWindow(CREATESTRUCT& cs)
 LRESULT CVideoView::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT lr = CWnd::WindowProc(message, wParam, lParam);
-	m_pPlayer->NotifyOwnerMessage(message, wParam, lParam);
+	//m_pPlayer->NotifyOwnerMessage(message, wParam, lParam);
 	return lr;
 }
 
@@ -64,7 +64,7 @@ BOOL CVideoView::OnEraseBkgnd( CDC* pDC )
 
 void CVideoView::OnDropFiles( HDROP hDropInfo )
 {
-	DWORD dwCount = DragQueryFileW(hDropInfo, 0xFFFFFFFF, NULL, 0);
+	/*DWORD dwCount = DragQueryFileW(hDropInfo, 0xFFFFFFFF, NULL, 0);
 	for (DWORD i = 0; i < dwCount; i++)
 	{
 		WCHAR szFile[MAX_PATH];
@@ -73,5 +73,5 @@ void CVideoView::OnDropFiles( HDROP hDropInfo )
 		m_pPlayer->AddFile(szFile);
 	}
 	DragFinish(hDropInfo);
-	m_pPlayer->Play();
+	m_pPlayer->Play();*/
 }

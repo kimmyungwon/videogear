@@ -263,18 +263,6 @@ HRESULT CFilterManager::RegisterFilter( UINT uiFilterCount, const FilterSetupInf
 		CFilter* pFilter = new CInternalFilter(*setupInfo.pClsID, setupInfo.pszName, setupInfo.pfnCreateInstance, 
 			setupInfo.uiPinCount, setupInfo.pPins);
 		m_filters[*setupInfo.pClsID] = CAutoPtr<CFilter>(pFilter);
-		/* 注册所有输入类型 */
-		for (UINT j = 0; j < setupInfo.uiPinCount; j++)
-		{
-			const AMOVIESETUP_PIN& pinInfo = setupInfo.pPins[j];
-			if (pinInfo.bOutput)
-				continue;
-			for (UINT k = 0; k < pinInfo.nMediaTypes; k++)
-			{
-				MediaType mt(*pinInfo.lpMediaType[k].clsMajorType, *pinInfo.lpMediaType[k].clsMinorType);
-				m_majorTypes[mt.major].Insert(mt.minor, pFilter);
-			}
-		}
 	}
 
 	return S_OK;

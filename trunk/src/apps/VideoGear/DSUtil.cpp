@@ -1,15 +1,34 @@
 #include "stdafx.h"
+#include "VideoGear.h"
 #include "DSUtil.h"
 
-void MyTrace(LPCWSTR pszFormat, ...)
+HRESULT AddToROT(IFilterGraph *pFG)
 {
-	CStringW strLog;
-	va_list args;
+	if (pFG == NULL)
+		return E_POINTER;
+	
+	CComPtr<IRunningObjectTable> pROT;
+	CStringW strName;
+	CComPtr<IMoniker> pMoniker;
+	DWORD dwRegister;
 
-	va_start(args, pszFormat);
-	strLog.FormatV(pszFormat, args);
-	va_end(args);
-	OutputDebugStringW(strLog);
+	RIF(GetRunningObjectTable(0, &pROT));
+	strName.Format(L"FilterGraph %08x pid %08x", (DWORD_PTR)pFG, GetCurrentProcessId());
+	RIF(CreateItemMoniker(L"!", strName, &pMoniker));
+	return pROT->Register(ROTFLAGS_REGISTRATIONKEEPSALIVE, pFG, pMoniker, &dwRegister);
+}
+
+bool IsSourceFilter(IBaseFilter *pFilter)
+{
+	ASSERT(pFilter != NULL);
+
+	BeginEnumPins(pFilter, pEnumPins, pPin)
+	{
+		if (IsPinDir(pPin, PINDIR_INPUT))
+			return false;
+	}
+	EndEnumPins;
+	return true;
 }
 
 bool IsPinConnected(IPin *pPin)
