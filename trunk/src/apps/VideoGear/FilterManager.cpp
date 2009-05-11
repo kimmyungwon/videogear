@@ -5,6 +5,8 @@
 #include "..\..\filters\parser\realmediasplitter\RealMediaSplitter.h"
 #include "..\..\filters\transform\mpcvideodec\MPCVideoDecFilter.h"
 #include "..\..\filters\transform\mpadecfilter\MpaDecFilter.h"
+#include "DbgUtil.h"
+#include "DSUtil.h"
 
 template<typename ClassT>
 HRESULT CreateInstance(LPUNKNOWN pUnk, IBaseFilter** ppv)
@@ -221,6 +223,8 @@ namespace AudioDec
 
 //////////////////////////////////////////////////////////////////////////
 
+CFilterManager g_FilterMgr;
+
 CFilterManager::CFilterManager(void)
 {
 	RegisterFilter(_countof(AVI::sudFilters), AVI::sudFilters);
@@ -238,32 +242,64 @@ CFilterManager::~CFilterManager(void)
 HRESULT CFilterManager::EnumMatchingFilters( const CAtlList<CMediaType>& mts, CAtlList<CFilter*>& filters )
 {
 	UINT nInitCount = filters.GetCount();
-	POSITION pos = m_filters.GetStartPosition();
-	while (pos != NULL)
+
+	POSITION posMT = mts.GetHeadPosition();
+	while (posMT != NULL)
 	{
-		CFilter *pFilter = m_filters.GetNextValue(pos);
-		POSITION posMT = mts.GetHeadPosition();
-		while (posMT != NULL)
+		const CMediaType &mt = mts.GetNext(posMT);
+		MajorTypes::CPair *pair = m_majorTypes.Lookup(mt.majortype);
+		if (pair == NULL)
+			continue;
+		/* 精确匹配 */
+		POSITION pos = pair->m_value.FindFirstWithKey(mt.subtype);
+		while (pos != NULL)
 		{
-			if (pFilter->CheckInputType(mts.GetNext(posMT)) == S_OK)
+			CFilter *pFilter = pair->m_value.GetNextValueWithKey(pos, mt.subtype);
+			filters.AddTail(pFilter);
+		}
+		/* 模糊匹配 */
+		if (mt.subtype != GUID_NULL)
+		{
+			POSITION pos = pair->m_value.FindFirstWithKey(GUID_NULL);
+			while (pos != NULL)
 			{
+				CFilter *pFilter = pair->m_value.GetNextValueWithKey(pos, mt.subtype);
 				filters.AddTail(pFilter);
-				break;
 			}
 		}
 	}
+
 	return filters.GetCount() - nInitCount > 0 ? S_OK : S_FALSE;
 }
 
-HRESULT CFilterManager::RegisterFilter( UINT uiFilterCount, const FilterSetupInfo* pSetupInfo )
+HRESULT CFilterManager::RegisterFilter( UINT nFilterCount, const FilterSetupInfo* pSetupInfo )
 {
-	for (UINT i = 0; i < uiFilterCount; i++)
+	for (UINT i = 0; i < nFilterCount; i++)
 	{
 		const FilterSetupInfo& setupInfo = pSetupInfo[i];
-		CFilter* pFilter = new CInternalFilter(*setupInfo.pClsID, setupInfo.pszName, setupInfo.pfnCreateInstance, 
-			setupInfo.uiPinCount, setupInfo.pPins);
+		CFilter* pFilter = new CFilterInternal(*setupInfo.pClsID, setupInfo.pszName, setupInfo.pfnCreateInstance, 
+			setupInfo.nPinCount, setupInfo.pPins);
 		m_filters[*setupInfo.pClsID] = CAutoPtr<CFilter>(pFilter);
+		/* 注册输入类型 */
+		for (UINT j = 0; j < setupInfo.nPinCount; j++)
+		{
+			const AMOVIESETUP_PIN &pinInfo = setupInfo.pPins[j];
+			if (pinInfo.bOutput)
+				continue;
+			for (UINT k = 0; k < pinInfo.nMediaTypes; k++)
+			{
+				const REGPINTYPES &pinTypes = pinInfo.lpMediaType[k];
+				m_majorTypes[*pinTypes.clsMajorType].Insert(*pinTypes.clsMinorType, pFilter);
+			}
+		}
 	}
 
+	return S_OK;
+}
+
+HRESULT CFilterManager::RegisterFilter( CLSID clsID )
+{
+	CFilter* pFilter = new CFilterRegister(clsID);
+	m_filters[clsID] = CAutoPtr<CFilter>(pFilter);
 	return S_OK;
 }

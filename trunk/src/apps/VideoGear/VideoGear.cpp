@@ -25,12 +25,10 @@ END_MESSAGE_MAP()
 CVideoGearApp::CVideoGearApp()
 {
 	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
-	m_pFilterManager = new CFilterManager;
 }
 
 CVideoGearApp::~CVideoGearApp()
 {
-	delete m_pFilterManager;
 	CoUninitialize();
 }
 

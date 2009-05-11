@@ -3,7 +3,8 @@
 
 CAppConfig g_AppCfg;
 
-CAppConfig::CAppConfig(void)
+CAppConfig::CAppConfig( void )
+: m_VideoRenderMode(VRM_VMR9)
 {
-	m_vmr = VRM_VMR9;
+
 }

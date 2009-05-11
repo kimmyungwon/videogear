@@ -1,10 +1,10 @@
 #include "stdafx.h"
 #include "DbgUtil.h"
 
-void MyTrace(LPCWSTR pszFormat, ...)
+void MyTrace( LPCWSTR pszFormat, ... )
 {
-	CStringW strLog;
 	va_list args;
+	CStringW strLog;
 
 	va_start(args, pszFormat);
 	strLog.FormatV(pszFormat, args);

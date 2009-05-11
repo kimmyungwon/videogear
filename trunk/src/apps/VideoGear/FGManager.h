@@ -17,11 +17,11 @@ protected:
 	// 分离指定的源滤镜
 	HRESULT SplitSource(IBaseFilter *pSource, IBaseFilter **ppFilter);
 	// 渲染指定的滤镜
-	HRESULT RenderFilter(IBaseFilter *pFilter);
+	HRESULT RenderFilter(IBaseFilter *pFilter, bool bReportError = false);
 	// 渲染指定的输出插针
-	HRESULT Render(IPin *ppinOut);
+	HRESULT Render(IPin *pPinOut);
 	// 直接连接输出插针到滤镜
-	HRESULT ConnectDirect(IPin *pPinOut, IBaseFilter *pFilterIn);
+	HRESULT ConnectDirect(IPin *pPinOut, IBaseFilter *pFilterIn, const AM_MEDIA_TYPE *pmt);
 	// 拆除下游滤镜链
 	HRESULT TearDownStream(IUnknown *pUnk);
 	// 清空图表
@@ -30,6 +30,7 @@ private:
 	bool m_bInitialized;
 	CWnd *m_pVidWnd;
 	CComPtr<IFilterGraph2> m_pGraph;
+	CComPtr<IMediaControl> m_pMC;
 	VideoRenderMode m_vmr;
 	CComPtr<IBaseFilter> m_pVideoRenderer;
 };

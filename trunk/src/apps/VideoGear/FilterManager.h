@@ -7,7 +7,7 @@ struct FilterSetupInfo
 	const CLSID* pClsID;
 	LPCWSTR pszName;
 	PFNCreateInstance pfnCreateInstance;
-	UINT uiPinCount;
+	UINT nPinCount;
 	const AMOVIESETUP_PIN* pPins;
 };
 
@@ -18,9 +18,15 @@ public:
 	virtual ~CFilterManager(void);
 	HRESULT EnumMatchingFilters(const CAtlList<CMediaType>& mts, CAtlList<CFilter*>& filters);
 protected:
-	HRESULT RegisterFilter(UINT uiFilterCount, const FilterSetupInfo* pSetupInfo);
+	HRESULT RegisterFilter(UINT nFilterCount, const FilterSetupInfo* pSetupInfo);
+	HRESULT RegisterFilter(CLSID clsID);
 private:
 	typedef CAtlMap<CLSID, CAutoPtr<CFilter> > FilterList;
+	typedef CRBMultiMap<GUID, CFilter*> MinorTypes;
+	typedef CAtlMap<GUID, MinorTypes> MajorTypes;
 
 	FilterList m_filters;
-};
+	MajorTypes m_majorTypes;
+ };
+
+extern CFilterManager g_FilterMgr;

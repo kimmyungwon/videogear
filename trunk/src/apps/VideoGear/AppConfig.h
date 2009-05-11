@@ -10,7 +10,7 @@ enum VideoRenderMode
 class CAppConfig
 {
 public:
-	VideoRenderMode m_vmr;
+	VideoRenderMode m_VideoRenderMode;
 
 	CAppConfig(void);
 };

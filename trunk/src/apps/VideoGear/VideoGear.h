@@ -8,7 +8,6 @@
 #endif
 
 #include "resource.h"       // 主符号
-#include "FilterManager.h"
 
 // CVideoGearApp:
 // 有关此类的实现，请参阅 VideoGear.cpp
@@ -19,9 +18,6 @@ class CVideoGearApp : public CWinApp
 public:
 	CVideoGearApp();
 	~CVideoGearApp();
-
-public:
-	CFilterManager* m_pFilterManager;
 
 // 重写
 public:
