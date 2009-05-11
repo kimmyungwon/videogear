@@ -285,8 +285,7 @@ HRESULT STDMETHODCALLTYPE CFGManager::RenderFilter( IBaseFilter *pFilter )
 	CComPtr<IEnumPins> pEnumPins;
 	int nTotal = 0, nRendered = 0;
 
-	RIF(pFilter->EnumPins(&pEnumPins));
-	for (CComPtr<IPin> pPin; pEnumPins->Next(1, &pPin, NULL) == S_OK; pPin.Release())
+	BeginEnumPins(pFilter, pEnumPins, pPin)
 	{
 		if (!IsPinDir(pPin, PINDIR_OUTPUT) || IsPinConnected(pPin))
 			continue;
@@ -294,6 +293,8 @@ HRESULT STDMETHODCALLTYPE CFGManager::RenderFilter( IBaseFilter *pFilter )
 		if (SUCCEEDED(Render(pPin)))
 			nRendered++;
 	}
+	EndEnumPins
+
 	if (nTotal > 0)
 		if (nRendered > 0)
 			return nRendered == nTotal ? S_OK : S_FALSE;
@@ -310,17 +311,34 @@ HRESULT STDMETHODCALLTYPE CFGManager::ConnectDirectEx( IPin *ppinOut, IBaseFilte
 	if (IsPinConnected(ppinOut))
 		return VFW_E_ALREADY_CONNECTED;
 
-	CComPtr<IEnumPins> pEnumPins;
-
-	RIF(pFilter->EnumPins(&pEnumPins));
-	for (CComPtr<IPin> ppinIn; pEnumPins->Next(1, &ppinIn, NULL) == S_OK; ppinIn.Release())
+	BeginEnumPins(pFilter, pEnumPins, ppinIn)
 	{
 		if (!IsPinDir(ppinIn, PINDIR_INPUT) || IsPinConnected(ppinIn))
 			continue;
-		HRESULT hr = ConnectDirect(ppinOut, ppinIn, pmt);
-		if (SUCCEEDED(hr))
-			return hr;
+
+		if (pmt != NULL)
+		{
+			HRESULT hr = ConnectDirect(ppinOut, ppinIn, pmt);
+			if (SUCCEEDED(hr))
+				return hr;
+		}
+		else
+		{
+			HRESULT hr;
+			
+			BeginEnumMediaTypes(ppinOut, pEnumMT, pmtOut)
+			{
+				hr = ConnectDirect(ppinOut, ppinIn, pmtOut);
+				if (SUCCEEDED(hr))
+					break;
+			}
+			EndEnumMediaTypes(pmtOut)
+			if (SUCCEEDED(hr))
+				return hr;
+		}
 	}
+	EndEnumPins
+
 	return VFW_E_CANNOT_CONNECT;
 }
 
