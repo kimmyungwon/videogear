@@ -144,8 +144,7 @@ HRESULT STDMETHODCALLTYPE CFGManager::Render(IPin *ppinOut)
 					return S_OK;
 				NukeDownstream(ppinOut);
 			}			
-			else
-				RemoveFilter(pBF);
+			RemoveFilter(pBF);
 		}
 	}
 
@@ -227,24 +226,35 @@ HRESULT STDMETHODCALLTYPE CFGManager::RenderEx(IPin *pPinOut, DWORD dwFlags, DWO
 	return m_pGraph->RenderEx(pPinOut, dwFlags, pvContext);
 }
 
-HRESULT STDMETHODCALLTYPE CFGManager::NukeDownstream( IPin *ppinOut )
+HRESULT STDMETHODCALLTYPE CFGManager::NukeDownstream( IUnknown *pUnk )
 {
-	if (ppinOut == NULL)
-		return E_POINTER;
-
-	CComPtr<IPin> ppinTo;
-	PIN_INFO piTo;
-	CComPtr<IEnumPins> pEnumPins;
-
-	RIF(ppinOut->ConnectedTo(&ppinTo));
-	RIF(ppinTo->QueryPinInfo(&piTo));
-	RIF(piTo.pFilter->EnumPins(&pEnumPins));
-	for (CComPtr<IPin> pPin; pEnumPins->Next(1, &pPin, NULL) == S_OK; pPin.Release())
+	if (CComQIPtr<IBaseFilter> pFilter = pUnk)
 	{
-		RIF(Disconnect(pPin));
+		BeginEnumPins(pFilter, pEnumPins, pPin)
+		{
+			NukeDownstream(pPin);
+		}
+		EndEnumPins
+		return S_OK;
 	}
-	RIF(RemoveFilter(piTo.pFilter));
-	return S_OK;
+	else if (CComQIPtr<IPin> pPin = pUnk)
+	{
+		CComPtr<IPin> pPinTo;
+
+		if (IsPinDir(pPin, PINDIR_OUTPUT) && SUCCEEDED(pPin->ConnectedTo(&pPinTo)) && pPinTo != NULL)
+		{
+			if (CComPtr<IBaseFilter> pFilter = GetFilterFromPin(pPinTo))
+			{
+				NukeDownstream(pFilter);
+				Disconnect(pPinTo);
+				Disconnect(pPin);
+				RemoveFilter(pFilter);
+			}
+		}
+		return S_OK;
+	}
+	else
+		return E_INVALIDARG;
 }
 
 HRESULT STDMETHODCALLTYPE CFGManager::ClearGraph( void )

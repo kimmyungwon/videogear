@@ -217,6 +217,8 @@ void CPlayer::AdjustVideoPosition( void )
 			long nDstW, nDstH, nDstX, nDstY;
 			
 			m_pVWC->GetNativeVideoSize(&nVidW, &nVidH, &nVidArW, &nVidArH);
+			if (nVidW == 0 || nVidH == 0)
+				return;
 			if (nVidW / (double)nVidH <= rctWnd.Width() / (double)rctWnd.Height())
 			{
 				nDstH = rctWnd.Height();

@@ -38,7 +38,7 @@ protected:
 	virtual HRESULT STDMETHODCALLTYPE ReconnectEx(IPin *ppin, const AM_MEDIA_TYPE *pmt);
 	virtual HRESULT STDMETHODCALLTYPE RenderEx(IPin *pPinOut, DWORD dwFlags, DWORD *pvContext);
 	/* IGraphBuilder2 */
-	virtual HRESULT STDMETHODCALLTYPE NukeDownstream(IPin *ppinOut);
+	virtual HRESULT STDMETHODCALLTYPE NukeDownstream(IUnknown *pUnk);
 	virtual HRESULT STDMETHODCALLTYPE ClearGraph(void);
 	virtual HRESULT STDMETHODCALLTYPE RenderFilter(IBaseFilter *pFilter);
 	virtual HRESULT STDMETHODCALLTYPE ConnectDirectEx(IPin *ppinOut, IBaseFilter *pFilter, const AM_MEDIA_TYPE *pmt);
