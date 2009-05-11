@@ -8,7 +8,7 @@
 	>
 	<Tool
 		Name="VCCLCompilerTool"
-		AdditionalIncludeDirectories="&quot;$(SolutionDir)..\inc&quot;"
+		AdditionalIncludeDirectories="&quot;$(SolutionDir)..\inc&quot;;&quot;$(SolutionDir)filters\BaseClasses&quot;"
 	/>
 	<Tool
 		Name="VCLinkerTool"

@@ -12,7 +12,8 @@ CFilter::~CFilter(void)
 
 //////////////////////////////////////////////////////////////////////////
 
-CInternalFilter::CInternalFilter( const CLSID& clsID, LPCWSTR pszName, PFNCreateInstance pfnCreateInstance, UINT uiPinCount, const AMOVIESETUP_PIN* pPins )
+CInternalFilter::CInternalFilter( const CLSID& clsID, LPCWSTR pszName, PFNCreateInstance pfnCreateInstance, 
+								 UINT uiPinCount, const AMOVIESETUP_PIN* pPins )
 : CFilter(clsID, pszName), m_pfnCreateInstance(pfnCreateInstance)
 {
 	for (UINT i = 0; i < uiPinCount; i++)
@@ -22,7 +23,7 @@ CInternalFilter::CInternalFilter( const CLSID& clsID, LPCWSTR pszName, PFNCreate
 			continue;
 		for (UINT j = 0; j < pin.nMediaTypes; j++)
 		{
-			m_mtsIn.push_back(MediaType(*pin.lpMediaType[j].clsMajorType, *pin.lpMediaType[j].clsMinorType));
+			m_majorTypes[*pin.lpMediaType[j].clsMajorType][*pin.lpMediaType[j].clsMinorType] = 0;
 		}
 	}
 }
@@ -34,22 +35,20 @@ HRESULT CInternalFilter::CreateInstance( LPUNKNOWN pUnk, IBaseFilter** ppv )
 
 HRESULT CInternalFilter::CheckInputType( const CMediaType& mt )
 {
-	if (CheckInputType(MediaType(mt.majortype, mt.subtype)))
-		return S_OK;
-	if (mt.subtype != GUID_NULL && CheckInputType(MediaType(mt.majortype, GUID_NULL)))
-		return S_OK;
-	if (mt.majortype != GUID_NULL && CheckInputType(MediaType(GUID_NULL, mt.subtype)))
-		return S_OK;
-	return S_FALSE;
-}
+	if (mt.majortype == GUID_NULL)
+		return E_INVALIDARG;
 
-bool CInternalFilter::CheckInputType( const MediaType& mt )
-{
-	for (std::list<MediaType>::const_iterator it = m_mtsIn.begin(); it != m_mtsIn.end(); it++)
+	MajorTypes::CPair *pairKey = m_majorTypes.Lookup(mt.majortype);
+	if (pairKey != NULL)
 	{
-		if ((it->major == mt.major || it->major == GUID_NULL || mt.major == GUID_NULL)
-			&& (it->minor == mt.minor || it->minor == GUID_NULL || mt.minor == GUID_NULL))
-			return true;
+		MinorTypes::CPair *pair = pairKey->m_value.Lookup(mt.subtype);
+		if (pair != NULL)
+			return S_OK;
+		if (mt.subtype != GUID_NULL)
+		{		
+			pair = pairKey->m_value.Lookup(GUID_NULL);
+			return (pair != NULL) ? S_OK : S_FALSE;
+		}
 	}
-	return false;
+	return S_FALSE;	
 }

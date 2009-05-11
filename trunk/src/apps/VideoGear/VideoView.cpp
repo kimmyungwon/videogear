@@ -53,7 +53,12 @@ LRESULT CVideoView::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 
 BOOL CVideoView::OnEraseBkgnd( CDC* pDC )
 {
-	return TRUE;
+	if (m_pPlayer->GetState() == PS_STOPPED)
+	{
+		return CWnd::OnEraseBkgnd(pDC);
+	}
+	else
+		return TRUE;
 }
 
 void CVideoView::OnDropFiles( HDROP hDropInfo )

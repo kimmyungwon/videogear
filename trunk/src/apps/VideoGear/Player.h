@@ -39,6 +39,7 @@ class CPlayer
 public:
 	CPlayer(CWnd *pOwner);
 	virtual ~CPlayer(void);
+	PlayerState GetState(void)	{ return m_state; }
 	void NotifyOwnerMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
 	/* 播放列表操作 */
 	HRESULT AddFile(LPCWSTR pszFile);

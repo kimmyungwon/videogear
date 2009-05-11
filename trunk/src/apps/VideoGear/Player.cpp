@@ -68,7 +68,7 @@ CPlayer::~CPlayer(void)
 
 void CPlayer::NotifyOwnerMessage( UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
-	if (m_pVDC == NULL && m_pVW != NULL)
+	if (g_appCfg.m_VideoRenderer != VR_EVR && m_pVW != NULL)
 		m_pVW->NotifyOwnerMessage((OAHWND)m_pOwner->GetSafeHwnd(), uMsg, wParam, lParam);
 
 	switch (uMsg)
@@ -78,7 +78,7 @@ void CPlayer::NotifyOwnerMessage( UINT uMsg, WPARAM wParam, LPARAM lParam )
 		AdjustVideoPosition();
 		break;
 	case WM_PAINT:
-		if (m_pVDC != NULL)
+		if (g_appCfg.m_VideoRenderer == VR_EVR && m_pVDC != NULL)
 			m_pVDC->RepaintVideo();
 		break;
 	case WM_GRAPH_NOTIFY:
@@ -108,7 +108,7 @@ HRESULT CPlayer::Play( void )
 	}
 	else if (m_state == PS_PAUSED)
 	{
-		//TODO: Impl
+		return m_pMC->Pause();
 	}
 	return S_OK;
 }
@@ -132,6 +132,8 @@ HRESULT CPlayer::Stop( void )
 		}
 		m_pBV = NULL;
 		m_pBA = NULL;
+		m_pMC = NULL;
+		m_pME = NULL;
 		RIF(m_pGB->ClearGraph());
 	}
 	m_state = PS_STOPPED;
@@ -144,8 +146,9 @@ HRESULT CPlayer::DoPlay( PlayItem& item )
 	RIF(m_pGB.QueryInterface(&m_pMC));
 	RIF(m_pGB.QueryInterface(&m_pME));
 	m_pGB.QueryInterface(&m_pBV);
-	m_pGB.QueryInterface(&m_pVDC);
-	if (m_pVDC == NULL)
+	if (g_appCfg.m_VideoRenderer == VR_EVR)
+		m_pGB.QueryInterface(&m_pVDC);
+	else
 		m_pGB.QueryInterface(&m_pVW);
 	m_pGB.QueryInterface(&m_pBA);
 	
@@ -162,15 +165,15 @@ void CPlayer::AdjustWindowSize( bool bInit )
 {
 	if (IsWindow(m_pOwner->GetSafeHwnd()))
 	{
-		if (m_pVDC != NULL)
+		if (g_appCfg.m_VideoRenderer == VR_EVR && m_pVDC != NULL)
 		{
-			CRect rctWnd;
-
-			m_pOwner->GetClientRect(&rctWnd);
-			m_pVDC->SetVideoWindow(m_pOwner->GetSafeHwnd());
-			m_pVDC->SetVideoPosition(NULL, &rctWnd);
+			if (bInit)
+			{
+				m_pVDC->SetVideoWindow(m_pOwner->GetSafeHwnd());
+				m_pVDC->SetAspectRatioMode(MFVideoARMode_None);
+			}
 		}
-		else if (m_pVW != NULL)
+		else if (g_appCfg.m_VideoRenderer != VR_EVR && m_pVW != NULL)
 		{
 			CRect rctWnd;
 
@@ -191,17 +194,32 @@ void CPlayer::AdjustVideoPosition( void )
 {
 	if (IsWindow(m_pOwner->GetSafeHwnd()))
 	{
-		if (m_pVDC != NULL)
+		CRect rctWnd;
+		
+		m_pOwner->GetClientRect(&rctWnd);		
+		if (g_appCfg.m_VideoRenderer == VR_EVR && m_pVDC != NULL)
 		{
-
+			CSize VideoSize;
+			long nDstW, nDstH;
+			
+			m_pVDC->GetNativeVideoSize(NULL, &VideoSize);
+			if (VideoSize.cx / VideoSize.cy <= rctWnd.Width() / rctWnd.Height())
+			{
+				nDstH = rctWnd.Height();
+				nDstW = nDstH * VideoSize.cx / VideoSize.cy;
+			}
+			else
+			{
+				nDstW = rctWnd.Width();
+				nDstH = nDstW * VideoSize.cy / VideoSize.cx;
+			}
+			m_pVDC->SetVideoPosition(NULL, CRect(CPoint((rctWnd.Width() - nDstW) / 2, (rctWnd.Height() - nDstH) / 2), CSize(nDstW, nDstH)));
 		}
-		else if (m_pBV != NULL)
+		else if (g_appCfg.m_VideoRenderer != VR_EVR && m_pBV != NULL)
 		{
-			CRect rctWnd;
 			long nVidW, nVidH;
 			long nDstW, nDstH;
-
-			m_pOwner->GetClientRect(&rctWnd);
+			
 			m_pBV->GetVideoSize(&nVidW, &nVidH);
 			if (nVidW / nVidH <= rctWnd.Width() / rctWnd.Height())
 			{

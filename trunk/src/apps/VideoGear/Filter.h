@@ -36,9 +36,10 @@ public:
 	CInternalFilter(const CLSID& clsID, LPCWSTR pszName, PFNCreateInstance pfnCreateInstance, UINT uiPinCount, const AMOVIESETUP_PIN* pPins);
 	virtual HRESULT CreateInstance(LPUNKNOWN pUnk, IBaseFilter** ppv);
 	virtual HRESULT CheckInputType(const CMediaType& mt);
-protected:
-	virtual bool CheckInputType(const MediaType& mt);
 private:
+	typedef CAtlMap<GUID, int> MinorTypes;
+	typedef CAtlMap<GUID, MinorTypes> MajorTypes;
+
 	PFNCreateInstance m_pfnCreateInstance;
-	std::list<MediaType> m_mtsIn;
+	MajorTypes m_majorTypes;
 };

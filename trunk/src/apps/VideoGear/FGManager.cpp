@@ -21,14 +21,16 @@ STDMETHODIMP CFGManager::NonDelegatingQueryInterface( REFIID riid, __deref_out v
 		CComQIPtr<IMFGetService> pGetSrv = m_pVideoRenderer;
 		if (pGetSrv == NULL)
 			return E_NOINTERFACE;
-		return pGetSrv->GetService(MR_VIDEO_RENDER_SERVICE, IID_IMFVideoDisplayControl, ppv);
+		return SUCCEEDED(pGetSrv->GetService(MR_VIDEO_RENDER_SERVICE, riid, ppv)) ? S_OK : E_NOINTERFACE;
 	}
 	else
+	{
 		return	QI(IGraphBuilder2)
 				QI(IFilterGraph2)
 				QI(IGraphBuilder)
 				QI(IFilterGraph)
 				m_pGraph->QueryInterface(riid, ppv);
+	}
 }
 
 HRESULT STDMETHODCALLTYPE CFGManager::AddFilter( IBaseFilter *pFilter, LPCWSTR pName )
@@ -38,8 +40,6 @@ HRESULT STDMETHODCALLTYPE CFGManager::AddFilter( IBaseFilter *pFilter, LPCWSTR p
 
 HRESULT STDMETHODCALLTYPE CFGManager::RemoveFilter( IBaseFilter *pFilter )
 {
-	if (pFilter == m_pVideoRenderer)
-		m_pVideoRenderer = NULL;
 	return m_pGraph->RemoveFilter(pFilter);
 }
 
@@ -88,7 +88,7 @@ HRESULT STDMETHODCALLTYPE CFGManager::Render(IPin *ppinOut)
 	IBaseFilter* pFilterOut;
 	CComPtr<IEnumFilters> pEnumFilters;
 	CAtlList<CMediaType> mtsOut;
-	std::list<CFilter*> filters;
+	CAtlList<CFilter*> filters;
 
 	/* Æ¥ÅäÒÑÓÐÂË¾µ */
 
@@ -109,21 +109,23 @@ HRESULT STDMETHODCALLTYPE CFGManager::Render(IPin *ppinOut)
 	ExtractMediaTypes(ppinOut, mtsOut);
 	if(theApp.m_pFilterManager->EnumMatchingFilters(mtsOut, filters) == S_OK)
 	{
-		for (std::list<CFilter*>::iterator it = filters.begin(); it != filters.end(); it++)
+		POSITION pos = filters.GetHeadPosition();
+		while (pos != NULL)
 		{
-			CComPtr<IBaseFilter> pFilter;
+			CFilter *pFilter = filters.GetNext(pos);
+			CComPtr<IBaseFilter> pBF;
 
-			if (FAILED((*it)->CreateInstance(NULL, &pFilter))
-				|| FAILED(AddFilter(pFilter, (*it)->GetName())))
+			if (FAILED(pFilter->CreateInstance(NULL, &pBF))
+				|| FAILED(AddFilter(pBF, pFilter->GetName())))
 				continue;
-			if (SUCCEEDED(ConnectDirectEx(ppinOut, pFilter, NULL)))
+			if (SUCCEEDED(ConnectDirectEx(ppinOut, pBF, NULL)))
 			{
-				if (SUCCEEDED(RenderFilter(pFilter)))
+				if (SUCCEEDED(RenderFilter(pBF)))
 					return S_OK;
 				NukeDownstream(ppinOut);
 			}			
 			else
-				RemoveFilter(pFilter);
+				RemoveFilter(pBF);
 		}
 	}
 
@@ -138,16 +140,19 @@ HRESULT STDMETHODCALLTYPE CFGManager::RenderFile(LPCWSTR lpcwstrFile, LPCWSTR lp
 	
 	RIF(ClearGraph());
 
-	if (SUCCEEDED(m_pVideoRenderer.CoCreateInstance(CLSID_EnhancedVideoRenderer)))
+	switch (g_appCfg.m_VideoRenderer)
 	{
-		RIF(AddFilter(m_pVideoRenderer, L"Enhanced Video Renderer"));
-		m_cfgVR = VR_EVR;
-	}
-	else
-	{
+	case VR_VMR9:
 		RIF(m_pVideoRenderer.CoCreateInstance(CLSID_VideoMixingRenderer9));
 		RIF(AddFilter(m_pVideoRenderer, L"Video Mixing Renderer 9"));
-		m_cfgVR = VR_EVR;
+		break;
+	case VR_EVR:
+		RIF(m_pVideoRenderer.CoCreateInstance(CLSID_EnhancedVideoRenderer));
+		RIF(AddFilter(m_pVideoRenderer, L"Enhanced Video Renderer"));
+		break;
+	default:
+		RIF(m_pVideoRenderer.CoCreateInstance(CLSID_VideoRendererDefault));
+		RIF(AddFilter(m_pVideoRenderer, L"Default Video Renderer"));
 	}
 	RIF(pAudioRenderer.CoCreateInstance(CLSID_DSoundRender));
 	RIF(AddFilter(pAudioRenderer, L"Default DirectSound Renderer"));
@@ -223,6 +228,7 @@ HRESULT STDMETHODCALLTYPE CFGManager::ClearGraph( void )
 {
 	CComPtr<IEnumFilters> pEnumFilters;
 
+	m_pVideoRenderer = NULL;
 	RIF(EnumFilters(&pEnumFilters));
 	for (CComPtr<IBaseFilter> pFilter; pEnumFilters->Next(1, &pFilter, NULL) == S_OK; pFilter.Release())
 	{
@@ -277,3 +283,4 @@ HRESULT STDMETHODCALLTYPE CFGManager::ConnectDirectEx( IPin *ppinOut, IBaseFilte
 	}
 	return VFW_E_CANNOT_CONNECT;
 }
+
