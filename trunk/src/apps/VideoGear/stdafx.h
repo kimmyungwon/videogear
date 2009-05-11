@@ -37,6 +37,7 @@
 
 #include <d3d9.h>
 #include <DShow.h>
+#include <vmr9.h>
 #include <evr9.h>
 #include <streams.h>
 #include <InitGuid.h>

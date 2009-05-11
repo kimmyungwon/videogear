@@ -63,14 +63,12 @@ CPlayer::CPlayer( CWnd *pOwner )
 CPlayer::~CPlayer(void)
 {
 	Stop();
+	m_pGB = NULL;
 	SAFE_DELETE(m_pPlaylist);
 }
 
 void CPlayer::NotifyOwnerMessage( UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
-	if (g_appCfg.m_VideoRenderer != VR_EVR && m_pVW != NULL)
-		m_pVW->NotifyOwnerMessage((OAHWND)m_pOwner->GetSafeHwnd(), uMsg, wParam, lParam);
-
 	switch (uMsg)
 	{
 	case WM_SIZE:
@@ -80,6 +78,8 @@ void CPlayer::NotifyOwnerMessage( UINT uMsg, WPARAM wParam, LPARAM lParam )
 	case WM_PAINT:
 		if (g_appCfg.m_VideoRenderer == VR_EVR && m_pVDC != NULL)
 			m_pVDC->RepaintVideo();
+		else if (g_appCfg.m_VideoRenderer != VR_EVR && m_pVWC != NULL)
+			m_pVWC->RepaintVideo(m_pOwner->GetSafeHwnd(), m_pOwner->GetDC()->m_hDC);
 		break;
 	case WM_GRAPH_NOTIFY:
 		break;
@@ -124,13 +124,11 @@ HRESULT CPlayer::Stop( void )
 			m_pVDC->SetVideoWindow(NULL);
 			m_pVDC = NULL;
 		}
-		else if (m_pVW != NULL)
+		else if (m_pVWC != NULL)
 		{
-			m_pVW->put_Visible(OAFALSE);
-			m_pVW->put_Owner((OAHWND)NULL);
-			m_pVW = NULL;
+			m_pVWC->SetVideoClippingWindow(NULL);
+			m_pVWC = NULL;
 		}
-		m_pBV = NULL;
 		m_pBA = NULL;
 		m_pMC = NULL;
 		m_pME = NULL;
@@ -145,11 +143,10 @@ HRESULT CPlayer::DoPlay( PlayItem& item )
 	RIF(m_pGB->RenderFile(item.path, NULL));
 	RIF(m_pGB.QueryInterface(&m_pMC));
 	RIF(m_pGB.QueryInterface(&m_pME));
-	m_pGB.QueryInterface(&m_pBV);
 	if (g_appCfg.m_VideoRenderer == VR_EVR)
 		m_pGB.QueryInterface(&m_pVDC);
 	else
-		m_pGB.QueryInterface(&m_pVW);
+		m_pGB.QueryInterface(&m_pVWC);
 	m_pGB.QueryInterface(&m_pBA);
 	
 	RIF(m_pME->SetNotifyWindow((OAHWND)m_pOwner->GetSafeHwnd(), WM_GRAPH_NOTIFY, (LONG_PTR)this));
@@ -173,18 +170,15 @@ void CPlayer::AdjustWindowSize( bool bInit )
 				m_pVDC->SetAspectRatioMode(MFVideoARMode_None);
 			}
 		}
-		else if (g_appCfg.m_VideoRenderer != VR_EVR && m_pVW != NULL)
+		else if (g_appCfg.m_VideoRenderer != VR_EVR && m_pVWC != NULL)
 		{
 			CRect rctWnd;
 
 			m_pOwner->GetClientRect(&rctWnd);
 			if (bInit)
 			{
-				m_pVW->put_WindowStyle(WS_CHILD|WS_VISIBLE);
-				m_pVW->put_Owner((OAHWND)m_pOwner->GetSafeHwnd());
-				m_pVW->put_Visible(OATRUE);
+				m_pVWC->SetVideoClippingWindow(m_pOwner->GetSafeHwnd());
 			}
-			m_pVW->SetWindowPosition(0, 0, rctWnd.Width(), rctWnd.Height());
 		}
 	}
 	
@@ -200,10 +194,10 @@ void CPlayer::AdjustVideoPosition( void )
 		if (g_appCfg.m_VideoRenderer == VR_EVR && m_pVDC != NULL)
 		{
 			CSize VideoSize;
-			long nDstW, nDstH;
+			long nDstW, nDstH, nDstX, nDstY;
 			
-			m_pVDC->GetNativeVideoSize(NULL, &VideoSize);
-			if (VideoSize.cx / VideoSize.cy <= rctWnd.Width() / rctWnd.Height())
+			m_pVDC->GetNativeVideoSize(&VideoSize, NULL);
+			if (VideoSize.cx / (double)VideoSize.cy <= rctWnd.Width() / (double)rctWnd.Height())
 			{
 				nDstH = rctWnd.Height();
 				nDstW = nDstH * VideoSize.cx / VideoSize.cy;
@@ -213,15 +207,17 @@ void CPlayer::AdjustVideoPosition( void )
 				nDstW = rctWnd.Width();
 				nDstH = nDstW * VideoSize.cy / VideoSize.cx;
 			}
-			m_pVDC->SetVideoPosition(NULL, CRect(CPoint((rctWnd.Width() - nDstW) / 2, (rctWnd.Height() - nDstH) / 2), CSize(nDstW, nDstH)));
+			nDstX = (rctWnd.Width() - nDstW) / 2;
+			nDstY = (rctWnd.Height() - nDstH) / 2;
+			m_pVDC->SetVideoPosition(NULL, CRect(CPoint(nDstX, nDstY), CSize(nDstW, nDstH)));
 		}
-		else if (g_appCfg.m_VideoRenderer != VR_EVR && m_pBV != NULL)
+		else if (g_appCfg.m_VideoRenderer != VR_EVR && m_pVWC != NULL)
 		{
-			long nVidW, nVidH;
-			long nDstW, nDstH;
+			long nVidW, nVidH, nVidArW, nVidArH;
+			long nDstW, nDstH, nDstX, nDstY;
 			
-			m_pBV->GetVideoSize(&nVidW, &nVidH);
-			if (nVidW / nVidH <= rctWnd.Width() / rctWnd.Height())
+			m_pVWC->GetNativeVideoSize(&nVidW, &nVidH, &nVidArW, &nVidArH);
+			if (nVidW / (double)nVidH <= rctWnd.Width() / (double)rctWnd.Height())
 			{
 				nDstH = rctWnd.Height();
 				nDstW = nDstH * nVidW / nVidH;
@@ -231,7 +227,9 @@ void CPlayer::AdjustVideoPosition( void )
 				nDstW = rctWnd.Width();
 				nDstH = nDstW * nVidH / nVidW;
 			}
-			m_pBV->SetDestinationPosition((rctWnd.Width() - nDstW) / 2, (rctWnd.Height() - nDstH) / 2, nDstW, nDstH);
+			nDstX = (rctWnd.Width() - nDstW) / 2;
+			nDstY = (rctWnd.Height() - nDstH) / 2;
+			m_pVWC->SetVideoPosition(NULL, CRect(CPoint(nDstX, nDstY), CSize(nDstW, nDstH)));
 		}
 	}
 }

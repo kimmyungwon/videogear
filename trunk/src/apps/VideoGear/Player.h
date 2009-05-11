@@ -58,8 +58,7 @@ private:
 	CComPtr<IGraphBuilder2> m_pGB;
 	CComPtr<IMediaControl> m_pMC;
 	CComPtr<IMediaEventEx> m_pME;
-	CComPtr<IBasicVideo2> m_pBV;
-	CComPtr<IVideoWindow> m_pVW;
+	CComPtr<IVMRWindowlessControl9> m_pVWC;
 	CComPtr<IMFVideoDisplayControl> m_pVDC;
 	CComPtr<IBasicAudio> m_pBA;
 };
