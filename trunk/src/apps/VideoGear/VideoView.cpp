@@ -47,18 +47,19 @@ BOOL CVideoView::PreCreateWindow(CREATESTRUCT& cs)
 
 LRESULT CVideoView::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 {
+	LRESULT lr = CWnd::WindowProc(message, wParam, lParam);
 	m_pPlayer->NotifyOwnerMessage(message, wParam, lParam);
-	return CWnd::WindowProc(message, wParam, lParam);
+	return lr;
 }
 
 BOOL CVideoView::OnEraseBkgnd( CDC* pDC )
 {
-	if (m_pPlayer->GetState() == PS_STOPPED)
+	//if (m_pPlayer->GetState() == PS_STOPPED)
 	{
 		return CWnd::OnEraseBkgnd(pDC);
 	}
-	else
-		return TRUE;
+	/*else
+		return TRUE;*/
 }
 
 void CVideoView::OnDropFiles( HDROP hDropInfo )

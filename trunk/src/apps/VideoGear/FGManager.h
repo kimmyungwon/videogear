@@ -8,7 +8,7 @@ class CFGManager
 	, public IGraphBuilder2
 {
 public:
-	CFGManager(void);
+	CFGManager(CWnd *pVidWnd);
 	~CFGManager(void);
 	/* IGraphBuilder */
 	virtual HRESULT STDMETHODCALLTYPE RenderFile(LPCWSTR lpcwstrFile, LPCWSTR lpcwstrPlayList);
@@ -43,6 +43,7 @@ protected:
 	virtual HRESULT STDMETHODCALLTYPE RenderFilter(IBaseFilter *pFilter);
 	virtual HRESULT STDMETHODCALLTYPE ConnectDirectEx(IPin *ppinOut, IBaseFilter *pFilter, const AM_MEDIA_TYPE *pmt);
 private:
+	CWnd *m_pVidWnd;
 	CComPtr<IFilterGraph2> m_pGraph;
 	CComPtr<IBaseFilter> m_pVideoRenderer;
 };

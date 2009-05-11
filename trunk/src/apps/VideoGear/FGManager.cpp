@@ -3,10 +3,27 @@
 #include "FGManager.h"
 #include "DSUtil.h"
 
-CFGManager::CFGManager(void)
+CFGManager::CFGManager( CWnd *pVidWnd )
 : CUnknown(L"CFGManager", NULL)
+, m_pVidWnd(pVidWnd)
 {
-	m_pGraph.CoCreateInstance(CLSID_FilterGraph);
+	if (SUCCEEDED(m_pGraph.CoCreateInstance(CLSID_FilterGraph)))
+	{
+		CComPtr<IRunningObjectTable> pROT;
+
+		if (SUCCEEDED(GetRunningObjectTable(0, &pROT)))
+		{
+			CStringW strName;
+			CComPtr<IMoniker> pMoniker;
+			DWORD dwRegister;
+
+			strName.Format(L"FilterGraph %08x pid %08x", (DWORD_PTR)(IUnknown*)m_pGraph, GetCurrentProcessId());
+			if (SUCCEEDED(CreateItemMoniker(L"!", strName, &pMoniker)))
+			{
+				pROT->Register(ROTFLAGS_REGISTRATIONKEEPSALIVE, m_pGraph, pMoniker, &dwRegister);
+			}
+		}
+	}
 }
 
 CFGManager::~CFGManager(void)
@@ -153,7 +170,6 @@ HRESULT STDMETHODCALLTYPE CFGManager::Render(IPin *ppinOut)
 
 HRESULT STDMETHODCALLTYPE CFGManager::RenderFile(LPCWSTR lpcwstrFile, LPCWSTR lpcwstrPlayList)
 {
-	CComPtr<IVMRFilterConfig9> pVMRConfig;
 	CComPtr<IBaseFilter> pAudioRenderer;
 	CComPtr<IBaseFilter> pSource;
 	HRESULT hr;
@@ -165,8 +181,16 @@ HRESULT STDMETHODCALLTYPE CFGManager::RenderFile(LPCWSTR lpcwstrFile, LPCWSTR lp
 	case VR_VMR9:
 		RIF(m_pVideoRenderer.CoCreateInstance(CLSID_VideoMixingRenderer9));
 		RIF(AddFilter(m_pVideoRenderer, L"Video Mixing Renderer 9"));
-		RIF(m_pVideoRenderer.QueryInterface(&pVMRConfig));
-		RIF(pVMRConfig->SetRenderingMode(VMR9Mode_Windowless));
+		if (m_pVidWnd != NULL)
+		{
+			CComPtr<IVMRFilterConfig9> pCfg;
+			CComPtr<IVMRWindowlessControl9> pWC;
+
+			RIF(m_pVideoRenderer.QueryInterface(&pCfg));
+			RIF(pCfg->SetRenderingMode(VMR9Mode_Windowless));
+			RIF(m_pVideoRenderer.QueryInterface(&pWC));
+			RIF(pWC->SetVideoClippingWindow(m_pVidWnd->m_hWnd));
+		}
 		break;
 	case VR_EVR:
 		RIF(m_pVideoRenderer.CoCreateInstance(CLSID_EnhancedVideoRenderer));
@@ -181,7 +205,7 @@ HRESULT STDMETHODCALLTYPE CFGManager::RenderFile(LPCWSTR lpcwstrFile, LPCWSTR lp
 
 	RIF(AddSourceFilter(lpcwstrFile, NULL, &pSource));
 	if (SUCCEEDED(hr = RenderFilter(pSource)))
-	{	
+	{			
 		DumpGraph(m_pGraph, 0);
 		return hr;
 	}
@@ -324,7 +348,7 @@ HRESULT STDMETHODCALLTYPE CFGManager::ConnectDirectEx( IPin *ppinOut, IBaseFilte
 		}
 		else
 		{
-			HRESULT hr;
+			HRESULT hr = VFW_E_CANNOT_RENDER;
 			
 			BeginEnumMediaTypes(ppinOut, pEnumMT, pmtOut)
 			{

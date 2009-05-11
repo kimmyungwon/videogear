@@ -57,7 +57,7 @@ CPlayer::CPlayer( CWnd *pOwner )
 : m_pOwner(pOwner), m_state(PS_STOPPED), m_nCurIndex(0)
 {
 	m_pPlaylist = new CPlaylist;
-	m_pGB = new CFGManager;
+	m_pGB = new CFGManager(pOwner);
 }
 
 CPlayer::~CPlayer(void)
@@ -82,6 +82,21 @@ void CPlayer::NotifyOwnerMessage( UINT uMsg, WPARAM wParam, LPARAM lParam )
 			m_pVWC->RepaintVideo(m_pOwner->GetSafeHwnd(), m_pOwner->GetDC()->m_hDC);
 		break;
 	case WM_GRAPH_NOTIFY:
+		{
+			long lEventCode;
+			LONG_PTR lParam1, lParam2;
+
+			while (m_pME->GetEvent(&lEventCode, &lParam1, &lParam2, 0) == S_OK)
+			{
+				switch (lEventCode)
+				{
+				case EC_VIDEO_SIZE_CHANGED:
+					AdjustVideoPosition();
+					break;
+				}
+				m_pME->FreeEventParams(lEventCode, lParam1, lParam2);
+			}
+		}
 		break;
 	}
 }
@@ -170,18 +185,7 @@ void CPlayer::AdjustWindowSize( bool bInit )
 				m_pVDC->SetAspectRatioMode(MFVideoARMode_None);
 			}
 		}
-		else if (g_appCfg.m_VideoRenderer != VR_EVR && m_pVWC != NULL)
-		{
-			CRect rctWnd;
-
-			m_pOwner->GetClientRect(&rctWnd);
-			if (bInit)
-			{
-				m_pVWC->SetVideoClippingWindow(m_pOwner->GetSafeHwnd());
-			}
-		}
 	}
-	
 }
 
 void CPlayer::AdjustVideoPosition( void )
@@ -196,7 +200,7 @@ void CPlayer::AdjustVideoPosition( void )
 			CSize VideoSize;
 			long nDstW, nDstH, nDstX, nDstY;
 			
-			m_pVDC->GetNativeVideoSize(&VideoSize, NULL);
+			m_pVDC->GetNativeVideoSize(NULL, &VideoSize);
 			if (VideoSize.cx / (double)VideoSize.cy <= rctWnd.Width() / (double)rctWnd.Height())
 			{
 				nDstH = rctWnd.Height();
@@ -217,17 +221,15 @@ void CPlayer::AdjustVideoPosition( void )
 			long nDstW, nDstH, nDstX, nDstY;
 			
 			m_pVWC->GetNativeVideoSize(&nVidW, &nVidH, &nVidArW, &nVidArH);
-			if (nVidW == 0 || nVidH == 0)
-				return;
-			if (nVidW / (double)nVidH <= rctWnd.Width() / (double)rctWnd.Height())
+			if (nVidArW / (double)nVidArH <= rctWnd.Width() / (double)rctWnd.Height())
 			{
 				nDstH = rctWnd.Height();
-				nDstW = nDstH * nVidW / nVidH;
+				nDstW = nDstH * nVidArW / nVidArH;
 			}
 			else
 			{
 				nDstW = rctWnd.Width();
-				nDstH = nDstW * nVidH / nVidW;
+				nDstH = nDstW * nVidArH / nVidArW;
 			}
 			nDstX = (rctWnd.Width() - nDstW) / 2;
 			nDstY = (rctWnd.Height() - nDstH) / 2;
