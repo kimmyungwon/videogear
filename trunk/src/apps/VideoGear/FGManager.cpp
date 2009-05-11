@@ -74,19 +74,22 @@ HRESULT CFGManager::AddSourceFilter( LPCWSTR pszFile, IBaseFilter **ppFilter )
 
 HRESULT CFGManager::SplitSource( IBaseFilter *pSource, IBaseFilter **ppFilter )
 {
+	CComPtr<IPin> pPinOut;
+	CAtlList<CMediaType> mtsOut;
+	CAtlList<CFilter*> filters;
+
 	ASSERT(IsSourceFilter(pSource));
 	if (ppFilter == NULL)
 		return E_POINTER;
-
-	GetFirstPin()
-	BeginEnumPins(pSource, pEnumPins, pPinOut)
+	pPinOut = GetFirstPin(pSource, PINDIR_OUTPUT);
+	ASSERT(pPinOut != NULL);
+	ExtractMediaTypes(pPinOut, mtsOut);
+	RIF(theApp.m_pFilterManager->EnumMatchingFilters(mtsOut, filters));
+	while (filters.GetCount() > 0)
 	{
-		CAtlList<CMediaType> mtsOut;
-		
-		ASSERT(IsPinDir(pPinOut, PINDIR_OUTPUT));
-		ExtractMediaTypes(pPinOut, mtsOut);
+		CFilter *pFilter = filters.RemoveHead();
+		//TODO: !!!
 	}
-	EndEnumPins;
 }
 
 HRESULT STDMETHODCALLTYPE CFGManager::Render(IPin *ppinOut)

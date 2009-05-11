@@ -20,15 +20,10 @@ HRESULT AddToROT(IFilterGraph *pFG)
 
 bool IsSourceFilter(IBaseFilter *pFilter)
 {
-	ASSERT(pFilter != NULL);
-
-	BeginEnumPins(pFilter, pEnumPins, pPin)
-	{
-		if (IsPinDir(pPin, PINDIR_INPUT))
-			return false;
-	}
-	EndEnumPins;
-	return true;
+	int nInPins, nOutPins, nInCPins, nOutCPins;
+	
+	CountPins(pFilter, nInPins, nOutPins, nInCPins, nOutCPins);
+	return nInPins == 0 && nOutPins == 1;
 }
 
 bool IsPinConnected(IPin *pPin)

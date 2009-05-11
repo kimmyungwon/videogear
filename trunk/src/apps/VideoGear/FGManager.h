@@ -21,7 +21,7 @@ protected:
 	// 渲染指定的输出插针
 	HRESULT Render(IPin *ppinOut);
 	// 直接连接输出插针到滤镜
-	HRESULT ConnectDirect(IPin *ppinOut, IBaseFilter *pFilterIn);
+	HRESULT ConnectDirect(IPin *pPinOut, IBaseFilter *pFilterIn);
 	// 拆除下游滤镜链
 	HRESULT TearDownStream(IUnknown *pUnk);
 	// 清空图表
