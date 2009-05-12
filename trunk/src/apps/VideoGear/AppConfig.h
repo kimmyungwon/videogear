@@ -2,7 +2,6 @@
 
 enum VideoRenderMode
 {
-	VRM_DEFAULT,
 	VRM_VMR9,
 	VRM_EVR
 };

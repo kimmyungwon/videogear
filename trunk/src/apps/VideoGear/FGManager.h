@@ -1,16 +1,29 @@
 #pragma once
 
 #include "AppConfig.h"
+#include "Thread.h"
 
 class CFGManager
 {
+	friend LRESULT CALLBACK VidWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 public:
+	enum {
+		STATE_UNKNOWN = -1,
+		STATE_IDLE,
+		STATE_STOPPED,
+		STATE_RUNNING
+	};
+
 	CFGManager(void);
 	virtual ~CFGManager(void);
 	// 初始化
 	HRESULT Initialize(CWnd *pVidWnd);
 	// 渲染指定的文件
 	HRESULT RenderFile(LPCWSTR pszFile);
+	// 开始播放
+	HRESULT Run(void);
+	// 停止播放
+	HRESULT Stop(void);
 protected:
 	// 按指定文件查找源滤镜并载入
 	HRESULT AddSourceFilter(LPCWSTR pszFile, IBaseFilter **ppFilter);
@@ -30,14 +43,30 @@ protected:
 	HRESULT RemoveIfNotUsed(CComPtr<IBaseFilter> &pFilter);
 	// 清空图表
 	HRESULT ClearGraph(void);
+	// 调整视频位置和视频窗口大小
+	HRESULT AdjustVideoPosition(void);
+	// 重新绘制视频
+	HREFTYPE RepaintVideo(void);
+	// 监听事件
+	virtual void GraphEventHandler(bool& bTerminated);
+	// 视频窗口消息
+	LRESULT VideoWindowMessageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam);
 private:
-	bool m_bInitialized;
+	int m_state;
 	CWnd *m_pVidWnd;
+	WNDPROC m_pfnOldVidWndProc;
+	CCritSec m_lock;
 	CComPtr<IFilterGraph2> m_pGraph;
+	CComPtr<IMediaEventEx> m_pME;
 	CComPtr<IMediaControl> m_pMC;
+	CThread<CFGManager> *m_pEventThread;
 	VideoRenderMode m_cfgVRM;
 	bool m_cfgUseAudioSwitcher;
+	CRect m_rctVideo;
 	CComPtr<IBaseFilter> m_pVideoRenderer;
+	CComPtr<IVMRFilterConfig9> m_pVMR9Cfg;
+	CComPtr<IVMRWindowlessControl9> m_pVMR9WC;
+	CComPtr<IMFVideoDisplayControl> m_pEVRWC;
 	CComPtr<IBaseFilter> m_pAudioRenderer;
 	CComPtr<IBaseFilter> m_pAudioSwitcher;
 };

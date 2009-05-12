@@ -5,28 +5,58 @@
 #include "DSUtil.h"
 #include "DbgUtil.h"
 
+#define AUTOLOCK	CAutoLock __lock__(&m_lock);
+
+CAtlMap<HWND, CFGManager*> g_HWNDToFGMgr;
+
+LRESULT CALLBACK VidWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	CFGManager *pFGMgr;
+	
+	if (g_HWNDToFGMgr.Lookup(hwnd, pFGMgr) && pFGMgr != NULL)
+	{
+		return pFGMgr->VideoWindowMessageHandler(uMsg, wParam, lParam);
+	}
+	else
+		return DefWindowProcW(hwnd, uMsg, wParam, lParam);
+}
+
 CFGManager::CFGManager( void )
-: m_bInitialized(false), m_pVidWnd(NULL)
+: m_state(STATE_UNKNOWN), m_pVidWnd(NULL)
 {
 }
 
 CFGManager::~CFGManager(void)
 {
 	ClearGraph();
+	SAFE_DELETE(m_pEventThread);
+	SetWindowLongPtrW(m_pVidWnd->m_hWnd, GWLP_WNDPROC, (LONG_PTR)m_pfnOldVidWndProc);
+	g_HWNDToFGMgr.RemoveKey(m_pVidWnd->m_hWnd);
+	m_pMC = NULL;
+	m_pME = NULL;
 	m_pGraph = NULL;
 }
 
 HRESULT CFGManager::Initialize( CWnd *pVidWnd )
-{
-	if (m_bInitialized)
+{		
+	if (m_state != STATE_UNKNOWN)
 		return E_UNEXPECTED;
+	if (pVidWnd == NULL || !IsWindow(pVidWnd->GetSafeHwnd()))
+		return E_INVALIDARG;
 	RIF(m_pGraph.CoCreateInstance(CLSID_FilterGraph));
+	RIF(m_pGraph.QueryInterface(&m_pME));
 	RIF(m_pGraph.QueryInterface(&m_pMC));
 #ifdef _DEBUG
 	AddToROT(m_pGraph);
 #endif
 	m_pVidWnd = pVidWnd;
-	m_bInitialized = true;
+	g_HWNDToFGMgr[m_pVidWnd->m_hWnd] = this;
+	m_pfnOldVidWndProc = (WNDPROC)SetWindowLongPtrW(m_pVidWnd->m_hWnd, GWLP_WNDPROC, (LONG_PTR)VidWndProc);
+	/* 启动事件监听线程 */
+	m_pME->SetNotifyFlags(0);
+	m_pEventThread = new CThread<CFGManager>(this, &CFGManager::GraphEventHandler);
+	/* 返回 */
+	m_state = STATE_IDLE;
 	return S_OK;
 }
 
@@ -36,7 +66,9 @@ HRESULT CFGManager::RenderFile( LPCWSTR pszFile )
 	HRESULT hr;
 	CComPtr<IBaseFilter> pFilter;
 
-	if (FAILED(ClearGraph()))
+	if (m_state == STATE_UNKNOWN)
+		return E_UNEXPECTED;
+	if (m_state != STATE_IDLE && FAILED(ClearGraph()))
 		return VFW_E_CANNOT_RENDER;
 	/* 保存本次渲染所用的配置 */
 	m_cfgVRM = g_AppCfg.m_VideoRenderMode;
@@ -46,6 +78,10 @@ HRESULT CFGManager::RenderFile( LPCWSTR pszFile )
 	{
 	case VRM_VMR9:
 		RIF(m_pVideoRenderer.CoCreateInstance(CLSID_VideoMixingRenderer9));
+		RIF(m_pVideoRenderer.QueryInterface(&m_pVMR9Cfg));
+		RIF(m_pVMR9Cfg->SetRenderingMode(VMR9Mode_Windowless));
+		RIF(m_pVideoRenderer.QueryInterface(&m_pVMR9WC));
+		RIF(m_pVMR9WC->SetVideoClippingWindow(m_pVidWnd->m_hWnd));
 		if FAILED(hr = m_pGraph->AddFilter(m_pVideoRenderer, L"Video Mixing Renderer 9"))
 		{
 			m_pVideoRenderer = NULL;
@@ -54,6 +90,12 @@ HRESULT CFGManager::RenderFile( LPCWSTR pszFile )
 		break;
 	case VRM_EVR:
 		RIF(m_pVideoRenderer.CoCreateInstance(CLSID_EnhancedVideoRenderer));
+		{
+			CComPtr<IMFGetService> pGetSrv;
+			RIF(m_pVideoRenderer.QueryInterface(&pGetSrv));
+			RIF(pGetSrv->GetService(MR_VIDEO_RENDER_SERVICE, IID_IMFVideoDisplayControl, (LPVOID*)&m_pEVRWC));
+		}
+		RIF(m_pEVRWC->SetVideoWindow(m_pVidWnd->m_hWnd));
 		if FAILED(hr = m_pGraph->AddFilter(m_pVideoRenderer, L"Enhanced Video Renderer"))
 		{
 			m_pVideoRenderer = NULL;
@@ -93,6 +135,7 @@ HRESULT CFGManager::RenderFile( LPCWSTR pszFile )
 	if (SUCCEEDED(hr))
 	{
 		// 渲染成功
+		m_state = STATE_STOPPED;
 		DumpGraph(m_pGraph, 0);
 		return hr;
 	}
@@ -102,6 +145,33 @@ HRESULT CFGManager::RenderFile( LPCWSTR pszFile )
 		TearDownStream(pSource);
 		m_pGraph->RemoveFilter(pSource);
 		return VFW_E_CANNOT_RENDER;
+	}
+}
+
+HRESULT CFGManager::Run( void )
+{
+	switch (m_state)
+	{
+	case STATE_STOPPED:
+		AdjustVideoPosition();
+		return m_pMC->Run();
+	case STATE_RUNNING:
+		return S_FALSE;
+	default:
+		return E_FAIL;
+	}
+}
+
+HRESULT CFGManager::Stop( void )
+{
+	switch (m_state)
+	{
+	case STATE_STOPPED:
+		return S_FALSE;
+	case STATE_RUNNING:
+		return m_pMC->Stop();
+	default:
+		return E_FAIL;
 	}
 }
 
@@ -217,7 +287,10 @@ HRESULT CFGManager::Render( IPin *pPinOut )
 			CComPtr<IBaseFilter> pFilter = pCachedFilters.GetNext(pos);
 			XTRACE(L"尝试渲染 [%s(%s)] 到 [%s]\n", GetFilterName(pFilterOut), GetPinName(pPinOut), GetFilterName(pFilter));
 			if (SUCCEEDED(ConnectDirect(pPinOut, pFilter, NULL)))
+			{
+				XTRACE(L"成功渲染 [%s(%s)]\n", GetFilterName(pFilterOut), GetPinName(pPinOut));
 				return S_OK;
+			}
 		}
 	}
 	/* 匹配内部滤镜 */
@@ -236,7 +309,10 @@ HRESULT CFGManager::Render( IPin *pPinOut )
 			if (SUCCEEDED(ConnectDirect(pPinOut, pBF, NULL)))
 			{
 				if (SUCCEEDED(RenderFilter(pBF)))
+				{
+					XTRACE(L"成功渲染 [%s(%s)]\n", GetFilterName(pFilterOut), GetPinName(pPinOut));
 					return S_OK;
+				}
 				TearDownStream(pBF);
 			}			
 			m_pGraph->RemoveFilter(pBF);
@@ -347,6 +423,11 @@ HRESULT CFGManager::RemoveIfNotUsed( CComPtr<IBaseFilter> &pFilter )
 		EndEnumPins;
 		if (bNeedRemove)
 		{
+			if (&pFilter == &m_pVideoRenderer)
+			{
+				m_pVMR9Cfg = NULL;
+				m_pVMR9WC = NULL;
+			}
 			m_pGraph->RemoveFilter(pFilter);
 			pFilter = NULL;
 		}
@@ -358,8 +439,16 @@ HRESULT CFGManager::ClearGraph( void )
 {
 	CInterfaceList<IBaseFilter> pFilters;
 
+	if (m_state == STATE_UNKNOWN)
+		return E_UNEXPECTED;
 	RIF(m_pMC->Stop());
+	m_rctVideo.SetRectEmpty();
+	m_pVMR9WC = NULL;
+	m_pVMR9Cfg = NULL;
+	m_pEVRWC = NULL;
 	m_pVideoRenderer = NULL;
+	m_pAudioRenderer = NULL;
+	m_pAudioSwitcher = NULL;
 	BeginEnumFilters(m_pGraph, pEnumFilters, pFilter)
 	{
 		XTRACE(L"即将从滤镜中删除 [%s]\n", GetFilterName(pFilter));
@@ -372,6 +461,122 @@ HRESULT CFGManager::ClearGraph( void )
 		CComPtr<IBaseFilter> pFilter = pFilters.GetNext(pos);
 		m_pGraph->RemoveFilter(pFilter);
 	}
+	m_state = STATE_IDLE;
 	return S_OK;
+}
+
+HRESULT CFGManager::AdjustVideoPosition( void )
+{
+	AUTOLOCK;
+	CSize sizeVideo, sizeARVideo;
+	CRect rctWnd;
+	long lNewWidth, lNewHeight, lNewLeft, lNewTop;
+	
+	ASSERT(m_pVidWnd != NULL);
+	m_pVidWnd->GetClientRect(rctWnd);
+	/* 获取视频原始大小 */
+	if (m_cfgVRM == VRM_VMR9 && m_pVMR9WC != NULL)
+	{
+		RIF(m_pVMR9WC->GetNativeVideoSize(&sizeVideo.cx, &sizeVideo.cy, &sizeARVideo.cx, &sizeARVideo.cy));	
+	}
+	else if (m_cfgVRM == VRM_EVR && m_pEVRWC != NULL)
+	{
+		RIF(m_pEVRWC->GetNativeVideoSize(&sizeVideo, &sizeARVideo));
+	}
+	else
+		return E_UNEXPECTED;
+	XTRACE(L"Video is %d:%d\n", sizeVideo.cx, sizeVideo.cy);
+	if (sizeVideo.cx == 0 || sizeVideo.cy == 0)
+		return E_UNEXPECTED;
+	/* 按比例缩放 */
+	if (sizeVideo.cx / (double)sizeVideo.cy <= rctWnd.Width() / (double)rctWnd.Height())
+	{
+		lNewHeight = rctWnd.Height();
+		lNewWidth = lNewHeight * sizeVideo.cx / sizeVideo.cy;
+	}
+	else
+	{
+		lNewWidth = rctWnd.Width();
+		lNewHeight = lNewWidth * sizeVideo.cy / sizeVideo.cx;
+	}
+	lNewLeft = (rctWnd.Width() - lNewWidth) / 2;
+	lNewTop = (rctWnd.Height() - lNewHeight) / 2;
+	m_rctVideo.SetRect(lNewLeft, lNewTop, lNewLeft + lNewWidth, lNewTop + lNewHeight);
+	if (m_cfgVRM == VRM_VMR9)
+	{
+		return m_pVMR9WC->SetVideoPosition(NULL, m_rctVideo);
+	}
+	else if (m_cfgVRM == VRM_EVR)
+	{
+		return m_pEVRWC->SetVideoPosition(NULL, m_rctVideo);
+	}
+	else
+		return E_UNEXPECTED;
+}
+
+HREFTYPE CFGManager::RepaintVideo( void )
+{
+	CPaintDC dc(m_pVidWnd);
+	
+	if (dc.m_hDC != NULL && !m_rctVideo.IsRectEmpty())
+	{
+		CRect rctClient;
+		CRgn rgnClient, rgnVideo, rgnNotVideo;
+
+		m_pVidWnd->GetClientRect(rctClient);
+		rgnClient.CreateRectRgnIndirect(rctClient);	
+		rgnVideo.CreateRectRgnIndirect(m_rctVideo);
+		rgnNotVideo.CreateRectRgn(0, 0, 0, 0);
+		rgnNotVideo.CombineRgn(&rgnClient, &rgnVideo, RGN_DIFF);
+		dc.FillRgn(&rgnNotVideo, CBrush::FromHandle((HBRUSH)GetStockBrush(BLACK_BRUSH)));
+		/* 绘制视频 */
+		if (m_cfgVRM == VRM_VMR9 && m_pVMR9WC != NULL)
+		{
+			m_pVMR9WC->RepaintVideo(m_pVidWnd->m_hWnd, dc.m_hDC);
+			return S_OK;
+		}
+		else if (m_cfgVRM == VRM_EVR && m_pEVRWC != NULL)
+		{
+			m_pEVRWC->RepaintVideo();
+			return S_OK;
+		}
+	}
+	return E_FAIL;
+}
+
+void CFGManager::GraphEventHandler( bool& bTerminated )
+{
+	while (!bTerminated)
+	{
+		long lEvCode;
+		LONG_PTR lParam1, lParam2;
+		
+		if (m_pME->GetEvent(&lEvCode, &lParam1, &lParam2, 1) != S_OK)
+			continue;
+		switch (lEvCode)
+		{
+		case EC_VIDEO_SIZE_CHANGED:
+			AdjustVideoPosition();
+			break;
+		}
+		m_pME->FreeEventParams(lEvCode, lParam1, lParam2);
+	}
+}
+
+LRESULT CFGManager::VideoWindowMessageHandler( UINT uMsg, WPARAM wParam, LPARAM lParam )
+{	
+	switch (uMsg)
+	{
+	case WM_SIZE:
+		AdjustVideoPosition();
+		break;
+	case WM_ERASEBKGND:
+		return TRUE;
+	case WM_PAINT:
+		if (SUCCEEDED(RepaintVideo()))
+			return 0;
+		break;		
+	}
+	return m_pfnOldVidWndProc(m_pVidWnd->m_hWnd, uMsg, wParam, lParam);
 }
 
