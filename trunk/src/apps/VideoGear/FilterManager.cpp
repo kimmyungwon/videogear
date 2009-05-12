@@ -338,10 +338,3 @@ HRESULT CFilterManager::RegisterFilter( UINT nFilterCount, const FilterSetupInfo
 	return S_OK;
 }
 
-HRESULT CFilterManager::RegisterFilter( CLSID clsID )
-{
-	CFilter* pFilter = new CFilterRegister(clsID);
-	m_filters[clsID] = CAutoPtr<CFilter>(pFilter);
-	return S_OK;
-}
-

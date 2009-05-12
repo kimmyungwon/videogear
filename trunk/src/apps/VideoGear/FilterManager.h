@@ -20,7 +20,6 @@ public:
 	HRESULT AddAudioSwitcherToGraph(IFilterGraph *pGraph, IBaseFilter **ppvObj);
 protected:
 	HRESULT RegisterFilter(UINT nFilterCount, const FilterSetupInfo* pSetupInfo, bool bFilterOnly = false);
-	HRESULT RegisterFilter(CLSID clsID);
 private:
 	typedef CAtlMap<CLSID, CAutoPtr<CFilter> > FilterList;
 	typedef CRBMultiMap<GUID, CFilter*> MinorTypes;

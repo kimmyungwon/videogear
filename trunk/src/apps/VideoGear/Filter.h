@@ -24,13 +24,8 @@ public:
 	virtual ~CFilter(void);
 	virtual const CStringW& GetName(void) const	= 0;
 	virtual HRESULT CreateInstance(LPUNKNOWN pUnk, IBaseFilter** ppv) = 0;
-	virtual HRESULT CheckInputType(const CMediaType& mt); 
-protected:
-	typedef CAtlMap<GUID, int> MinorTypes;
-	typedef CAtlMap<GUID, MinorTypes> MajorTypes;
-	
+protected:	
 	CLSID m_clsID;
-	MajorTypes m_majorTypes;
 };
 
 class CFilterInternal : public CFilter
@@ -44,7 +39,7 @@ private:
 	PFNCreateInstance m_pfnCreateInstance;
 };
 
-class CFilterRegister : public CFilter
+/*class CFilterRegister : public CFilter
 {
 public:
 	CFilterRegister(const CLSID& clsID);
@@ -54,4 +49,4 @@ protected:
 	void ExtractFilterData(BYTE *pData, UINT cbData);
 private:
 	CStringW m_strName;
-};
+};*/

@@ -20,6 +20,10 @@ public:
 	HRESULT Initialize(CWnd *pVidWnd);
 	// 渲染指定的文件
 	HRESULT RenderFile(LPCWSTR pszFile);
+	// 获取媒体总长度
+	HRESULT GetDuration(__int64 &nDuration);
+	// 获取可播放的长度
+	HRESULT GetAvailable(__int64 &nEarliest, __int64 &nLastest);
 	// 开始播放
 	HRESULT Run(void);
 	// 停止播放
@@ -59,6 +63,7 @@ private:
 	CComPtr<IFilterGraph2> m_pGraph;
 	CComPtr<IMediaEventEx> m_pME;
 	CComPtr<IMediaControl> m_pMC;
+	CComPtr<IMediaSeeking> m_pMS;
 	CThread<CFGManager> *m_pEventThread;
 	VideoRenderMode m_cfgVRM;
 	bool m_cfgUseAudioSwitcher;

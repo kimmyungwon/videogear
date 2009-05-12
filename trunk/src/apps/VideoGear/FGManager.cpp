@@ -6,6 +6,7 @@
 #include "DbgUtil.h"
 
 #define AUTOLOCK	CAutoLock __lock__(&m_lock);
+#define MSecsPerRTime	10000
 
 CAtlMap<HWND, CFGManager*> g_HWNDToFGMgr;
 
@@ -32,6 +33,7 @@ CFGManager::~CFGManager(void)
 	SAFE_DELETE(m_pEventThread);
 	SetWindowLongPtrW(m_pVidWnd->m_hWnd, GWLP_WNDPROC, (LONG_PTR)m_pfnOldVidWndProc);
 	g_HWNDToFGMgr.RemoveKey(m_pVidWnd->m_hWnd);
+	m_pMS = NULL;
 	m_pMC = NULL;
 	m_pME = NULL;
 	m_pGraph = NULL;
@@ -46,6 +48,7 @@ HRESULT CFGManager::Initialize( CWnd *pVidWnd )
 	RIF(m_pGraph.CoCreateInstance(CLSID_FilterGraph));
 	RIF(m_pGraph.QueryInterface(&m_pME));
 	RIF(m_pGraph.QueryInterface(&m_pMC));
+	RIF(m_pGraph.QueryInterface(&m_pMS));
 #ifdef _DEBUG
 	AddToROT(m_pGraph);
 #endif
@@ -146,6 +149,31 @@ HRESULT CFGManager::RenderFile( LPCWSTR pszFile )
 		m_pGraph->RemoveFilter(pSource);
 		return VFW_E_CANNOT_RENDER;
 	}
+}
+
+HRESULT CFGManager::GetDuration( __int64 &nDuration )
+{
+	if (m_state >= STATE_STOPPED)
+	{
+		RIF(m_pMS->GetDuration(&nDuration));
+		nDuration /= MSecsPerRTime;
+		return S_OK;
+	}
+	else
+		return E_FAIL;
+}
+
+HRESULT CFGManager::GetAvailable( __int64 &nEarliest, __int64 &nLastest )
+{
+	if (m_state >= STATE_STOPPED)
+	{
+		RIF(m_pMS->GetAvailable(&nEarliest, &nLastest));
+		nEarliest /= MSecsPerRTime;
+		nLastest /= MSecsPerRTime;
+		return S_OK;
+	}
+	else
+		return E_FAIL;	
 }
 
 HRESULT CFGManager::Run( void )
@@ -555,6 +583,8 @@ void CFGManager::GraphEventHandler( bool& bTerminated )
 			continue;
 		switch (lEvCode)
 		{
+		case EC_LENGTH_CHANGED:
+			break;
 		case EC_VIDEO_SIZE_CHANGED:
 			AdjustVideoPosition();
 			break;
@@ -579,4 +609,6 @@ LRESULT CFGManager::VideoWindowMessageHandler( UINT uMsg, WPARAM wParam, LPARAM 
 	}
 	return m_pfnOldVidWndProc(m_pVidWnd->m_hWnd, uMsg, wParam, lParam);
 }
+
+
 

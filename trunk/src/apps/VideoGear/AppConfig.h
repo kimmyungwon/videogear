@@ -9,7 +9,9 @@ enum VideoRenderMode
 class CAppConfig
 {
 public:
+	/*  ”∆µ≈‰÷√ */
 	VideoRenderMode m_VideoRenderMode;
+	/* “Ù∆µ≈‰÷√ */
 	bool m_bUseAudioSwitcher;
 
 	CAppConfig(void);

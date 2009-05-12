@@ -148,7 +148,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="strmiids.lib winmm.lib d3d9.lib strmbaseRU.lib basesplitterRU.lib AviSplitterRU.lib MatroskaSplitterRU.lib RealMediaSplitterRU.lib MPCVideoDecRU.lib libvorbisidecR.lib decssRU.lib MpaDecFilterRU.lib"
+				AdditionalDependencies="strmiids.lib winmm.lib d3d9.lib strmbaseRU.lib libvorbisidecR.lib decssRU.lib basesplitterRU.lib AviSplitterRU.lib MatroskaSplitterRU.lib RealMediaSplitterRU.lib MPCVideoDecRU.lib MpaDecFilterRU.lib audioswitcherRU.lib"
 				LinkIncremental="1"
 				GenerateDebugInformation="false"
 				SubSystem="2"

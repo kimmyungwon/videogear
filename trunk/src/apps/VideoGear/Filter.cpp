@@ -11,42 +11,12 @@ CFilter::~CFilter(void)
 {
 }
 
-HRESULT CFilter::CheckInputType( const CMediaType& mt )
-{
-	if (mt.majortype == GUID_NULL)
-		return E_INVALIDARG;
-
-	MajorTypes::CPair *pairKey = m_majorTypes.Lookup(mt.majortype);
-	if (pairKey != NULL)
-	{
-		MinorTypes::CPair *pair = pairKey->m_value.Lookup(mt.subtype);
-		if (pair != NULL)
-			return S_OK;
-		if (mt.subtype != GUID_NULL)
-		{		
-			pair = pairKey->m_value.Lookup(GUID_NULL);
-			return (pair != NULL) ? S_OK : S_FALSE;
-		}
-	}
-	return S_FALSE;	
-}
-
 //////////////////////////////////////////////////////////////////////////
 
 CFilterInternal::CFilterInternal( const CLSID& clsID, LPCWSTR pszName, PFNCreateInstance pfnCreateInstance, 
 								 UINT uiPinCount, const AMOVIESETUP_PIN* pPins )
 : CFilter(clsID), m_strName(pszName), m_pfnCreateInstance(pfnCreateInstance)
 {
-	for (UINT i = 0; i < uiPinCount; i++)
-	{
-		const AMOVIESETUP_PIN& pin = pPins[i];
-		if (pin.bOutput)
-			continue;
-		for (UINT j = 0; j < pin.nMediaTypes; j++)
-		{
-			m_majorTypes[*pin.lpMediaType[j].clsMajorType][*pin.lpMediaType[j].clsMinorType] = 0;
-		}
-	}
 }
 
 HRESULT CFilterInternal::CreateInstance( LPUNKNOWN pUnk, IBaseFilter** ppv )
@@ -56,7 +26,7 @@ HRESULT CFilterInternal::CreateInstance( LPUNKNOWN pUnk, IBaseFilter** ppv )
 
 //////////////////////////////////////////////////////////////////////////
 
-CFilterRegister::CFilterRegister( const CLSID& clsID )
+/*CFilterRegister::CFilterRegister( const CLSID& clsID )
 : CFilter(clsID)
 {
 	CStringW strClsID;
@@ -234,5 +204,5 @@ void CFilterRegister::ExtractFilterData( BYTE *pData, UINT cbData )
 
 #undef ChkLen
 	}
-}
+}*/
 
