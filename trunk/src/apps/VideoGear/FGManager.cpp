@@ -38,8 +38,11 @@ HRESULT CFGManager::RenderFile( LPCWSTR pszFile )
 
 	if (FAILED(ClearGraph()))
 		return VFW_E_CANNOT_RENDER;
-	/* 初始化渲染器 */
-	switch (g_AppCfg.m_VideoRenderMode)
+	/* 保存本次渲染所用的配置 */
+	m_cfgVRM = g_AppCfg.m_VideoRenderMode;
+	m_cfgUseAudioSwitcher = g_AppCfg.m_bUseAudioSwitcher;
+	/* 初始化视频渲染器 */
+	switch (m_cfgVRM)
 	{
 	case VRM_VMR9:
 		RIF(m_pVideoRenderer.CoCreateInstance(CLSID_VideoMixingRenderer9));
@@ -60,6 +63,14 @@ HRESULT CFGManager::RenderFile( LPCWSTR pszFile )
 	default:
 		return VFW_E_CANNOT_RENDER;
 	}
+	/* 初始化音频渲染器 */
+	RIF(m_pAudioRenderer.CoCreateInstance(CLSID_DSoundRender));
+	RIF(m_pGraph->AddFilter(m_pAudioRenderer, L"Default DirectSound Renderer"));
+	/* 初始化音频切换器 */
+	if (m_cfgUseAudioSwitcher)
+	{
+		RIF(g_FilterMgr.AddAudioSwitcherToGraph(m_pGraph, &m_pAudioSwitcher));
+	}
 	/* 加载文件 */
 	hr = AddSourceFilter(pszFile, &pSource);
 	if (FAILED(hr))
@@ -67,23 +78,31 @@ HRESULT CFGManager::RenderFile( LPCWSTR pszFile )
 	/* 渲染文件 */
 	if (hr == S_OK)
 	{
-		hr = RenderFilter(pSource, true);
-		if (SUCCEEDED(hr))
-			return hr;
+		hr = RenderFilter(pSource, true);		
 	}
 	else if (SUCCEEDED(SplitSource(pSource, &pFilter)))
 	{
 		hr = RenderFilter(pFilter, true);
-		if (SUCCEEDED(hr))
-		{
-			DumpGraph(m_pGraph, 0);
-			return hr;	
-		}
 	}
-	// 渲染失败
-	TearDownStream(pSource);
-	m_pGraph->RemoveFilter(pSource);
-	return VFW_E_CANNOT_RENDER;
+	/* 清理无用的滤镜 */
+	RemoveIfNotUsed(m_pVideoRenderer);
+	RemoveIfNotUsed(m_pAudioRenderer);
+	if (m_cfgUseAudioSwitcher)
+		RemoveIfNotUsed(m_pAudioSwitcher);
+	/* 返回 */
+	if (SUCCEEDED(hr))
+	{
+		// 渲染成功
+		DumpGraph(m_pGraph, 0);
+		return hr;
+	}
+	else
+	{
+		// 渲染失败
+		TearDownStream(pSource);
+		m_pGraph->RemoveFilter(pSource);
+		return VFW_E_CANNOT_RENDER;
+	}
 }
 
 HRESULT CFGManager::AddSourceFilter( LPCWSTR pszFile, IBaseFilter **ppFilter )
@@ -187,7 +206,7 @@ HRESULT CFGManager::Render( IPin *pPinOut )
 
 		BeginEnumFilters(m_pGraph, pEnumFilters, pCachedFilter)
 		{
-			if (pCachedFilter == pFilterOut)
+			if (pCachedFilter == pFilterOut || pCachedFilter == m_pAudioSwitcher)
 				continue;
 			pCachedFilters.AddTail(pCachedFilter);
 		}
@@ -239,12 +258,46 @@ HRESULT CFGManager::ConnectDirect( IPin *pPinOut, IBaseFilter *pFilterIn, const 
 	{
 		if (!IsPinDir(pPinIn, PINDIR_INPUT) || IsPinConnected(pPinIn))
 			continue;
-		if (SUCCEEDED(m_pGraph->ConnectDirect(pPinOut, pPinIn, pmt)))
+		if (SUCCEEDED(ConnectDirect(pPinOut, pPinIn, pmt)))
 			return S_OK;
 	}
 	EndEnumPins;
 	/* 无法连接 */
 	return VFW_E_CANNOT_CONNECT;
+}
+
+HRESULT CFGManager::ConnectDirect( IPin *pPinOut, IPin *pPinIn, const AM_MEDIA_TYPE *pmt )
+{	
+	CComPtr<IBaseFilter> pFilterOut, pFilterIn;
+	
+	if (pPinOut == NULL || pPinIn == NULL)
+		return E_POINTER;
+	if (!IsPinDir(pPinOut, PINDIR_OUTPUT) || !IsPinDir(pPinIn, PINDIR_INPUT))
+		return VFW_E_INVALID_DIRECTION;
+	if (IsPinConnected(pPinOut) || IsPinConnected(pPinIn))
+		return VFW_E_ALREADY_CONNECTED;
+	/* 在AudioRenderer前加入AudioSwitcher */
+	pFilterOut = GetFilterFromPin(pPinOut);
+	pFilterIn = GetFilterFromPin(pPinIn);
+	if (m_cfgUseAudioSwitcher && pFilterOut != m_pAudioSwitcher && pFilterIn == m_pAudioRenderer)
+	{
+		CComPtr<IPin> pSWPinIn, pSWPinOut;
+		
+		/* 连接到AudioSwitcher */
+		pSWPinIn = GetFirstDisconnectedPin(m_pAudioSwitcher, PINDIR_INPUT);
+		ASSERT(pSWPinIn != NULL);
+		RIF(m_pGraph->ConnectDirect(pPinOut, pSWPinIn, pmt));
+		/* 连接AudioSwitcher到AudioRenderer */
+		pSWPinOut = GetFirstDisconnectedPin(m_pAudioSwitcher, PINDIR_OUTPUT);
+		ASSERT(pPinOut != NULL);
+		if (!IsPinConnected(pSWPinOut))
+		{
+			RIF(ConnectDirect(pSWPinOut, m_pAudioRenderer, NULL));
+		}
+		return S_OK;
+	}
+	else
+		return m_pGraph->ConnectDirect(pPinOut, pPinIn, pmt);
 }
 
 HRESULT CFGManager::TearDownStream( IUnknown *pUnk )
@@ -278,6 +331,29 @@ HRESULT CFGManager::TearDownStream( IUnknown *pUnk )
 		return E_INVALIDARG;
 }
 
+HRESULT CFGManager::RemoveIfNotUsed( CComPtr<IBaseFilter> &pFilter )
+{
+	if (pFilter != NULL)
+	{
+		bool bNeedRemove = true;
+		BeginEnumPins(pFilter, pEnumPins, pPin)
+		{
+			if (IsPinConnected(pPin))
+			{
+				bNeedRemove = false;
+				break;
+			}
+		}
+		EndEnumPins;
+		if (bNeedRemove)
+		{
+			m_pGraph->RemoveFilter(pFilter);
+			pFilter = NULL;
+		}
+	}	
+	return S_OK;
+}
+
 HRESULT CFGManager::ClearGraph( void )
 {
 	CInterfaceList<IBaseFilter> pFilters;
@@ -286,7 +362,7 @@ HRESULT CFGManager::ClearGraph( void )
 	m_pVideoRenderer = NULL;
 	BeginEnumFilters(m_pGraph, pEnumFilters, pFilter)
 	{
-		XTRACE(L"即将从滤镜中删除 [%s]", GetFilterName(pFilter));
+		XTRACE(L"即将从滤镜中删除 [%s]\n", GetFilterName(pFilter));
 		pFilters.AddTail(pFilter);
 	}
 	EndEnumFilters;
@@ -298,3 +374,4 @@ HRESULT CFGManager::ClearGraph( void )
 	}
 	return S_OK;
 }
+

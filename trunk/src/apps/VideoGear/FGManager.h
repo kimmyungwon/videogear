@@ -22,8 +22,12 @@ protected:
 	HRESULT Render(IPin *pPinOut);
 	// 直接连接输出插针到滤镜
 	HRESULT ConnectDirect(IPin *pPinOut, IBaseFilter *pFilterIn, const AM_MEDIA_TYPE *pmt);
+	// 直接连接两个插针
+	HRESULT ConnectDirect(IPin *pPinOut, IPin *pPinIn, const AM_MEDIA_TYPE *pmt);
 	// 拆除下游滤镜链
 	HRESULT TearDownStream(IUnknown *pUnk);
+	// 清除没有连接的滤镜
+	HRESULT RemoveIfNotUsed(CComPtr<IBaseFilter> &pFilter);
 	// 清空图表
 	HRESULT ClearGraph(void);
 private:
@@ -31,6 +35,9 @@ private:
 	CWnd *m_pVidWnd;
 	CComPtr<IFilterGraph2> m_pGraph;
 	CComPtr<IMediaControl> m_pMC;
-	VideoRenderMode m_vmr;
+	VideoRenderMode m_cfgVRM;
+	bool m_cfgUseAudioSwitcher;
 	CComPtr<IBaseFilter> m_pVideoRenderer;
+	CComPtr<IBaseFilter> m_pAudioRenderer;
+	CComPtr<IBaseFilter> m_pAudioSwitcher;
 };

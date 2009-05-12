@@ -1,10 +1,12 @@
 #include "StdAfx.h"
+#include "VideoGear.h"
 #include "FilterManager.h"
 #include "..\..\filters\parser\avisplitter\AviSplitter.h"
 #include "..\..\filters\parser\matroskasplitter\MatroskaSplitter.h"
 #include "..\..\filters\parser\realmediasplitter\RealMediaSplitter.h"
 #include "..\..\filters\transform\mpcvideodec\MPCVideoDecFilter.h"
 #include "..\..\filters\transform\mpadecfilter\MpaDecFilter.h"
+#include "..\..\filters\switcher\audioswitcher\AudioSwitcher.h"
 #include "DbgUtil.h"
 #include "DSUtil.h"
 
@@ -221,6 +223,30 @@ namespace AudioDec
 	};
 }
 
+namespace AudioSw
+{
+	const AMOVIESETUP_MEDIATYPE sudPinTypesIn[] =
+	{
+		{&MEDIATYPE_Audio, &MEDIASUBTYPE_NULL}
+	};
+
+	const AMOVIESETUP_MEDIATYPE sudPinTypesOut[] =
+	{
+		{&MEDIATYPE_Audio, &MEDIASUBTYPE_NULL}
+	};
+
+	const AMOVIESETUP_PIN sudpPins[] =
+	{
+		{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesIn), sudPinTypesIn},
+		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesOut), sudPinTypesOut}
+	};
+
+	const FilterSetupInfo sudFilters[] =
+	{
+		{&__uuidof(CAudioSwitcherFilter), L"MPC - AudioSwitcher", CreateInstance<CAudioSwitcherFilter>, _countof(sudpPins), sudpPins}
+	};
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 CFilterManager g_FilterMgr;
@@ -232,6 +258,7 @@ CFilterManager::CFilterManager(void)
 	RegisterFilter(_countof(RMDec::sudFilters), RMDec::sudFilters);
 	RegisterFilter(_countof(VideoDec::sudFilters), VideoDec::sudFilters);
 	RegisterFilter(_countof(AudioDec::sudFilters), AudioDec::sudFilters);
+	RegisterFilter(_countof(AudioSw::sudFilters), AudioSw::sudFilters, true);
 }
 
 CFilterManager::~CFilterManager(void)
@@ -272,7 +299,18 @@ HRESULT CFilterManager::EnumMatchingFilters( const CAtlList<CMediaType>& mts, CA
 	return filters.GetCount() - nInitCount > 0 ? S_OK : S_FALSE;
 }
 
-HRESULT CFilterManager::RegisterFilter( UINT nFilterCount, const FilterSetupInfo* pSetupInfo )
+HRESULT CFilterManager::AddAudioSwitcherToGraph( IFilterGraph *pGraph, IBaseFilter **ppvObj )
+{
+	if (pGraph == NULL || ppvObj == NULL)
+		return E_POINTER;
+	FilterList::CPair *pair = m_filters.Lookup(__uuidof(CAudioSwitcherFilter));
+	if (pair == NULL)
+		return E_FAIL;
+	RIF(pair->m_value->CreateInstance(NULL, ppvObj));
+	return pGraph->AddFilter(*ppvObj, pair->m_value->GetName());
+}
+
+HRESULT CFilterManager::RegisterFilter( UINT nFilterCount, const FilterSetupInfo* pSetupInfo, bool bFilterOnly )
 {
 	for (UINT i = 0; i < nFilterCount; i++)
 	{
@@ -280,18 +318,21 @@ HRESULT CFilterManager::RegisterFilter( UINT nFilterCount, const FilterSetupInfo
 		CFilter* pFilter = new CFilterInternal(*setupInfo.pClsID, setupInfo.pszName, setupInfo.pfnCreateInstance, 
 			setupInfo.nPinCount, setupInfo.pPins);
 		m_filters[*setupInfo.pClsID] = CAutoPtr<CFilter>(pFilter);
-		/* 注册输入类型 */
-		for (UINT j = 0; j < setupInfo.nPinCount; j++)
+		if (!bFilterOnly)
 		{
-			const AMOVIESETUP_PIN &pinInfo = setupInfo.pPins[j];
-			if (pinInfo.bOutput)
-				continue;
-			for (UINT k = 0; k < pinInfo.nMediaTypes; k++)
+			/* 注册输入类型 */
+			for (UINT j = 0; j < setupInfo.nPinCount; j++)
 			{
-				const REGPINTYPES &pinTypes = pinInfo.lpMediaType[k];
-				m_majorTypes[*pinTypes.clsMajorType].Insert(*pinTypes.clsMinorType, pFilter);
+				const AMOVIESETUP_PIN &pinInfo = setupInfo.pPins[j];
+				if (pinInfo.bOutput)
+					continue;
+				for (UINT k = 0; k < pinInfo.nMediaTypes; k++)
+				{
+					const REGPINTYPES &pinTypes = pinInfo.lpMediaType[k];
+					m_majorTypes[*pinTypes.clsMajorType].Insert(*pinTypes.clsMinorType, pFilter);
+				}
 			}
-		}
+		}		
 	}
 
 	return S_OK;
@@ -303,3 +344,4 @@ HRESULT CFilterManager::RegisterFilter( CLSID clsID )
 	m_filters[clsID] = CAutoPtr<CFilter>(pFilter);
 	return S_OK;
 }
+

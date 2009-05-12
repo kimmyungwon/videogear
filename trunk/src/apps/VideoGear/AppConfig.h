@@ -11,6 +11,7 @@ class CAppConfig
 {
 public:
 	VideoRenderMode m_VideoRenderMode;
+	bool m_bUseAudioSwitcher;
 
 	CAppConfig(void);
 };
