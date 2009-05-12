@@ -4,6 +4,7 @@
 
 
 #pragma once
+#include "FGManager.h"
 
 // CVideoView 窗口
 
@@ -22,10 +23,10 @@ public:
 // 重写
 protected:
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
-	virtual LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam);
+	//virtual LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
-	//CPlayer *m_pPlayer;
+	CFGManager* m_pFGMgr;
 
 // 实现
 public:
@@ -34,7 +35,7 @@ public:
 // 生成的消息映射函数
 	DECLARE_MESSAGE_MAP()
 protected:
-	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnDropFiles(HDROP hDropInfo);
 };
 

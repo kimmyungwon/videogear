@@ -21,9 +21,13 @@ public:
 	// 渲染指定的文件
 	HRESULT RenderFile(LPCWSTR pszFile);
 	// 获取媒体总长度
-	HRESULT GetDuration(__int64 &nDuration);
+	HRESULT GetDuration(LONGLONG &nDuration);
 	// 获取可播放的长度
-	HRESULT GetAvailable(__int64 &nEarliest, __int64 &nLastest);
+	HRESULT GetAvailable(LONGLONG &nEarliest, LONGLONG &nLastest);
+	// 获取当前位置
+	HRESULT GetPosition(LONGLONG &nPosition);
+	// 设置当前位置
+	HRESULT SetPosition(LONGLONG nPosition);
 	// 开始播放
 	HRESULT Run(void);
 	// 停止播放

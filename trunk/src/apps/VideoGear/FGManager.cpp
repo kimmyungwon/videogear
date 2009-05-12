@@ -6,14 +6,14 @@
 #include "DbgUtil.h"
 
 #define AUTOLOCK	CAutoLock __lock__(&m_lock);
-#define MSecsPerRTime	10000
+#define RTimePerMSec	10000
 
 CAtlMap<HWND, CFGManager*> g_HWNDToFGMgr;
 
 LRESULT CALLBACK VidWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	CFGManager *pFGMgr;
-	
+
 	if (g_HWNDToFGMgr.Lookup(hwnd, pFGMgr) && pFGMgr != NULL)
 	{
 		return pFGMgr->VideoWindowMessageHandler(uMsg, wParam, lParam);
@@ -23,7 +23,7 @@ LRESULT CALLBACK VidWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 }
 
 CFGManager::CFGManager( void )
-: m_state(STATE_UNKNOWN), m_pVidWnd(NULL)
+: m_state(STATE_UNKNOWN), m_pVidWnd(NULL), m_pfnOldVidWndProc(NULL), m_pEventThread(NULL)
 {
 }
 
@@ -31,8 +31,11 @@ CFGManager::~CFGManager(void)
 {
 	ClearGraph();
 	SAFE_DELETE(m_pEventThread);
-	SetWindowLongPtrW(m_pVidWnd->m_hWnd, GWLP_WNDPROC, (LONG_PTR)m_pfnOldVidWndProc);
-	g_HWNDToFGMgr.RemoveKey(m_pVidWnd->m_hWnd);
+	if (m_pVidWnd != NULL && m_pfnOldVidWndProc != NULL)
+	{
+		SetWindowLongPtrW(m_pVidWnd->m_hWnd, GWLP_WNDPROC, (LONG_PTR)m_pfnOldVidWndProc);
+		g_HWNDToFGMgr.RemoveKey(m_pVidWnd->m_hWnd);
+	}
 	m_pMS = NULL;
 	m_pMC = NULL;
 	m_pME = NULL;
@@ -43,7 +46,7 @@ HRESULT CFGManager::Initialize( CWnd *pVidWnd )
 {		
 	if (m_state != STATE_UNKNOWN)
 		return E_UNEXPECTED;
-	if (pVidWnd == NULL || !IsWindow(pVidWnd->GetSafeHwnd()))
+	if (pVidWnd == NULL || !IsWindow(pVidWnd->m_hWnd) || g_HWNDToFGMgr.Lookup(pVidWnd->m_hWnd) != NULL)
 		return E_INVALIDARG;
 	RIF(m_pGraph.CoCreateInstance(CLSID_FilterGraph));
 	RIF(m_pGraph.QueryInterface(&m_pME));
@@ -54,7 +57,8 @@ HRESULT CFGManager::Initialize( CWnd *pVidWnd )
 #endif
 	m_pVidWnd = pVidWnd;
 	g_HWNDToFGMgr[m_pVidWnd->m_hWnd] = this;
-	m_pfnOldVidWndProc = (WNDPROC)SetWindowLongPtrW(m_pVidWnd->m_hWnd, GWLP_WNDPROC, (LONG_PTR)VidWndProc);
+	m_pfnOldVidWndProc = (WNDPROC)GetWindowLongPtrW(m_pVidWnd->m_hWnd, GWLP_WNDPROC);
+	SetWindowLongPtrW(m_pVidWnd->m_hWnd, GWLP_WNDPROC, (LONG_PTR)VidWndProc);
 	/* 启动事件监听线程 */
 	m_pME->SetNotifyFlags(0);
 	m_pEventThread = new CThread<CFGManager>(this, &CFGManager::GraphEventHandler);
@@ -151,26 +155,64 @@ HRESULT CFGManager::RenderFile( LPCWSTR pszFile )
 	}
 }
 
-HRESULT CFGManager::GetDuration( __int64 &nDuration )
+HRESULT CFGManager::GetDuration( LONGLONG &nDuration )
 {
 	if (m_state >= STATE_STOPPED)
 	{
 		RIF(m_pMS->GetDuration(&nDuration));
-		nDuration /= MSecsPerRTime;
+		nDuration /= RTimePerMSec;
 		return S_OK;
 	}
 	else
 		return E_FAIL;
 }
 
-HRESULT CFGManager::GetAvailable( __int64 &nEarliest, __int64 &nLastest )
+HRESULT CFGManager::GetAvailable( LONGLONG &nEarliest, LONGLONG &nLastest )
 {
 	if (m_state >= STATE_STOPPED)
 	{
 		RIF(m_pMS->GetAvailable(&nEarliest, &nLastest));
-		nEarliest /= MSecsPerRTime;
-		nLastest /= MSecsPerRTime;
+		nEarliest /= RTimePerMSec;
+		nLastest /= RTimePerMSec;
 		return S_OK;
+	}
+	else
+		return E_FAIL;	
+}
+
+HRESULT CFGManager::GetPosition( LONGLONG &nPosition )
+{
+	if (m_state >= STATE_RUNNING)
+	{
+		RIF(m_pMS->GetCurrentPosition(&nPosition));
+		nPosition /= RTimePerMSec;
+		return S_OK;
+	}
+	else
+		return E_FAIL;	
+}
+
+HRESULT CFGManager::SetPosition( LONGLONG nPosition )
+{
+	if (m_state >= STATE_RUNNING)
+	{
+		DWORD dwCaps;
+		LONGLONG nCurrent;
+		
+		RIF(m_pMS->GetCapabilities(&dwCaps));
+		nPosition *= RTimePerMSec;
+		RIF(m_pMS->GetCurrentPosition(&nCurrent));
+		if (nPosition > nCurrent && (dwCaps & AM_SEEKING_CanSeekForwards)
+			|| nPosition < nCurrent && (dwCaps & AM_SEEKING_CanSeekBackwards))
+		{
+			nPosition -= nCurrent;
+			RIF(m_pMS->SetPositions(&nPosition, AM_SEEKING_RelativePositioning, NULL, AM_SEEKING_NoPositioning));
+			return S_OK;
+		}
+		else if (nPosition == nCurrent)
+			return S_OK;
+		else
+			return E_FAIL;
 	}
 	else
 		return E_FAIL;	
@@ -609,6 +651,3 @@ LRESULT CFGManager::VideoWindowMessageHandler( UINT uMsg, WPARAM wParam, LPARAM 
 	}
 	return m_pfnOldVidWndProc(m_pVidWnd->m_hWnd, uMsg, wParam, lParam);
 }
-
-
-

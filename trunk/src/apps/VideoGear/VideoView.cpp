@@ -15,17 +15,17 @@
 
 CVideoView::CVideoView()
 {
-	//m_pPlayer = new CPlayer(this);
+	m_pFGMgr = new CFGManager;
 }
 
 CVideoView::~CVideoView()
 {
-	//SAFE_DELETE(m_pPlayer);
+	SAFE_DELETE(m_pFGMgr);
 }
 
 BEGIN_MESSAGE_MAP(CVideoView, CWnd)
-	ON_WM_ERASEBKGND()
 	ON_WM_DROPFILES()
+	ON_WM_CREATE()
 END_MESSAGE_MAP()
 
 
@@ -45,33 +45,38 @@ BOOL CVideoView::PreCreateWindow(CREATESTRUCT& cs)
 	return TRUE;
 }
 
-LRESULT CVideoView::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
+/*LRESULT CVideoView::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 {
-	LRESULT lr = CWnd::WindowProc(message, wParam, lParam);
-	//m_pPlayer->NotifyOwnerMessage(message, wParam, lParam);
-	return lr;
-}
+	bool bDefaultHandler;
+	LRESULT lr = m_pFGMgr->NotifyVideoWindowMessage(message, wParam, lParam, bDefaultHandler);
+	if (bDefaultHandler)
+		return CWnd::WindowProc(message, wParam, lParam);
+	else
+		return lr;
+}*/
 
-BOOL CVideoView::OnEraseBkgnd( CDC* pDC )
+int CVideoView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
-	//if (m_pPlayer->GetState() == PS_STOPPED)
-	{
-		return CWnd::OnEraseBkgnd(pDC);
-	}
-	/*else
-		return TRUE;*/
+	if (CWnd::OnCreate(lpCreateStruct) == -1)
+		return -1;
+
+	if (FAILED(m_pFGMgr->Initialize(this)))
+		return -1;
+
+	return 0;
 }
 
 void CVideoView::OnDropFiles( HDROP hDropInfo )
 {
-	/*DWORD dwCount = DragQueryFileW(hDropInfo, 0xFFFFFFFF, NULL, 0);
-	for (DWORD i = 0; i < dwCount; i++)
+	DWORD dwCount = DragQueryFileW(hDropInfo, 0xFFFFFFFF, NULL, 0);
+	for (DWORD i = 0; i < 1/*dwCount*/; i++)
 	{
 		WCHAR szFile[MAX_PATH];
 		
 		DragQueryFileW(hDropInfo, i, szFile, _countof(szFile));
-		m_pPlayer->AddFile(szFile);
+		m_pFGMgr->RenderFile(szFile);
 	}
 	DragFinish(hDropInfo);
-	m_pPlayer->Play();*/
+	m_pFGMgr->Run();
 }
+

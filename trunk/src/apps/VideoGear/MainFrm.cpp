@@ -44,13 +44,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;
 	}
 
-	__int64 nDuration, nFrom, nTo;
-	m_fm.Initialize(&m_wndView);
-	m_fm.RenderFile(L"E:\\test.avi");
-	m_fm.GetDuration(nDuration);
-	m_fm.GetAvailable(nFrom, nTo);
-	m_fm.Run();
-	//m_wndView.DragAcceptFiles(TRUE);
+	m_wndView.DragAcceptFiles(TRUE);
 
 	return 0;
 }

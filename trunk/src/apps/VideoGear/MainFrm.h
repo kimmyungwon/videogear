@@ -4,7 +4,6 @@
 
 #pragma once
 #include "VideoView.h"
-#include "FGManager.h"
 
 class CMainFrame : public CFrameWnd
 {
@@ -35,7 +34,6 @@ public:
 
 private:
 	CVideoView	m_wndView;
-	CFGManager	m_fm;
 
 // 生成的消息映射函数
 protected:
