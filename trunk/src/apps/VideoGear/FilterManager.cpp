@@ -10,6 +10,16 @@
 #include "DbgUtil.h"
 #include "DSUtil.h"
 
+namespace std
+{
+	bool operator<(const GUID &_left, const GUID &_right)
+	{
+		return (memcmp(&_left, &_right, sizeof(GUID)) < 0);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 template<typename ClassT>
 HRESULT CreateInstance(LPUNKNOWN pUnk, IBaseFilter** ppv)
 {
@@ -260,13 +270,14 @@ CFilterManager::CFilterManager(void)
 	RegisterInternalFilter(_countof(VideoDec::sudFilters), VideoDec::sudFilters);
 	RegisterInternalFilter(_countof(AudioDec::sudFilters), AudioDec::sudFilters);
 	RegisterInternalFilter(_countof(AudioSw::sudFilters), AudioSw::sudFilters, true);
-	/* 外部滤镜 */
+	/* 系统滤镜 */
 	RegisterSystemFilters();
 }
 
 CFilterManager::~CFilterManager(void)
 {
-	m_InternalFilters.RemoveAll();
+	m_InternalFilters.clear();
+	m_SystemFilters.clear();
 }
 
 HRESULT CFilterManager::EnumMatchingFilters( const CAtlList<CMediaType>& mts, CAtlList<CFilter*>& filters )
@@ -277,23 +288,23 @@ HRESULT CFilterManager::EnumMatchingFilters( const CAtlList<CMediaType>& mts, CA
 	while (posMT != NULL)
 	{
 		const CMediaType &mt = mts.GetNext(posMT);
-		MajorTypes::CPair *pair = m_InternalMajorTypes.Lookup(mt.majortype);
-		if (pair == NULL)
+		MajorTypes::iterator it = m_InternalMajorTypes.find(mt.majortype);
+		if (it == m_InternalMajorTypes.end())
 			continue;
 		/* 精确匹配 */
-		POSITION pos = pair->m_value.FindFirstWithKey(mt.subtype);
-		while (pos != NULL)
+		std::pair<MinorTypes::const_iterator, MinorTypes::const_iterator> pii = it->second.equal_range(mt.subtype);
+		for (MinorTypes::const_iterator it = pii.first; it != pii.second; it++)
 		{
-			CFilter *pFilter = pair->m_value.GetNextValueWithKey(pos, mt.subtype);
+			CFilter *pFilter = it->second;
 			filters.AddTail(pFilter);
 		}
 		/* 模糊匹配 */
 		if (mt.subtype != GUID_NULL)
 		{
-			POSITION pos = pair->m_value.FindFirstWithKey(GUID_NULL);
-			while (pos != NULL)
+			std::pair<MinorTypes::const_iterator, MinorTypes::const_iterator> pii = it->second.equal_range(GUID_NULL);
+			for (MinorTypes::const_iterator it = pii.first; it != pii.second; it++)
 			{
-				CFilter *pFilter = pair->m_value.GetNextValueWithKey(pos, mt.subtype);
+				CFilter *pFilter = it->second;
 				filters.AddTail(pFilter);
 			}
 		}
@@ -306,21 +317,21 @@ HRESULT CFilterManager::AddAudioSwitcherToGraph( IFilterGraph *pGraph, IBaseFilt
 {
 	if (pGraph == NULL || ppvObj == NULL)
 		return E_POINTER;
-	FilterList::CPair *pair = m_InternalFilters.Lookup(__uuidof(CAudioSwitcherFilter));
-	if (pair == NULL)
+	FilterList::iterator it = m_InternalFilters.find(__uuidof(CAudioSwitcherFilter));
+	if (it == m_InternalFilters.end())
 		return E_FAIL;
-	RIF(pair->m_value->CreateInstance(NULL, ppvObj));
-	return pGraph->AddFilter(*ppvObj, pair->m_value->GetName());
+	RIF(it->second->CreateInstance(NULL, ppvObj));
+	return pGraph->AddFilter(*ppvObj, it->second->GetName());
 }
 
 HRESULT CFilterManager::RegisterInternalFilter( UINT nFilterCount, const InternalFilterSetupInfo* pSetupInfo, bool bFilterOnly )
-{
+{	
 	for (UINT i = 0; i < nFilterCount; i++)
 	{
 		const InternalFilterSetupInfo& setupInfo = pSetupInfo[i];
-		CFilter* pFilter = new CFilterInternal(*setupInfo.pClsID, setupInfo.pszName, setupInfo.pfnCreateInstance, 
+		CFilter *pFilter = new CFilterInternal(*setupInfo.pClsID, setupInfo.pszName, setupInfo.pfnCreateInstance, 
 			setupInfo.nPinCount, setupInfo.pPins);
-		m_InternalFilters[*setupInfo.pClsID] = CAutoPtr<CFilter>(pFilter);
+		m_InternalFilters.insert(CLSID(*setupInfo.pClsID), pFilter);
 		if (!bFilterOnly)
 		{
 			/* 注册输入类型 */
@@ -332,12 +343,11 @@ HRESULT CFilterManager::RegisterInternalFilter( UINT nFilterCount, const Interna
 				for (UINT k = 0; k < pinInfo.nMediaTypes; k++)
 				{
 					const REGPINTYPES &pinTypes = pinInfo.lpMediaType[k];
-					m_InternalMajorTypes[*pinTypes.clsMajorType].Insert(*pinTypes.clsMinorType, pFilter);
+					m_InternalMajorTypes[*pinTypes.clsMajorType].insert(std::make_pair(*pinTypes.clsMinorType, pFilter));
 				}
 			}
 		}		
 	}
-
 	return S_OK;
 }
 
@@ -347,14 +357,24 @@ HRESULT CFilterManager::RegisterSystemFilter( const RegisterFilterSetupInfo& set
 		return S_FALSE;
 	if (setupInfo.dwInPins != 0 && setupInfo.dwOutPins == 0)	// 不注册Renderer
 		return S_FALSE;
-	POSITION posPin = setupInfo.pins.GetHeadPosition();
-	while (posPin != NULL)
+	CFilter *pFilter = new CFilterRegister(setupInfo.clsID, setupInfo.strName);
+	m_SystemFilters.insert(CLSID(setupInfo.clsID), pFilter);
+	if (!bFilterOnly)
 	{
-		const RegisterPinSetupInfo *pPinInfo = setupInfo.pins.GetNext(posPin);
-		if (pPinInfo->bOutput)
-			continue;
-
+		/* 注册输入类型 */
+		for (boost::ptr_vector<RegisterPinSetupInfo>::const_iterator itPin = setupInfo.pins.begin(); itPin != setupInfo.pins.end(); itPin++)
+		{
+			const RegisterPinSetupInfo &pinInfo = *itPin;
+			if (pinInfo.bOutput)
+				continue;
+			for (std::vector<MediaType>::const_iterator itMT = pinInfo.mts.begin(); itMT != pinInfo.mts.end(); itMT++)
+			{
+				const MediaType &mt = *itMT;
+				m_SystemMajorTypes[mt.major].insert(std::make_pair(mt.minor, pFilter));
+			}
+		}
 	}
+	return S_OK;
 }
 
 HRESULT CFilterManager::RegisterSystemFilters( void )
@@ -435,7 +455,7 @@ HRESULT CFilterManager::DecodeFilterData( BYTE* pData, DWORD cbData, RegisterFil
 	info.dwMerit = pHeader->dwMerit;
 	while (pHeader->dwPins-- > 0)
 	{
-		CAutoPtr<RegisterPinSetupInfo> pPinInfo(new RegisterPinSetupInfo);	
+		std::auto_ptr<RegisterPinSetupInfo> pPinInfo(new RegisterPinSetupInfo);	
 		ChkLen(1);
 		BYTE n = *pPtr - 0x30;
 		pPtr++;
@@ -482,9 +502,9 @@ HRESULT CFilterManager::DecodeFilterData( BYTE* pData, DWORD cbData, RegisterFil
 			pPtr += 4;
 			GUID subType = *(GUID*)&pData[*(DWORD*)pPtr];
 			pPtr += 4;
-			pPinInfo->mts.AddTail(MediaType(majorType, subType));
+			pPinInfo->mts.push_back(MediaType(majorType, subType));
 		}
-		info.pins.AddTail(pPinInfo.Detach());
+		info.pins.push_back(pPinInfo);
 	}
 	return S_OK;
 

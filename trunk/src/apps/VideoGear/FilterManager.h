@@ -14,7 +14,7 @@ struct InternalFilterSetupInfo
 struct RegisterPinSetupInfo
 {
 	bool bOutput;
-	CAtlList<MediaType> mts;
+	std::vector<MediaType> mts;
 };
 
 struct RegisterFilterSetupInfo
@@ -23,17 +23,7 @@ struct RegisterFilterSetupInfo
 	CStringW strName;
 	DWORD dwMerit;
 	DWORD dwInPins, dwOutPins;
-	CAtlList<RegisterPinSetupInfo*> pins;
-
-	~RegisterFilterSetupInfo(void)
-	{
-		POSITION pos = pins.GetHeadPosition();
-		while (pins.GetCount() > 0)
-		{
-			RegisterPinSetupInfo *pPinInfo = pins.RemoveHead();
-			SAFE_DELETE(pPinInfo);
-		}
-	}
+	boost::ptr_vector<RegisterPinSetupInfo> pins;
 };
 
 class CFilterManager
@@ -49,9 +39,9 @@ protected:
 	HRESULT RegisterSystemFilters(void);
 	HRESULT DecodeFilterData(BYTE* pData, DWORD cbData, RegisterFilterSetupInfo &info);
 private:
-	typedef CAtlMap<CLSID, CAutoPtr<CFilter> > FilterList;
-	typedef CRBMultiMap<GUID, CFilter*> MinorTypes;
-	typedef CAtlMap<GUID, MinorTypes> MajorTypes;
+	typedef boost::ptr_map<CLSID, CFilter> FilterList;
+	typedef std::multimap<GUID, CFilter*> MinorTypes;
+	typedef std::map<GUID, MinorTypes> MajorTypes;
 
 	FilterList m_InternalFilters, m_SystemFilters;
 	MajorTypes m_InternalMajorTypes, m_SystemMajorTypes;
