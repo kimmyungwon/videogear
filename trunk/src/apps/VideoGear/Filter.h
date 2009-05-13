@@ -22,18 +22,20 @@ class CFilter
 public:
 	CFilter(const CLSID& clsID, LPCWSTR pszName);
 	virtual ~CFilter(void);
-	virtual const CStringW& GetName(void) const	= 0;
+	const CLSID& GetCLSID(void) const	{ return m_clsID; }
+	const CStringW& GetName(void) const	{ return m_strName; }
+	DWORD GetMerit(void) const	{ return m_dwMerit; }
 	virtual HRESULT CreateInstance(LPUNKNOWN pUnk, IBaseFilter** ppv) = 0;
 protected:	
 	CLSID m_clsID;
 	CStringW m_strName;
+	DWORD m_dwMerit;
 };
 
 class CFilterInternal : public CFilter
 {
 public:
 	CFilterInternal(const CLSID& clsID, LPCWSTR pszName, PFNCreateInstance pfnCreateInstance, UINT uiPinCount, const AMOVIESETUP_PIN* pPins);
-	virtual const CStringW& GetName(void) const	{ return m_strName; }
 	virtual HRESULT CreateInstance(LPUNKNOWN pUnk, IBaseFilter** ppv);
 private:	
 	PFNCreateInstance m_pfnCreateInstance;
@@ -43,6 +45,5 @@ class CFilterRegister : public CFilter
 {
 public:
 	CFilterRegister(const CLSID& clsID, LPCWSTR pszName);
-	virtual const CStringW& GetName(void) const	{ return m_strName; }
 	virtual HRESULT CreateInstance(LPUNKNOWN pUnk, IBaseFilter** ppv);
 };

@@ -26,12 +26,25 @@ struct RegisterFilterSetupInfo
 	boost::ptr_vector<RegisterPinSetupInfo> pins;
 };
 
+struct MeritOrder
+{
+	bool operator()(CFilter *const _left, CFilter *const _right) const
+	{
+		if (_left->GetMerit() != _right->GetMerit())
+			return (_left->GetMerit() > _right->GetMerit());
+		else 
+			return (_left < _right);
+	}
+};
+
+typedef std::set<CFilter*, MeritOrder> MatchedFilters;
+
 class CFilterManager
 {
 public:
 	CFilterManager(void);
 	virtual ~CFilterManager(void);
-	HRESULT EnumMatchingFilters(const CAtlList<CMediaType>& mts, CAtlList<CFilter*>& filters);
+	void EnumMatchingFilters(const CAtlList<CMediaType>& mts, MatchedFilters& filters);
 	HRESULT AddAudioSwitcherToGraph(IFilterGraph *pGraph, IBaseFilter **ppvObj);
 protected:
 	HRESULT RegisterInternalFilter(UINT nFilterCount, const InternalFilterSetupInfo* pSetupInfo, bool bFilterOnly = false);

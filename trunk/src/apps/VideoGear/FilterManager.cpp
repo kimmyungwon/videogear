@@ -280,37 +280,33 @@ CFilterManager::~CFilterManager(void)
 	m_SystemFilters.clear();
 }
 
-HRESULT CFilterManager::EnumMatchingFilters( const CAtlList<CMediaType>& mts, CAtlList<CFilter*>& filters )
+void CFilterManager::EnumMatchingFilters( const CAtlList<CMediaType>& mts, MatchedFilters& filters )
 {
-	UINT nInitCount = filters.GetCount();
-
 	POSITION posMT = mts.GetHeadPosition();
 	while (posMT != NULL)
 	{
 		const CMediaType &mt = mts.GetNext(posMT);
-		MajorTypes::iterator it = m_InternalMajorTypes.find(mt.majortype);
-		if (it == m_InternalMajorTypes.end())
+		MajorTypes::iterator itMajor = m_InternalMajorTypes.find(mt.majortype);
+		if (itMajor == m_InternalMajorTypes.end())
 			continue;
 		/* ¾«È·Æ¥Åä */
-		std::pair<MinorTypes::const_iterator, MinorTypes::const_iterator> pii = it->second.equal_range(mt.subtype);
-		for (MinorTypes::const_iterator it = pii.first; it != pii.second; it++)
+		std::pair<MinorTypes::const_iterator, MinorTypes::const_iterator> pii = itMajor->second.equal_range(mt.subtype);
+		for (MinorTypes::const_iterator itMinor = pii.first; itMinor != pii.second; itMinor++)
 		{
-			CFilter *pFilter = it->second;
-			filters.AddTail(pFilter);
+			CFilter *pFilter = itMinor->second;
+			filters.insert(pFilter);
 		}
 		/* Ä£ºýÆ¥Åä */
 		if (mt.subtype != GUID_NULL)
 		{
-			std::pair<MinorTypes::const_iterator, MinorTypes::const_iterator> pii = it->second.equal_range(GUID_NULL);
-			for (MinorTypes::const_iterator it = pii.first; it != pii.second; it++)
+			std::pair<MinorTypes::const_iterator, MinorTypes::const_iterator> pii = itMajor->second.equal_range(GUID_NULL);
+			for (MinorTypes::const_iterator itMinor = pii.first; itMinor != pii.second; itMinor++)
 			{
-				CFilter *pFilter = it->second;
-				filters.AddTail(pFilter);
+				CFilter *pFilter = itMinor->second;
+				filters.insert(pFilter);
 			}
 		}
 	}
-
-	return filters.GetCount() - nInitCount > 0 ? S_OK : S_FALSE;
 }
 
 HRESULT CFilterManager::AddAudioSwitcherToGraph( IFilterGraph *pGraph, IBaseFilter **ppvObj )

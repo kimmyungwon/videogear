@@ -129,7 +129,7 @@ HRESULT CFGManager::RenderFile( LPCWSTR pszFile )
 	{
 		hr = RenderFilter(pSource, true);		
 	}
-	else if (SUCCEEDED(SplitSource(pSource, &pFilter)))
+	else if (SUCCEEDED(hr = SplitSource(pSource, &pFilter)))
 	{
 		hr = RenderFilter(pFilter, true);
 	}
@@ -281,7 +281,7 @@ HRESULT CFGManager::SplitSource( IBaseFilter *pSource, IBaseFilter **ppFilter )
 {
 	CComPtr<IPin> pPinOut;
 	CAtlList<CMediaType> mtsOut;
-	CAtlList<CFilter*> filters;
+	MatchedFilters filters;
 
 	ASSERT(IsSourceFilter(pSource));
 	if (ppFilter == NULL)
@@ -289,11 +289,10 @@ HRESULT CFGManager::SplitSource( IBaseFilter *pSource, IBaseFilter **ppFilter )
 	pPinOut = GetFirstPin(pSource, PINDIR_OUTPUT);
 	ASSERT(pPinOut != NULL);
 	ExtractMediaTypes(pPinOut, mtsOut);
-	RIF(g_FilterMgr.EnumMatchingFilters(mtsOut, filters));
-	while (filters.GetCount() > 0)
+	g_FilterMgr.EnumMatchingFilters(mtsOut, filters);
+	for (MatchedFilters::iterator it = filters.begin(); it != filters.end(); it++)
 	{
-		CFilter *pFilter = filters.RemoveHead();
-
+		CFilter *pFilter = *it;
 		if (FAILED(pFilter->CreateInstance(NULL, ppFilter))
 			|| FAILED(m_pGraph->AddFilter(*ppFilter, pFilter->GetName())))
 			continue;
@@ -303,6 +302,7 @@ HRESULT CFGManager::SplitSource( IBaseFilter *pSource, IBaseFilter **ppFilter )
 		}
 		m_pGraph->RemoveFilter(*ppFilter);
 		(*ppFilter)->Release();
+		*ppFilter = NULL;
 	}
 	return VFW_E_UNSUPPORTED_STREAM;
 }
@@ -344,7 +344,7 @@ HRESULT CFGManager::Render( IPin *pPinOut )
 {
 	CComPtr<IBaseFilter> pFilterOut;
 	CAtlList<CMediaType> mtsOut;
-	CAtlList<CFilter*> matchingFilters;
+	MatchedFilters matchedFilters;
 	
 	if (pPinOut == NULL)
 		return E_POINTER;
@@ -379,28 +379,25 @@ HRESULT CFGManager::Render( IPin *pPinOut )
 	}
 	/* 匹配内部滤镜 */
 	ExtractMediaTypes(pPinOut, mtsOut);
-	if(g_FilterMgr.EnumMatchingFilters(mtsOut, matchingFilters) == S_OK)
+	g_FilterMgr.EnumMatchingFilters(mtsOut, matchedFilters);
+	for (MatchedFilters::iterator it = matchedFilters.begin(); it != matchedFilters.end(); it++)
 	{
-		POSITION pos = matchingFilters.GetHeadPosition();
-		while (pos != NULL)
-		{
-			CFilter *pFilter = matchingFilters.GetNext(pos);
-			CComPtr<IBaseFilter> pBF;
+		CFilter *pFilter = *it;
+		CComPtr<IBaseFilter> pBF;
 
-			if (FAILED(pFilter->CreateInstance(NULL, &pBF))
-				|| FAILED(m_pGraph->AddFilter(pBF, pFilter->GetName())))
-				continue;
-			if (SUCCEEDED(ConnectDirect(pPinOut, pBF, NULL)))
+		if (FAILED(pFilter->CreateInstance(NULL, &pBF))
+			|| FAILED(m_pGraph->AddFilter(pBF, pFilter->GetName())))
+			continue;
+		if (SUCCEEDED(ConnectDirect(pPinOut, pBF, NULL)))
+		{
+			if (SUCCEEDED(RenderFilter(pBF)))
 			{
-				if (SUCCEEDED(RenderFilter(pBF)))
-				{
-					XTRACE(L"成功渲染 [%s(%s)]\n", GetFilterName(pFilterOut), GetPinName(pPinOut));
-					return S_OK;
-				}
-				TearDownStream(pBF);
-			}			
-			m_pGraph->RemoveFilter(pBF);
-		}
+				XTRACE(L"成功渲染 [%s(%s)]\n", GetFilterName(pFilterOut), GetPinName(pPinOut));
+				return S_OK;
+			}
+			TearDownStream(pBF);
+		}			
+		m_pGraph->RemoveFilter(pBF);
 	}
 	/* 无法渲染 */
 	return VFW_E_CANNOT_RENDER;
