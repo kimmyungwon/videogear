@@ -42,7 +42,7 @@ namespace AVI
 		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, 0, NULL}
 	};
 
-	const FilterSetupInfo sudFilters[] =
+	const InternalFilterSetupInfo sudFilters[] =
 	{
 		{&__uuidof(CAviSplitterFilter), L"MPC - Avi Splitter", CreateInstance<CAviSplitterFilter>, _countof(sudpPins), sudpPins}
 	};
@@ -62,7 +62,7 @@ namespace MKV
 		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, 0, NULL}
 	};
 
-	const FilterSetupInfo sudFilters[] =
+	const InternalFilterSetupInfo sudFilters[] =
 	{
 		{&__uuidof(CMatroskaSplitterFilter), L"MPC - Matroska Splitter", CreateInstance<CMatroskaSplitterFilter>, _countof(sudpPins), sudpPins},
 	};
@@ -124,7 +124,7 @@ namespace RMDec
 		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, _countof(sudPinTypesOut3), sudPinTypesOut3}
 	};
 
-	const FilterSetupInfo sudFilters[] =
+	const InternalFilterSetupInfo sudFilters[] =
 	{
 		{&__uuidof(CRealMediaSplitterFilter), L"MPC - RealMedia Splitter", CreateInstance<CRealMediaSplitterFilter>, _countof(sudpPins), sudpPins},
 		{&__uuidof(CRealVideoDecoder), L"MPC - RealVideo Decoder", CreateInstance<CRealVideoDecoder>, _countof(sudpPins2), sudpPins2},
@@ -140,7 +140,7 @@ namespace VideoDec
 		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, CMPCVideoDecFilter::sudPinTypesOutCount, CMPCVideoDecFilter::sudPinTypesOut}
 	};
 
-	const FilterSetupInfo sudFilters[] =
+	const InternalFilterSetupInfo sudFilters[] =
 	{
 		{&__uuidof(CMPCVideoDecFilter), L"MPC - Video decoder", CreateInstance<CMPCVideoDecFilter>, _countof(sudpPinsVideoDec), sudpPinsVideoDec}
 	};
@@ -217,7 +217,7 @@ namespace AudioDec
 		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, _countof(sudPinTypesOut), sudPinTypesOut}
 	};
 
-	const FilterSetupInfo sudFilters[] =
+	const InternalFilterSetupInfo sudFilters[] =
 	{
 		{&__uuidof(CMpaDecFilter), L"MPC - MPA Decoder Filter", CreateInstance<CMpaDecFilter>, _countof(sudpPins), sudpPins},
 	};
@@ -241,7 +241,7 @@ namespace AudioSw
 		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, countof(sudPinTypesOut), sudPinTypesOut}
 	};
 
-	const FilterSetupInfo sudFilters[] =
+	const InternalFilterSetupInfo sudFilters[] =
 	{
 		{&__uuidof(CAudioSwitcherFilter), L"MPC - AudioSwitcher", CreateInstance<CAudioSwitcherFilter>, _countof(sudpPins), sudpPins}
 	};
@@ -253,17 +253,20 @@ CFilterManager g_FilterMgr;
 
 CFilterManager::CFilterManager(void)
 {
-	RegisterFilter(_countof(AVI::sudFilters), AVI::sudFilters);
-	RegisterFilter(_countof(MKV::sudFilters), MKV::sudFilters);
-	RegisterFilter(_countof(RMDec::sudFilters), RMDec::sudFilters);
-	RegisterFilter(_countof(VideoDec::sudFilters), VideoDec::sudFilters);
-	RegisterFilter(_countof(AudioDec::sudFilters), AudioDec::sudFilters);
-	RegisterFilter(_countof(AudioSw::sudFilters), AudioSw::sudFilters, true);
+	/* 内部滤镜 */
+	RegisterInternalFilter(_countof(AVI::sudFilters), AVI::sudFilters);
+	RegisterInternalFilter(_countof(MKV::sudFilters), MKV::sudFilters);
+	RegisterInternalFilter(_countof(RMDec::sudFilters), RMDec::sudFilters);
+	RegisterInternalFilter(_countof(VideoDec::sudFilters), VideoDec::sudFilters);
+	RegisterInternalFilter(_countof(AudioDec::sudFilters), AudioDec::sudFilters);
+	RegisterInternalFilter(_countof(AudioSw::sudFilters), AudioSw::sudFilters, true);
+	/* 外部滤镜 */
+	RegisterSystemFilters();
 }
 
 CFilterManager::~CFilterManager(void)
 {
-	m_filters.RemoveAll();
+	m_InternalFilters.RemoveAll();
 }
 
 HRESULT CFilterManager::EnumMatchingFilters( const CAtlList<CMediaType>& mts, CAtlList<CFilter*>& filters )
@@ -274,7 +277,7 @@ HRESULT CFilterManager::EnumMatchingFilters( const CAtlList<CMediaType>& mts, CA
 	while (posMT != NULL)
 	{
 		const CMediaType &mt = mts.GetNext(posMT);
-		MajorTypes::CPair *pair = m_majorTypes.Lookup(mt.majortype);
+		MajorTypes::CPair *pair = m_InternalMajorTypes.Lookup(mt.majortype);
 		if (pair == NULL)
 			continue;
 		/* 精确匹配 */
@@ -303,21 +306,21 @@ HRESULT CFilterManager::AddAudioSwitcherToGraph( IFilterGraph *pGraph, IBaseFilt
 {
 	if (pGraph == NULL || ppvObj == NULL)
 		return E_POINTER;
-	FilterList::CPair *pair = m_filters.Lookup(__uuidof(CAudioSwitcherFilter));
+	FilterList::CPair *pair = m_InternalFilters.Lookup(__uuidof(CAudioSwitcherFilter));
 	if (pair == NULL)
 		return E_FAIL;
 	RIF(pair->m_value->CreateInstance(NULL, ppvObj));
 	return pGraph->AddFilter(*ppvObj, pair->m_value->GetName());
 }
 
-HRESULT CFilterManager::RegisterFilter( UINT nFilterCount, const FilterSetupInfo* pSetupInfo, bool bFilterOnly )
+HRESULT CFilterManager::RegisterInternalFilter( UINT nFilterCount, const InternalFilterSetupInfo* pSetupInfo, bool bFilterOnly )
 {
 	for (UINT i = 0; i < nFilterCount; i++)
 	{
-		const FilterSetupInfo& setupInfo = pSetupInfo[i];
+		const InternalFilterSetupInfo& setupInfo = pSetupInfo[i];
 		CFilter* pFilter = new CFilterInternal(*setupInfo.pClsID, setupInfo.pszName, setupInfo.pfnCreateInstance, 
 			setupInfo.nPinCount, setupInfo.pPins);
-		m_filters[*setupInfo.pClsID] = CAutoPtr<CFilter>(pFilter);
+		m_InternalFilters[*setupInfo.pClsID] = CAutoPtr<CFilter>(pFilter);
 		if (!bFilterOnly)
 		{
 			/* 注册输入类型 */
@@ -329,12 +332,162 @@ HRESULT CFilterManager::RegisterFilter( UINT nFilterCount, const FilterSetupInfo
 				for (UINT k = 0; k < pinInfo.nMediaTypes; k++)
 				{
 					const REGPINTYPES &pinTypes = pinInfo.lpMediaType[k];
-					m_majorTypes[*pinTypes.clsMajorType].Insert(*pinTypes.clsMinorType, pFilter);
+					m_InternalMajorTypes[*pinTypes.clsMajorType].Insert(*pinTypes.clsMinorType, pFilter);
 				}
 			}
 		}		
 	}
 
 	return S_OK;
+}
+
+HRESULT CFilterManager::RegisterSystemFilter( const RegisterFilterSetupInfo& setupInfo, bool bFilterOnly /*= false*/ )
+{
+	if (setupInfo.dwInPins == 0 && setupInfo.dwOutPins == 0)	// 不注册Source
+		return S_FALSE;
+	if (setupInfo.dwInPins != 0 && setupInfo.dwOutPins == 0)	// 不注册Renderer
+		return S_FALSE;
+	POSITION posPin = setupInfo.pins.GetHeadPosition();
+	while (posPin != NULL)
+	{
+		const RegisterPinSetupInfo *pPinInfo = setupInfo.pins.GetNext(posPin);
+		if (pPinInfo->bOutput)
+			continue;
+
+	}
+}
+
+HRESULT CFilterManager::RegisterSystemFilters( void )
+{
+	CStringW strCategory;
+	HKEY hkFilters;
+	DWORD dwFilters;
+	WCHAR szSubKey[256];
+	DWORD cchSubKey;
+
+	strCategory = CStringFromGUID(CLSID_LegacyAmFilterCategory);
+	if (RegOpenKeyExW(HKEY_CLASSES_ROOT, L"CLSID\\" + strCategory + L"\\Instance", 0, KEY_ENUMERATE_SUB_KEYS|KEY_QUERY_VALUE, 
+		&hkFilters) != ERROR_SUCCESS)
+		return HRESULT_FROM_WIN32(GetLastError());
+	if (RegQueryInfoKeyW(hkFilters, NULL, NULL, NULL, &dwFilters, NULL, NULL, NULL, NULL, NULL, NULL, 
+		NULL) != ERROR_SUCCESS)
+		return HRESULT_FROM_WIN32(GetLastError());
+	cchSubKey = _countof(szSubKey);
+	for (DWORD i = 0; i < dwFilters; i++, cchSubKey = _countof(szSubKey))
+	{
+		HKEY hkFilter;
+		DWORD dwMaxValueLen;
+		CStringW strCLSID;
+		CAutoVectorPtr<BYTE> pValue;
+		DWORD cbData;
+		RegisterFilterSetupInfo filterInfo;
+		
+		if (RegEnumKeyExW(hkFilters, i, szSubKey, &cchSubKey, NULL, NULL, NULL, NULL) != ERROR_SUCCESS)
+			break;
+		if (RegOpenKeyExW(hkFilters, szSubKey, 0, KEY_QUERY_VALUE, &hkFilter) != ERROR_SUCCESS)
+			break;
+		if (RegQueryInfoKeyW(hkFilter, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &dwMaxValueLen, NULL, NULL))
+			goto next_key;
+		pValue.Allocate(dwMaxValueLen);
+		/* 滤镜CLSID */
+		cbData = dwMaxValueLen;
+		if (RegQueryValueExW(hkFilter, L"CLSID", NULL, NULL, pValue, &cbData) != ERROR_SUCCESS)
+			goto next_key;
+		strCLSID = (WCHAR*)pValue.m_p;
+		filterInfo.clsID = GUIDFromCString(strCLSID);
+		/* 滤镜名 */
+		cbData = dwMaxValueLen;
+		if (RegQueryValueExW(hkFilter, L"FriendlyName", NULL, NULL, pValue, &cbData) != ERROR_SUCCESS)
+			goto next_key;
+		filterInfo.strName = (WCHAR*)pValue.m_p;
+		/* 滤镜配置信息 */
+		cbData = dwMaxValueLen;
+		if (RegQueryValueExW(hkFilter, L"FilterData", NULL, NULL, pValue, &cbData) != ERROR_SUCCESS)
+			goto next_key;
+		DecodeFilterData(pValue.m_p, cbData, filterInfo);
+		/* 注册该滤镜 */
+		RegisterSystemFilter(filterInfo, false);
+next_key:
+		RegCloseKey(hkFilter);
+	}
+	RegCloseKey(hkFilters);
+	return S_OK;
+}
+
+HRESULT CFilterManager::DecodeFilterData( BYTE* pData, DWORD cbData, RegisterFilterSetupInfo &info )
+{
+	struct Header
+	{
+		DWORD dwVersion;
+		DWORD dwMerit;
+		DWORD dwPins;
+		DWORD dwReserved;
+	};
+
+#define ChkLen(size) if(pPtr - pData + size > (int)cbData) return E_FAIL;
+
+	BYTE *pPtr = pData;
+	ChkLen(sizeof(Header));
+	Header *pHeader = (Header*)pPtr;
+	pPtr += sizeof(Header);
+	if (pHeader->dwVersion != 2)	// 只支持版本2
+		return E_FAIL;
+	info.dwMerit = pHeader->dwMerit;
+	while (pHeader->dwPins-- > 0)
+	{
+		CAutoPtr<RegisterPinSetupInfo> pPinInfo(new RegisterPinSetupInfo);	
+		ChkLen(1);
+		BYTE n = *pPtr - 0x30;
+		pPtr++;
+		ChkLen(2);
+		WORD pi = *(WORD*)pPtr;
+		pPtr += 2;
+		ASSERT(pi == 'ip');
+		ChkLen(1);
+		BYTE x33 = *pPtr;
+		pPtr++;
+		ASSERT(x33 == 0x33);
+		ChkLen(8);
+		pPinInfo->bOutput = (*pPtr & REG_PINFLAG_B_OUTPUT) != 0;
+		if (pPinInfo->bOutput)
+			info.dwOutPins++;
+		else
+			info.dwInPins++;
+		pPtr += 8;
+		ChkLen(12);
+		DWORD dwTypes = *(DWORD*)pPtr;
+		pPtr += 12;
+		while (dwTypes-- > 0)
+		{
+			ChkLen(1);
+			BYTE n = *pPtr - 0x30;
+			pPtr++;
+			ChkLen(2);
+			WORD ty = *(WORD*)pPtr;
+			pPtr += 2;
+			ASSERT(ty == 'yt');
+			ChkLen(5);
+			BYTE x33 = *pPtr;
+			pPtr++;
+			ASSERT(x33 == 0x33);
+			pPtr += 4;
+			ChkLen(8);
+			if (*(DWORD*)pPtr < (DWORD)(pPtr - pData + 8) || *(DWORD*)pPtr >= cbData
+				|| *(DWORD*)(pPtr + 4) < (DWORD)(pPtr - pData + 8) || *(DWORD*)(pPtr + 4) >= cbData)
+			{
+				pPtr += 8;
+				continue;
+			}
+			GUID majorType = *(GUID*)&pData[*(DWORD*)pPtr];
+			pPtr += 4;
+			GUID subType = *(GUID*)&pData[*(DWORD*)pPtr];
+			pPtr += 4;
+			pPinInfo->mts.AddTail(MediaType(majorType, subType));
+		}
+		info.pins.AddTail(pPinInfo.Detach());
+	}
+	return S_OK;
+
+#undef ChkLen
 }
 

@@ -47,8 +47,8 @@ protected:
 	HRESULT ConnectDirect(IPin *pPinOut, IPin *pPinIn, const AM_MEDIA_TYPE *pmt);
 	// 拆除下游滤镜链
 	HRESULT TearDownStream(IUnknown *pUnk);
-	// 清除没有连接的滤镜
-	HRESULT RemoveIfNotUsed(CComPtr<IBaseFilter> &pFilter);
+	// 检查滤镜是否正在使用
+	HRESULT CheckInUse(IBaseFilter *pFilter);
 	// 清空图表
 	HRESULT ClearGraph(void);
 	// 调整视频位置和视频窗口大小

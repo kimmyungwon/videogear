@@ -2,8 +2,8 @@
 #include "Filter.h"
 #include "DSUtil.h"
 
-CFilter::CFilter( const CLSID& clsID )
-: m_clsID(clsID)
+CFilter::CFilter( const CLSID& clsID, LPCWSTR pszName )
+: m_clsID(clsID), m_strName(pszName)
 {
 }
 
@@ -15,7 +15,7 @@ CFilter::~CFilter(void)
 
 CFilterInternal::CFilterInternal( const CLSID& clsID, LPCWSTR pszName, PFNCreateInstance pfnCreateInstance, 
 								 UINT uiPinCount, const AMOVIESETUP_PIN* pPins )
-: CFilter(clsID), m_strName(pszName), m_pfnCreateInstance(pfnCreateInstance)
+: CFilter(clsID, pszName), m_pfnCreateInstance(pfnCreateInstance)
 {
 }
 
@@ -26,69 +26,9 @@ HRESULT CFilterInternal::CreateInstance( LPUNKNOWN pUnk, IBaseFilter** ppv )
 
 //////////////////////////////////////////////////////////////////////////
 
-/*CFilterRegister::CFilterRegister( const CLSID& clsID )
-: CFilter(clsID)
+CFilterRegister::CFilterRegister( const CLSID& clsID, LPCWSTR pszName )
+: CFilter(clsID, pszName)
 {
-	CStringW strClsID;
-	CRegKey keyName, keyInfo;
-
-	strClsID = CStringFromGUID(m_clsID);
-	if(keyName.Open(HKEY_CLASSES_ROOT, L"CLSID\\" + strClsID, KEY_READ) == ERROR_SUCCESS)
-	{
-		ULONG nChars = 0;
-		if(keyName.QueryStringValue(NULL, NULL, &nChars) == ERROR_SUCCESS)
-		{
-			if(keyName.QueryStringValue(NULL, m_strName.GetBuffer(nChars), &nChars) == ERROR_SUCCESS)
-			{
-				m_strName.ReleaseBuffer(nChars);
-			}
-		}
-		keyName.Close();
-	}
-	if(keyInfo.Open(HKEY_CLASSES_ROOT, L"CLSID\\{083863F1-70DE-11d0-BD40-00A0C911CE86}\\Instance", KEY_READ) == ERROR_SUCCESS)
-	{
-		if(keyName.Open(keyInfo, strClsID, KEY_READ) != ERROR_SUCCESS)
-		{
-			// illiminable pack uses the name of the filter and not the clsid, have to enum all keys to find it...
-
-			FILETIME ft;
-			WCHAR szSubKey[256];
-			DWORD cchSubKey = _countof(szSubKey);
-			for(DWORD i = 0; keyInfo.EnumKey(i, szSubKey, &cchSubKey, &ft) == ERROR_SUCCESS; i++, cchSubKey = _countof(szSubKey))
-			{
-				if(keyName.Open(keyInfo, szSubKey, KEY_READ) == ERROR_SUCCESS)
-				{
-					WCHAR szClsId[256];
-					DWORD cchClsID = _countof(szClsId);
-					if(ERROR_SUCCESS == keyName.QueryStringValue(L"CLSID", szClsId, &cchClsID) && GUIDFromCString(szClsId) == m_clsID)
-						break;
-					keyName.Close();
-				}
-			}
-		}
-
-		if(keyName)
-		{
-			ULONG nChars = 0;
-			if(keyName.QueryStringValue(L"FriendlyName", NULL, &nChars) == ERROR_SUCCESS)
-			{
-				if(keyName.QueryStringValue(L"FriendlyName", m_strName.GetBuffer(nChars), &nChars) == ERROR_SUCCESS)
-				{
-					m_strName.ReleaseBuffer(nChars);
-				}
-			}
-			ULONG nBytes = 0;
-			if(keyName.QueryBinaryValue(_T("FilterData"), NULL, &nBytes) == ERROR_SUCCESS)
-			{
-				CAutoVectorPtr<BYTE> buffer;
-				if(buffer.Allocate(nBytes) && ERROR_SUCCESS == keyName.QueryBinaryValue(L"FilterData", buffer, &nBytes))
-				{
-					ExtractFilterData(buffer, nBytes);
-				}
-			}
-			keyName.Close();
-		}
-	}
 }
 
 HRESULT CFilterRegister::CreateInstance( LPUNKNOWN pUnk, IBaseFilter** ppv )
@@ -96,7 +36,7 @@ HRESULT CFilterRegister::CreateInstance( LPUNKNOWN pUnk, IBaseFilter** ppv )
 	return CoCreateInstance(m_clsID, pUnk, CLSCTX_ALL, IID_IBaseFilter, (LPVOID*)ppv);
 }
 
-[uuid("97f7c4d4-547b-4a5f-8332-536430ad2e4d")]
+/*[uuid("97f7c4d4-547b-4a5f-8332-536430ad2e4d")]
 interface IAMFilterData : public IUnknown
 {
 	STDMETHOD (ParseFilterData) (BYTE* rgbFilterData, ULONG cb, BYTE** prgbRegFilter2) PURE;

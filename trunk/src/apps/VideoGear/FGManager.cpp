@@ -134,10 +134,24 @@ HRESULT CFGManager::RenderFile( LPCWSTR pszFile )
 		hr = RenderFilter(pFilter, true);
 	}
 	/* 清理无用的滤镜 */
-	RemoveIfNotUsed(m_pVideoRenderer);
-	RemoveIfNotUsed(m_pAudioRenderer);
-	if (m_cfgUseAudioSwitcher)
-		RemoveIfNotUsed(m_pAudioSwitcher);
+	if (CheckInUse(m_pVideoRenderer) == S_FALSE)
+	{
+		m_pVMR9WC = NULL;
+		m_pVMR9Cfg = NULL;
+		m_pEVRWC = NULL;
+		m_pGraph->RemoveFilter(m_pVideoRenderer);
+		m_pVideoRenderer = NULL;
+	}
+	if (CheckInUse(m_pAudioRenderer) == S_FALSE)
+	{
+		m_pGraph->RemoveFilter(m_pAudioRenderer);
+		m_pAudioRenderer = NULL;
+	}
+	if (m_cfgUseAudioSwitcher && CheckInUse(m_pAudioSwitcher) == S_FALSE)
+	{
+		m_pGraph->RemoveFilter(m_pAudioSwitcher);
+		m_pAudioSwitcher = NULL;
+	}
 	/* 返回 */
 	if (SUCCEEDED(hr))
 	{
@@ -477,32 +491,20 @@ HRESULT CFGManager::TearDownStream( IUnknown *pUnk )
 		return E_INVALIDARG;
 }
 
-HRESULT CFGManager::RemoveIfNotUsed( CComPtr<IBaseFilter> &pFilter )
+HRESULT CFGManager::CheckInUse( IBaseFilter *pFilter )
 {
-	if (pFilter != NULL)
+	if (pFilter == NULL)
+		return E_POINTER;
+	BeginEnumPins(pFilter, pEnumPins, pPin)
 	{
-		bool bNeedRemove = true;
-		BeginEnumPins(pFilter, pEnumPins, pPin)
+		if (IsPinConnected(pPin))
 		{
-			if (IsPinConnected(pPin))
-			{
-				bNeedRemove = false;
-				break;
-			}
+			return S_OK;
+			break;
 		}
-		EndEnumPins;
-		if (bNeedRemove)
-		{
-			if (&pFilter == &m_pVideoRenderer)
-			{
-				m_pVMR9Cfg = NULL;
-				m_pVMR9WC = NULL;
-			}
-			m_pGraph->RemoveFilter(pFilter);
-			pFilter = NULL;
-		}
-	}	
-	return S_OK;
+	}
+	EndEnumPins;
+	return S_FALSE;
 }
 
 HRESULT CFGManager::ClearGraph( void )
@@ -640,12 +642,15 @@ LRESULT CFGManager::VideoWindowMessageHandler( UINT uMsg, WPARAM wParam, LPARAM 
 	switch (uMsg)
 	{
 	case WM_SIZE:
-		AdjustVideoPosition();
+		if (m_state >= STATE_RUNNING)
+			AdjustVideoPosition();
 		break;
 	case WM_ERASEBKGND:
-		return TRUE;
+		if (m_state >= STATE_RUNNING)
+			return TRUE;
+		break;
 	case WM_PAINT:
-		if (SUCCEEDED(RepaintVideo()))
+		if (m_state >= STATE_RUNNING && SUCCEEDED(RepaintVideo()))
 			return 0;
 		break;		
 	}
