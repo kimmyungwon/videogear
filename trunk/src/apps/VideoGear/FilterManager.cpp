@@ -282,6 +282,7 @@ CFilterManager::~CFilterManager(void)
 
 void CFilterManager::EnumMatchingFilters( const CAtlList<CMediaType>& mts, MatchedFilters& filters )
 {
+	UINT nPriority = 0;
 	POSITION posMT = mts.GetHeadPosition();
 	while (posMT != NULL)
 	{
@@ -294,18 +295,9 @@ void CFilterManager::EnumMatchingFilters( const CAtlList<CMediaType>& mts, Match
 		for (MinorTypes::const_iterator itMinor = pii.first; itMinor != pii.second; itMinor++)
 		{
 			CFilter *pFilter = itMinor->second;
-			filters.insert(pFilter);
+			filters.insert(MatchedFilter(pFilter, nPriority));
 		}
-		/* 模糊匹配 */
-		if (mt.subtype != GUID_NULL)
-		{
-			std::pair<MinorTypes::const_iterator, MinorTypes::const_iterator> pii = itMajor->second.equal_range(GUID_NULL);
-			for (MinorTypes::const_iterator itMinor = pii.first; itMinor != pii.second; itMinor++)
-			{
-				CFilter *pFilter = itMinor->second;
-				filters.insert(pFilter);
-			}
-		}
+		nPriority++;
 	}
 }
 
@@ -355,6 +347,7 @@ HRESULT CFilterManager::RegisterSystemFilter( const RegisterFilterSetupInfo& set
 		return S_FALSE;
 	CFilter *pFilter = new CFilterRegister(setupInfo.clsID, setupInfo.strName);
 	m_SystemFilters.insert(CLSID(setupInfo.clsID), pFilter);
+	XTRACE(L"已注册系统滤镜 [%s]\n", setupInfo.strName);
 	if (!bFilterOnly)
 	{
 		/* 注册输入类型 */
@@ -449,6 +442,8 @@ HRESULT CFilterManager::DecodeFilterData( BYTE* pData, DWORD cbData, RegisterFil
 	if (pHeader->dwVersion != 2)	// 只支持版本2
 		return E_FAIL;
 	info.dwMerit = pHeader->dwMerit;
+	info.pins.clear();
+	info.dwInPins = info.dwOutPins = 0;
 	while (pHeader->dwPins-- > 0)
 	{
 		std::auto_ptr<RegisterPinSetupInfo> pPinInfo(new RegisterPinSetupInfo);	

@@ -292,7 +292,7 @@ HRESULT CFGManager::SplitSource( IBaseFilter *pSource, IBaseFilter **ppFilter )
 	g_FilterMgr.EnumMatchingFilters(mtsOut, filters);
 	for (MatchedFilters::iterator it = filters.begin(); it != filters.end(); it++)
 	{
-		CFilter *pFilter = *it;
+		CFilter *pFilter = it->pFilter;
 		if (FAILED(pFilter->CreateInstance(NULL, ppFilter))
 			|| FAILED(m_pGraph->AddFilter(*ppFilter, pFilter->GetName())))
 			continue;
@@ -382,7 +382,7 @@ HRESULT CFGManager::Render( IPin *pPinOut )
 	g_FilterMgr.EnumMatchingFilters(mtsOut, matchedFilters);
 	for (MatchedFilters::iterator it = matchedFilters.begin(); it != matchedFilters.end(); it++)
 	{
-		CFilter *pFilter = *it;
+		CFilter *pFilter = it->pFilter;
 		CComPtr<IBaseFilter> pBF;
 
 		if (FAILED(pFilter->CreateInstance(NULL, &pBF))

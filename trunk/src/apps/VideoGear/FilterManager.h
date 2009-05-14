@@ -26,18 +26,32 @@ struct RegisterFilterSetupInfo
 	boost::ptr_vector<RegisterPinSetupInfo> pins;
 };
 
+struct MatchedFilter
+{
+	CFilter *pFilter;
+	UINT nPriority;
+
+	MatchedFilter(CFilter *_pFilter, UINT _nPriority)
+		: pFilter(_pFilter), nPriority(_nPriority)
+	{}
+};
+
 struct MeritOrder
 {
-	bool operator()(CFilter *const _left, CFilter *const _right) const
+	bool operator()(const MatchedFilter &_left, const MatchedFilter &_right) const
 	{
-		if (_left->GetMerit() != _right->GetMerit())
-			return (_left->GetMerit() > _right->GetMerit());
-		else 
-			return (_left < _right);
+		if (_left.pFilter == _right.pFilter)
+			return false;
+		else if (_left.nPriority != _right.nPriority)
+			return (_left.nPriority < _right.nPriority);
+		else if (_left.pFilter->GetMerit() != _right.pFilter->GetMerit())
+			return (_left.pFilter->GetMerit() < _right.pFilter->GetMerit());
+		else
+			return _left.pFilter < _right.pFilter;
 	}
 };
 
-typedef std::set<CFilter*, MeritOrder> MatchedFilters;
+typedef std::set<MatchedFilter, MeritOrder> MatchedFilters;
 
 class CFilterManager
 {
