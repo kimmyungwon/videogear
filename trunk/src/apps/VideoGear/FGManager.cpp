@@ -406,6 +406,7 @@ HRESULT CFGManager::Render( IPin *pPinOut )
 		CFilter *pFilter = it->pFilter;
 		CComPtr<IBaseFilter> pBF;
 
+		XTRACE(L"尝试渲染 [%s(%s)] 到 [%s]\n", GetFilterName(pFilterOut), GetPinName(pPinOut), pFilter->GetName());
 		if (FAILED(pFilter->CreateInstance(NULL, &pBF))
 			|| FAILED(m_pGraph->AddFilter(pBF, pFilter->GetName())))
 			continue;
@@ -413,7 +414,7 @@ HRESULT CFGManager::Render( IPin *pPinOut )
 		{
 			if (SUCCEEDED(RenderFilter(pBF)))
 			{
-				XTRACE(L"成功渲染 [%s(%s)]\n", GetFilterName(pFilterOut), GetPinName(pPinOut));
+				XTRACE(L"成功渲染 [%s(%s)] 到 [%s]\n", GetFilterName(pFilterOut), GetPinName(pPinOut), pFilter->GetName());
 				return S_OK;
 			}
 			TearDownStream(pBF);
