@@ -224,6 +224,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Playlist.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.cpp"
 				>
 				<FileConfiguration
@@ -295,6 +299,10 @@
 			</File>
 			<File
 				RelativePath=".\PlayerBar.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Playlist.h"
 				>
 			</File>
 			<File

@@ -23,7 +23,7 @@ LRESULT CALLBACK VidWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 }
 
 CFGManager::CFGManager( void )
-: m_state(STATE_UNKNOWN), m_pVidWnd(NULL), m_pfnOldVidWndProc(NULL), m_pEventThread(NULL)
+: m_iState(STATE_UNKNOWN), m_pVidWnd(NULL), m_pfnOldVidWndProc(NULL), m_pEventThread(NULL)
 {
 }
 
@@ -42,9 +42,14 @@ CFGManager::~CFGManager(void)
 	m_pGraph = NULL;
 }
 
+int CFGManager::GetState( void )
+{
+	return m_iState;
+}
+
 HRESULT CFGManager::Initialize( CWnd *pVidWnd )
 {		
-	if (m_state != STATE_UNKNOWN)
+	if (m_iState != STATE_UNKNOWN)
 		return E_UNEXPECTED;
 	if (pVidWnd == NULL || !IsWindow(pVidWnd->m_hWnd) || g_HWNDToFGMgr.Lookup(pVidWnd->m_hWnd) != NULL)
 		return E_INVALIDARG;
@@ -63,7 +68,7 @@ HRESULT CFGManager::Initialize( CWnd *pVidWnd )
 	m_pME->SetNotifyFlags(0);
 	m_pEventThread = new CThread<CFGManager>(this, &CFGManager::GraphEventHandler);
 	/* 返回 */
-	m_state = STATE_IDLE;
+	SetState(STATE_IDLE);
 	return S_OK;
 }
 
@@ -73,9 +78,9 @@ HRESULT CFGManager::RenderFile( LPCWSTR pszFile )
 	HRESULT hr;
 	CComPtr<IBaseFilter> pFilter;
 
-	if (m_state == STATE_UNKNOWN)
+	if (m_iState == STATE_UNKNOWN)
 		return E_UNEXPECTED;
-	if (m_state != STATE_IDLE && FAILED(ClearGraph()))
+	if (m_iState != STATE_IDLE && FAILED(ClearGraph()))
 		return VFW_E_CANNOT_RENDER;
 	/* 保存本次渲染所用的配置 */
 	m_cfgVRM = g_AppCfg.m_VideoRenderMode;
@@ -156,7 +161,7 @@ HRESULT CFGManager::RenderFile( LPCWSTR pszFile )
 	if (SUCCEEDED(hr))
 	{
 		// 渲染成功
-		m_state = STATE_STOPPED;
+		SetState(STATE_STOPPED);
 		DumpGraph(m_pGraph, 0);
 		return hr;
 	}
@@ -171,7 +176,7 @@ HRESULT CFGManager::RenderFile( LPCWSTR pszFile )
 
 HRESULT CFGManager::GetDuration( LONGLONG &nDuration )
 {
-	if (m_state >= STATE_STOPPED)
+	if (m_iState >= STATE_STOPPED)
 	{
 		RIF(m_pMS->GetDuration(&nDuration));
 		nDuration /= RTimePerMSec;
@@ -183,7 +188,7 @@ HRESULT CFGManager::GetDuration( LONGLONG &nDuration )
 
 HRESULT CFGManager::GetAvailable( LONGLONG &nEarliest, LONGLONG &nLastest )
 {
-	if (m_state >= STATE_STOPPED)
+	if (m_iState >= STATE_STOPPED)
 	{
 		RIF(m_pMS->GetAvailable(&nEarliest, &nLastest));
 		nEarliest /= RTimePerMSec;
@@ -196,7 +201,7 @@ HRESULT CFGManager::GetAvailable( LONGLONG &nEarliest, LONGLONG &nLastest )
 
 HRESULT CFGManager::GetPosition( LONGLONG &nPosition )
 {
-	if (m_state >= STATE_RUNNING)
+	if (m_iState >= STATE_RUNNING)
 	{
 		RIF(m_pMS->GetCurrentPosition(&nPosition));
 		nPosition /= RTimePerMSec;
@@ -208,7 +213,7 @@ HRESULT CFGManager::GetPosition( LONGLONG &nPosition )
 
 HRESULT CFGManager::SetPosition( LONGLONG nPosition )
 {
-	if (m_state >= STATE_RUNNING)
+	if (m_iState >= STATE_RUNNING)
 	{
 		DWORD dwCaps;
 		LONGLONG nCurrent;
@@ -234,7 +239,7 @@ HRESULT CFGManager::SetPosition( LONGLONG nPosition )
 
 HRESULT CFGManager::Run( void )
 {
-	switch (m_state)
+	switch (m_iState)
 	{
 	case STATE_STOPPED:
 		AdjustVideoPosition();
@@ -248,7 +253,7 @@ HRESULT CFGManager::Run( void )
 
 HRESULT CFGManager::Stop( void )
 {
-	switch (m_state)
+	switch (m_iState)
 	{
 	case STATE_STOPPED:
 		return S_FALSE;
@@ -508,7 +513,7 @@ HRESULT CFGManager::ClearGraph( void )
 {
 	CInterfaceList<IBaseFilter> pFilters;
 
-	if (m_state == STATE_UNKNOWN)
+	if (m_iState == STATE_UNKNOWN)
 		return E_UNEXPECTED;
 	RIF(m_pMC->Stop());
 	m_rctVideo.SetRectEmpty();
@@ -530,7 +535,7 @@ HRESULT CFGManager::ClearGraph( void )
 		CComPtr<IBaseFilter> pFilter = pFilters.GetNext(pos);
 		m_pGraph->RemoveFilter(pFilter);
 	}
-	m_state = STATE_IDLE;
+	SetState(STATE_IDLE);
 	return S_OK;
 }
 
@@ -624,7 +629,8 @@ void CFGManager::GraphEventHandler( bool& bTerminated )
 			continue;
 		switch (lEvCode)
 		{
-		case EC_LENGTH_CHANGED:
+		case EC_COMPLETE:
+			Stop();
 			break;
 		case EC_VIDEO_SIZE_CHANGED:
 			AdjustVideoPosition();
@@ -639,17 +645,24 @@ LRESULT CFGManager::VideoWindowMessageHandler( UINT uMsg, WPARAM wParam, LPARAM 
 	switch (uMsg)
 	{
 	case WM_SIZE:
-		if (m_state >= STATE_RUNNING)
+		if (m_iState >= STATE_RUNNING)
 			AdjustVideoPosition();
 		break;
 	case WM_ERASEBKGND:
-		if (m_state >= STATE_RUNNING)
+		if (m_iState >= STATE_RUNNING)
 			return TRUE;
 		break;
 	case WM_PAINT:
-		if (m_state >= STATE_RUNNING && SUCCEEDED(RepaintVideo()))
+		if (m_iState >= STATE_RUNNING && SUCCEEDED(RepaintVideo()))
 			return 0;
 		break;		
 	}
 	return m_pfnOldVidWndProc(m_pVidWnd->m_hWnd, uMsg, wParam, lParam);
 }
+
+void CFGManager::SetState( int iNewState )
+{
+	m_iState = iNewState;
+	__raise OnStateChanged(m_iState);
+}
+

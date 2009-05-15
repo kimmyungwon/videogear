@@ -16,21 +16,19 @@
 CVideoView::CVideoView()
 {
 	m_pFGMgr = new CFGManager;
+	__hook(&CFGManager::OnStateChanged, m_pFGMgr, &CVideoView::FGManagerStateChanged);
 }
 
 CVideoView::~CVideoView()
 {
+	__unhook(&CFGManager::OnStateChanged, m_pFGMgr, &CVideoView::FGManagerStateChanged);
 	SAFE_DELETE(m_pFGMgr);
 }
 
-BEGIN_MESSAGE_MAP(CVideoView, CWnd)
-	ON_WM_DROPFILES()
-	ON_WM_CREATE()
-END_MESSAGE_MAP()
-
-
-
-// CVideoView 消息处理程序
+void CVideoView::FGManagerStateChanged( int iNewState )
+{
+	
+}
 
 BOOL CVideoView::PreCreateWindow(CREATESTRUCT& cs) 
 {
@@ -45,15 +43,10 @@ BOOL CVideoView::PreCreateWindow(CREATESTRUCT& cs)
 	return TRUE;
 }
 
-/*LRESULT CVideoView::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
-{
-	bool bDefaultHandler;
-	LRESULT lr = m_pFGMgr->NotifyVideoWindowMessage(message, wParam, lParam, bDefaultHandler);
-	if (bDefaultHandler)
-		return CWnd::WindowProc(message, wParam, lParam);
-	else
-		return lr;
-}*/
+BEGIN_MESSAGE_MAP(CVideoView, CWnd)
+	ON_WM_CREATE()
+	ON_WM_DROPFILES()
+END_MESSAGE_MAP()
 
 int CVideoView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
@@ -68,8 +61,8 @@ int CVideoView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 void CVideoView::OnDropFiles( HDROP hDropInfo )
 {
-	DWORD dwCount = DragQueryFileW(hDropInfo, 0xFFFFFFFF, NULL, 0);
-	for (DWORD i = 0; i < 1/*dwCount*/; i++)
+	/*DWORD dwCount = DragQueryFileW(hDropInfo, 0xFFFFFFFF, NULL, 0);
+	for (DWORD i = 0; i < dwCount; i++)
 	{
 		WCHAR szFile[MAX_PATH];
 		
@@ -77,6 +70,6 @@ void CVideoView::OnDropFiles( HDROP hDropInfo )
 		m_pFGMgr->RenderFile(szFile);
 	}
 	DragFinish(hDropInfo);
-	m_pFGMgr->Run();
+	m_pFGMgr->Run();*/
 }
 

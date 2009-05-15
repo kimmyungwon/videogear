@@ -10,31 +10,16 @@
 
 class CVideoView : public CWnd
 {
-// 构造
 public:
 	CVideoView();
-
-// 属性
-public:
-
-// 操作
-public:
-
-// 重写
+	virtual ~CVideoView();
 protected:
+	void FGManagerStateChanged(int iNewState);
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
-	//virtual LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam);
-
 private:
 	CFGManager* m_pFGMgr;
-
-// 实现
-public:
-	virtual ~CVideoView();
-
-// 生成的消息映射函数
-	DECLARE_MESSAGE_MAP()
 protected:
+	DECLARE_MESSAGE_MAP()
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnDropFiles(HDROP hDropInfo);
 };

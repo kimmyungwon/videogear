@@ -3,6 +3,7 @@
 #include "AppConfig.h"
 #include "Thread.h"
 
+[event_source(native, optimize=speed)]
 class CFGManager
 {
 	friend LRESULT CALLBACK VidWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -16,6 +17,8 @@ public:
 
 	CFGManager(void);
 	virtual ~CFGManager(void);
+	// 获取当前状态
+	int GetState(void);
 	// 初始化
 	HRESULT Initialize(CWnd *pVidWnd);
 	// 渲染指定的文件
@@ -32,6 +35,8 @@ public:
 	HRESULT Run(void);
 	// 停止播放
 	HRESULT Stop(void);
+public:
+	__event void OnStateChanged(int iNewState);
 protected:
 	// 按指定文件查找源滤镜并载入
 	HRESULT AddSourceFilter(LPCWSTR pszFile, IBaseFilter **ppFilter);
@@ -60,7 +65,9 @@ protected:
 	// 视频窗口消息
 	LRESULT VideoWindowMessageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam);
 private:
-	int m_state;
+	void SetState(int iNewState);
+private:
+	int m_iState;
 	CWnd *m_pVidWnd;
 	WNDPROC m_pfnOldVidWndProc;
 	CCritSec m_lock;
