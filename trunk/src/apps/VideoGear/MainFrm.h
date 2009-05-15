@@ -8,43 +8,26 @@
 
 class CMainFrame : public CFrameWnd
 {
-	
+	DECLARE_DYNAMIC(CMainFrame)
 public:
 	CMainFrame();
-protected: 
-	DECLARE_DYNAMIC(CMainFrame)
-
-// 属性
-public:
-
-// 操作
-public:
-
-// 重写
-public:
-	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
-	virtual BOOL OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo);
-
-// 实现
-public:
 	virtual ~CMainFrame();
 #ifdef _DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
-
+protected: 
+	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
+	virtual BOOL OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo);
 private:
 	CVideoView	m_wndView;
 	CPlayerBar	m_barControl;
-
-// 生成的消息映射函数
 protected:
+	DECLARE_MESSAGE_MAP()
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnSetFocus(CWnd *pOldWnd);
-	DECLARE_MESSAGE_MAP()
-
-public:
 	afx_msg void OnFileOpen();
+	afx_msg void OnCtrlPlaypause();
 };
 
 

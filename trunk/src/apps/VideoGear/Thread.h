@@ -6,8 +6,8 @@ public:
 	CMyCritSec(void);
 	~CMyCritSec(void);
 	bool TryEnter(void);
-	void Enter(void);
-	void Leave(void);
+	void Lock(void);
+	void Unlock(void);
 private:
 	RTL_CRITICAL_SECTION m_cs;
 };

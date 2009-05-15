@@ -4,7 +4,7 @@
 #include "Thread.h"
 
 [event_source(native, optimize=speed)]
-class CFGManager
+class CFGManager : public CCritSec
 {
 	friend LRESULT CALLBACK VidWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 public:
@@ -24,19 +24,20 @@ public:
 	// 渲染指定的文件
 	HRESULT RenderFile(LPCWSTR pszFile);
 	// 获取媒体总长度
-	HRESULT GetDuration(LONGLONG &nDuration);
+	HRESULT GetDuration(int &nDuration);
 	// 获取可播放的长度
-	HRESULT GetAvailable(LONGLONG &nEarliest, LONGLONG &nLastest);
+	HRESULT GetAvailable(int &nEarliest, int &nLastest);
 	// 获取当前位置
-	HRESULT GetPosition(LONGLONG &nPosition);
+	HRESULT GetPosition(int &nPosition);
 	// 设置当前位置
-	HRESULT SetPosition(LONGLONG nPosition);
+	HRESULT SetPosition(int nPosition);
 	// 开始播放
 	HRESULT Run(void);
 	// 停止播放
 	HRESULT Stop(void);
 public:
 	__event void OnStateChanged(int iNewState);
+	__event void OnMediaCompleted(void);
 protected:
 	// 按指定文件查找源滤镜并载入
 	HRESULT AddSourceFilter(LPCWSTR pszFile, IBaseFilter **ppFilter);
@@ -70,7 +71,6 @@ private:
 	int m_iState;
 	CWnd *m_pVidWnd;
 	WNDPROC m_pfnOldVidWndProc;
-	CCritSec m_lock;
 	CComPtr<IFilterGraph2> m_pGraph;
 	CComPtr<IMediaEventEx> m_pME;
 	CComPtr<IMediaControl> m_pMC;

@@ -5,8 +5,8 @@
 #include "DSUtil.h"
 #include "DbgUtil.h"
 
-#define AUTOLOCK	CAutoLock __lock__(&m_lock);
-#define RTimePerMSec	10000
+#define AUTOLOCK	CAutoLock __lock__(this);
+#define RTimePerMSec	((LONGLONG)10000)
 
 CAtlMap<HWND, CFGManager*> g_HWNDToFGMgr;
 
@@ -174,61 +174,67 @@ HRESULT CFGManager::RenderFile( LPCWSTR pszFile )
 	}
 }
 
-HRESULT CFGManager::GetDuration( LONGLONG &nDuration )
+HRESULT CFGManager::GetDuration( int &nDuration )
 {
 	if (m_iState >= STATE_STOPPED)
 	{
-		RIF(m_pMS->GetDuration(&nDuration));
-		nDuration /= RTimePerMSec;
+		LONGLONG llDuration;
+
+		RIF(m_pMS->GetDuration(&llDuration));
+		nDuration = (int)(llDuration / RTimePerMSec);
 		return S_OK;
 	}
 	else
 		return E_FAIL;
 }
 
-HRESULT CFGManager::GetAvailable( LONGLONG &nEarliest, LONGLONG &nLastest )
+HRESULT CFGManager::GetAvailable( int &nEarliest, int &nLastest )
 {
 	if (m_iState >= STATE_STOPPED)
 	{
-		RIF(m_pMS->GetAvailable(&nEarliest, &nLastest));
-		nEarliest /= RTimePerMSec;
-		nLastest /= RTimePerMSec;
+		LONGLONG llEarliest, llLastest;
+		
+		RIF(m_pMS->GetAvailable(&llEarliest, &llLastest));
+		nEarliest = (int)(llEarliest / RTimePerMSec);
+		nLastest /= (int)(llLastest / RTimePerMSec);
 		return S_OK;
 	}
 	else
 		return E_FAIL;	
 }
 
-HRESULT CFGManager::GetPosition( LONGLONG &nPosition )
+HRESULT CFGManager::GetPosition( int &nPosition )
 {
 	if (m_iState >= STATE_RUNNING)
 	{
-		RIF(m_pMS->GetCurrentPosition(&nPosition));
-		nPosition /= RTimePerMSec;
+		LONGLONG llPosition;
+		
+		RIF(m_pMS->GetCurrentPosition(&llPosition));
+		nPosition = (int)(llPosition / RTimePerMSec);
 		return S_OK;
 	}
 	else
 		return E_FAIL;	
 }
 
-HRESULT CFGManager::SetPosition( LONGLONG nPosition )
+HRESULT CFGManager::SetPosition( int nPosition )
 {
 	if (m_iState >= STATE_RUNNING)
 	{
 		DWORD dwCaps;
-		LONGLONG nCurrent;
+		LONGLONG llPosition, llCurrent;
 		
 		RIF(m_pMS->GetCapabilities(&dwCaps));
-		nPosition *= RTimePerMSec;
-		RIF(m_pMS->GetCurrentPosition(&nCurrent));
-		if (nPosition > nCurrent && (dwCaps & AM_SEEKING_CanSeekForwards)
-			|| nPosition < nCurrent && (dwCaps & AM_SEEKING_CanSeekBackwards))
+		llPosition = (LONGLONG)nPosition * RTimePerMSec;
+		RIF(m_pMS->GetCurrentPosition(&llCurrent));
+		if (llPosition > llCurrent && (dwCaps & AM_SEEKING_CanSeekForwards)
+			|| llPosition < llCurrent && (dwCaps & AM_SEEKING_CanSeekBackwards))
 		{
-			nPosition -= nCurrent;
-			RIF(m_pMS->SetPositions(&nPosition, AM_SEEKING_RelativePositioning, NULL, AM_SEEKING_NoPositioning));
+			llPosition -= llCurrent;
+			RIF(m_pMS->SetPositions(&llPosition, AM_SEEKING_RelativePositioning, NULL, AM_SEEKING_NoPositioning));
 			return S_OK;
 		}
-		else if (nPosition == nCurrent)
+		else if (llPosition == llCurrent)
 			return S_OK;
 		else
 			return E_FAIL;
@@ -239,11 +245,16 @@ HRESULT CFGManager::SetPosition( LONGLONG nPosition )
 
 HRESULT CFGManager::Run( void )
 {
+	HRESULT hr;
+	
 	switch (m_iState)
 	{
 	case STATE_STOPPED:
 		AdjustVideoPosition();
-		return m_pMC->Run();
+		hr = m_pMC->Run();
+		if (SUCCEEDED(hr))
+			SetState(STATE_RUNNING);
+		return hr;
 	case STATE_RUNNING:
 		return S_FALSE;
 	default:
@@ -253,12 +264,17 @@ HRESULT CFGManager::Run( void )
 
 HRESULT CFGManager::Stop( void )
 {
+	HRESULT hr;
+	
 	switch (m_iState)
 	{
 	case STATE_STOPPED:
 		return S_FALSE;
 	case STATE_RUNNING:
-		return m_pMC->Stop();
+		hr = m_pMC->Stop();
+		if (SUCCEEDED(hr))
+			SetState(STATE_STOPPED);
+		return hr;
 	default:
 		return E_FAIL;
 	}
@@ -630,10 +646,12 @@ void CFGManager::GraphEventHandler( bool& bTerminated )
 		switch (lEvCode)
 		{
 		case EC_COMPLETE:
-			Stop();
+			if (SUCCEEDED(Stop()))
+				__raise OnMediaCompleted();
 			break;
 		case EC_VIDEO_SIZE_CHANGED:
 			AdjustVideoPosition();
+			m_pVidWnd->RedrawWindow();
 			break;
 		}
 		m_pME->FreeEventParams(lEvCode, lParam1, lParam2);

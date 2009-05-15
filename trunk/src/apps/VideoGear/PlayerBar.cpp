@@ -56,6 +56,23 @@ BOOL CPlayerBar::Create( CWnd* pParentWnd, UINT nID /*= AFX_IDW_CONTROLBAR_FIRST
 	return TRUE;
 }
 
+void CPlayerBar::UpdateProgress( int *piPos, int *piDuration )
+{
+	if (piDuration != NULL)
+	{
+		m_cmnPorgress.SetRange(0, *piDuration);
+	}
+	if (piPos != NULL)
+	{
+		m_cmnPorgress.SetPos(*piPos);
+	}
+}
+
+void CPlayerBar::EnableProgress( BOOL bEnable )
+{
+	m_cmnPorgress.EnableWindow(bEnable);
+}
+
 BEGIN_MESSAGE_MAP(CPlayerBar, CToolBar)
 	ON_WM_SIZE()
 END_MESSAGE_MAP()
@@ -85,3 +102,4 @@ void CPlayerBar::OnSize(UINT nType, int cx, int cy)
 		m_cmnVolumn.SetWindowPos(NULL, rctCmn.left, rctCmn.top, rctCmn.Width(), rctCmn.Height(), SWP_NOZORDER);
 	}
 }
+

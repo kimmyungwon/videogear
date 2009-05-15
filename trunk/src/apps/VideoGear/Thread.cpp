@@ -16,12 +16,12 @@ bool CMyCritSec::TryEnter( void )
 	return (TryEnterCriticalSection(&m_cs) != FALSE);
 }
 
-void CMyCritSec::Enter( void )
+void CMyCritSec::Lock( void )
 {	
 	EnterCriticalSection(&m_cs);
 }
 
-void CMyCritSec::Leave( void )
+void CMyCritSec::Unlock( void )
 {
 	LeaveCriticalSection(&m_cs);
 }

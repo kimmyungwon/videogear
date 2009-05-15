@@ -19,6 +19,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_WM_CREATE()
 	ON_WM_SETFOCUS()
 	ON_COMMAND(ID_FILE_OPEN, &CMainFrame::OnFileOpen)
+	ON_COMMAND(ID_CTRL_PLAYPAUSE, &CMainFrame::OnCtrlPlaypause)
 END_MESSAGE_MAP()
 
 // CMainFrame 构造/析构
@@ -49,6 +50,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		TRACE0("未能创建控制条\n");
 		return -1;
 	}
+	m_wndView.m_pCtrlBar = &m_barControl;
 
 	return 0;
 }
@@ -100,4 +102,9 @@ BOOL CMainFrame::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO*
 
 void CMainFrame::OnFileOpen()
 {
+}
+
+void CMainFrame::OnCtrlPlaypause()
+{
+		
 }

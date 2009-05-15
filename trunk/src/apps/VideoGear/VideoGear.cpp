@@ -108,6 +108,8 @@ protected:
 // 实现
 protected:
 	DECLARE_MESSAGE_MAP()
+public:
+	afx_msg void OnUpdateCtrlPlaypause(CCmdUI *pCmdUI);
 };
 
 CAboutDlg::CAboutDlg() : CDialog(CAboutDlg::IDD)
@@ -130,6 +132,3 @@ void CVideoGearApp::OnAppAbout()
 }
 
 // CVideoGearApp 消息处理程序
-
-
-

@@ -10,24 +10,60 @@
 #define new DEBUG_NEW
 #endif
 
+#define INVALID_ITEM_INDEX	((UINT)0xFFFFFFFF)
+#define TIMER_PROGRESS		0x100
 
 // CVideoView
 
 CVideoView::CVideoView()
-{
-	m_pFGMgr = new CFGManager;
+: m_nItemIndex(INVALID_ITEM_INDEX)
+{m_pFGMgr = new CFGManager;
 	__hook(&CFGManager::OnStateChanged, m_pFGMgr, &CVideoView::FGManagerStateChanged);
+	__hook(&CFGManager::OnMediaCompleted, m_pFGMgr, &CVideoView::FGManagerMediaCompleted);
 }
 
 CVideoView::~CVideoView()
 {
+	__unhook(&CFGManager::OnMediaCompleted, m_pFGMgr, &CVideoView::FGManagerMediaCompleted);
 	__unhook(&CFGManager::OnStateChanged, m_pFGMgr, &CVideoView::FGManagerStateChanged);
 	SAFE_DELETE(m_pFGMgr);
+}
+
+void CVideoView::SetItemIndex( UINT nIndex )
+{
+	if (m_nItemIndex != nIndex)
+	{
+		KillTimer(TIMER_PROGRESS);
+		m_pCtrlBar->EnableProgress(FALSE);
+		m_pFGMgr->Stop();
+		m_nItemIndex = INVALID_ITEM_INDEX;
+		if (const MediaItem *pItem = m_playlist.GetItem(nIndex))
+		{
+			HRESULT hr = m_pFGMgr->RenderFile(pItem->strFullPath);
+			if (SUCCEEDED(hr))
+			{
+				int iDuration;
+				
+				m_pFGMgr->Run();
+				m_nItemIndex = nIndex;
+				m_pFGMgr->GetDuration(iDuration);
+				m_pCtrlBar->EnableProgress(TRUE);
+				m_pCtrlBar->UpdateProgress(NULL, &iDuration);
+				SetTimer(TIMER_PROGRESS, 500, NULL);
+			}
+		}
+	}
 }
 
 void CVideoView::FGManagerStateChanged( int iNewState )
 {
 	
+}
+
+void CVideoView::FGManagerMediaCompleted( void )
+{
+	if (m_nItemIndex < m_playlist.GetCount())
+		SetItemIndex(m_nItemIndex + 1);
 }
 
 BOOL CVideoView::PreCreateWindow(CREATESTRUCT& cs) 
@@ -46,6 +82,7 @@ BOOL CVideoView::PreCreateWindow(CREATESTRUCT& cs)
 BEGIN_MESSAGE_MAP(CVideoView, CWnd)
 	ON_WM_CREATE()
 	ON_WM_DROPFILES()
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 int CVideoView::OnCreate(LPCREATESTRUCT lpCreateStruct)
@@ -56,20 +93,43 @@ int CVideoView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (FAILED(m_pFGMgr->Initialize(this)))
 		return -1;
 
+	DragAcceptFiles(TRUE);
+
 	return 0;
 }
 
 void CVideoView::OnDropFiles( HDROP hDropInfo )
 {
-	/*DWORD dwCount = DragQueryFileW(hDropInfo, 0xFFFFFFFF, NULL, 0);
+	m_playlist.Lock();
+	DWORD dwCount = DragQueryFileW(hDropInfo, 0xFFFFFFFF, NULL, 0);
+	UINT nStartIndex;
 	for (DWORD i = 0; i < dwCount; i++)
 	{
 		WCHAR szFile[MAX_PATH];
+		UINT nIndex;
 		
 		DragQueryFileW(hDropInfo, i, szFile, _countof(szFile));
-		m_pFGMgr->RenderFile(szFile);
+		nIndex = m_playlist.AddFile(szFile);
+		if (i == 0)
+			nStartIndex = nIndex;
 	}
 	DragFinish(hDropInfo);
-	m_pFGMgr->Run();*/
+	m_playlist.Unlock();
+	SetItemIndex(nStartIndex);
+}
+
+void CVideoView::OnTimer( UINT_PTR nIDEvent )
+{
+	switch (nIDEvent)
+	{
+	case TIMER_PROGRESS:
+		{
+			int iPos;
+
+			if (SUCCEEDED(m_pFGMgr->GetPosition(iPos)) && m_pCtrlBar != NULL)
+				m_pCtrlBar->UpdateProgress(&iPos, NULL);
+		}
+		break;
+	}
 }
 

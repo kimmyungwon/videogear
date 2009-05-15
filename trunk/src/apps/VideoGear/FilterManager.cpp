@@ -314,6 +314,8 @@ HRESULT CFilterManager::AddAudioSwitcherToGraph( IFilterGraph *pGraph, IBaseFilt
 
 HRESULT CFilterManager::RegisterInternalFilter( UINT nFilterCount, const InternalFilterSetupInfo* pSetupInfo, bool bFilterOnly )
 {	
+	if (m_InternalFilters.find(*pSetupInfo->pClsID) != m_InternalFilters.end())	// 不注册重复的滤镜
+		return S_FALSE;
 	for (UINT i = 0; i < nFilterCount; i++)
 	{
 		const InternalFilterSetupInfo& setupInfo = pSetupInfo[i];
@@ -341,13 +343,14 @@ HRESULT CFilterManager::RegisterInternalFilter( UINT nFilterCount, const Interna
 
 HRESULT CFilterManager::RegisterSystemFilter( const RegisterFilterSetupInfo& setupInfo, bool bFilterOnly /*= false*/ )
 {
-	if (setupInfo.dwInPins == 0 && setupInfo.dwOutPins == 0)	// 不注册Source
+	if (setupInfo.dwInPins == 0 || setupInfo.dwOutPins == 0)	// 不注册Source和Renderer
 		return S_FALSE;
-	if (setupInfo.dwInPins != 0 && setupInfo.dwOutPins == 0)	// 不注册Renderer
+	if (m_InternalFilters.find(setupInfo.clsID) != m_InternalFilters.end()
+		|| m_SystemFilters.find(setupInfo.clsID) != m_SystemFilters.end())	// 不注册重复的滤镜
 		return S_FALSE;
 	CFilter *pFilter = new CFilterRegister(setupInfo.clsID, setupInfo.strName);
 	m_SystemFilters.insert(CLSID(setupInfo.clsID), pFilter);
-	XTRACE(L"已注册系统滤镜 [%s]\n", setupInfo.strName);
+	XTRACE(L"已注册系统滤镜 [%s(IN:%d, OUT:%d)]\n", setupInfo.strName, setupInfo.dwInPins, setupInfo.dwOutPins);
 	if (!bFilterOnly)
 	{
 		/* 注册输入类型 */
