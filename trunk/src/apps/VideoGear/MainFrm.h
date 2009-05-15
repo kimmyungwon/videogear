@@ -4,6 +4,7 @@
 
 #pragma once
 #include "VideoView.h"
+#include "PlayerBar.h"
 
 class CMainFrame : public CFrameWnd
 {
@@ -34,6 +35,7 @@ public:
 
 private:
 	CVideoView	m_wndView;
+	CPlayerBar	m_barControl;
 
 // 生成的消息映射函数
 protected:

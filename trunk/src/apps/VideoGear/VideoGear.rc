@@ -16,7 +16,7 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// 中文(中华人民共和国) resources
+// Chinese (P.R.C.) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
 #ifdef _WIN32
@@ -78,15 +78,22 @@ IDR_MAINFRAME           ICON                    "res\\VideoGear.ico"
 
 IDR_MAINFRAME MENU 
 BEGIN
-    POPUP "文件(&F)"
+    POPUP "文件"
     BEGIN
-        MENUITEM "打开文件(&O)...",                 ID_FILE_OPEN
+        MENUITEM "打开文件...",                     ID_FILE_OPEN
         MENUITEM SEPARATOR
-        MENUITEM "退出(&X)",                      ID_APP_EXIT
+        MENUITEM "退出",                          ID_APP_EXIT
     END
-    POPUP "帮助(&H)"
+    POPUP "控制"
     BEGIN
-        MENUITEM "关于 VideoGear(&A)...",         ID_APP_ABOUT
+        MENUITEM "播放",                          ID_CTRL_PLAYPAUSE
+        MENUITEM "停止",                          ID_CTRL_STOP
+        MENUITEM SEPARATOR
+        MENUITEM "静音",                          ID_CTRL_MUTE
+    END
+    POPUP "帮助"
+    BEGIN
+        MENUITEM "关于 VideoGear...",             ID_APP_ABOUT
     END
 END
 
@@ -188,6 +195,13 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 //
+// Bitmap
+//
+
+IDB_PLAYBAR             BITMAP                  "res\\playerbar.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
 // String Table
 //
 
@@ -266,7 +280,7 @@ BEGIN
     AFX_IDS_SCTASKLIST      "激活任务列表"
 END
 
-#endif    // 中文(中华人民共和国) resources
+#endif    // Chinese (P.R.C.) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

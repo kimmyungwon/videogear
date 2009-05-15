@@ -44,7 +44,11 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;
 	}
 
-	m_wndView.DragAcceptFiles(TRUE);
+	if (!m_barControl.Create(this))
+	{
+		TRACE0("未能创建控制条\n");
+		return -1;
+	}
 
 	return 0;
 }
