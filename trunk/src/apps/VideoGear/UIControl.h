@@ -1,10 +1,22 @@
 #pragma once
 
+#include "VideoGear.h"
+
 template<typename BaseT>
 class CUIControlImpl : public BaseT
 {
 public:
-	virtual ~CUIControlImpl(void)	{}
+	CUIControlImpl(void)
+		: m_pCanvas(NULL), m_pPainter(NULL)
+	{
+	
+	}
+
+	virtual ~CUIControlImpl(void)	
+	{
+		SAFE_DELETE(m_pPainter);
+		SAFE_DELETE(m_pCanvas);
+	}
 protected:
 	virtual void DoPaint(Graphics &canvas);	
 private:
@@ -39,4 +51,4 @@ void CUIControlImpl<BaseT>::OnPaint()
 	}
 }
 
-typedef CUIControlImpl<CWnd> CUIWnd;
+typedef CUIControlImpl<CWnd> CUIControl;

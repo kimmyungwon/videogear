@@ -24,12 +24,12 @@ END_MESSAGE_MAP()
 CVideoGearApp::CVideoGearApp()
 {
 	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
-	GdiplusStartup(&m_ulToken, &m_gpInput, NULL);
+	Gdiplus::GdiplusStartup(&m_ulToken, &m_gpInput, NULL);
 }
 
 CVideoGearApp::~CVideoGearApp()
 {
-	GdiplusShutdown(m_ulToken);
+	Gdiplus::GdiplusShutdown(m_ulToken);
 	CoUninitialize();
 }
 
