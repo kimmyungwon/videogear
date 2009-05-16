@@ -12,7 +12,9 @@ public:
 	virtual ~CPlayerBar();
 	BOOL Create(CWnd* pParentWnd, UINT nID = AFX_IDW_CONTROLBAR_FIRST);
 	void EnableProgress(BOOL bEnable);
-	void UpdateProgress(int *piPos, int *piDuration);
+	void UpdateProgress(int iPosition);
+	void UpdateDuration(int iDuration);
+	void UpdateAvailable(int iEarliest, int iLastest);
 private:
 	bool m_bCreated;
 	CSliderCtrl	m_cmnPorgress;

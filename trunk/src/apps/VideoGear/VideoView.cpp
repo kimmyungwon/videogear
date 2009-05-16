@@ -34,6 +34,8 @@ void CVideoView::SetItemIndex( UINT nIndex )
 	if (m_nItemIndex != nIndex)
 	{
 		KillTimer(TIMER_PROGRESS);
+		m_pCtrlBar->UpdateProgress(0);
+		m_pCtrlBar->UpdateDuration(0);
 		m_pCtrlBar->EnableProgress(FALSE);
 		m_pFGMgr->Stop();
 		m_nItemIndex = INVALID_ITEM_INDEX;
@@ -43,13 +45,14 @@ void CVideoView::SetItemIndex( UINT nIndex )
 			if (SUCCEEDED(hr))
 			{
 				int iDuration;
-				
+
 				m_pFGMgr->Run();
 				m_nItemIndex = nIndex;
 				m_pFGMgr->GetDuration(iDuration);
 				m_pCtrlBar->EnableProgress(TRUE);
-				m_pCtrlBar->UpdateProgress(NULL, &iDuration);
-				SetTimer(TIMER_PROGRESS, 500, NULL);
+				m_pCtrlBar->UpdateDuration(iDuration);
+				m_pCtrlBar->UpdateProgress(0);
+				SetTimer(TIMER_PROGRESS, 200, NULL);
 			}
 		}
 	}
@@ -124,10 +127,17 @@ void CVideoView::OnTimer( UINT_PTR nIDEvent )
 	{
 	case TIMER_PROGRESS:
 		{
-			int iPos;
+			int iPos, iDuration, iEarliest, iLastest;
 
-			if (SUCCEEDED(m_pFGMgr->GetPosition(iPos)) && m_pCtrlBar != NULL)
-				m_pCtrlBar->UpdateProgress(&iPos, NULL);
+			if (m_pCtrlBar != NULL)
+			{
+				if (SUCCEEDED(m_pFGMgr->GetDuration(iDuration)))
+					m_pCtrlBar->UpdateDuration(iDuration);
+				if (SUCCEEDED(m_pFGMgr->GetAvailable(iEarliest, iLastest)))
+					m_pCtrlBar->UpdateAvailable(iEarliest, iLastest);
+				if (SUCCEEDED(m_pFGMgr->GetPosition(iPos)))
+					m_pCtrlBar->UpdateProgress(iPos);
+			}			
 		}
 		break;
 	}

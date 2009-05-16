@@ -36,6 +36,7 @@
 #include <boost\ptr_container\ptr_vector.hpp>
 #include <boost\ptr_container\ptr_map.hpp>
 
+#include <GdiPlus.h>
 #include <d3d9.h>
 #include <DShow.h>
 #include <vmr9.h>

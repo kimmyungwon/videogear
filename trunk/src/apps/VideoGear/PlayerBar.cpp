@@ -36,7 +36,8 @@ BOOL CPlayerBar::Create( CWnd* pParentWnd, UINT nID /*= AFX_IDW_CONTROLBAR_FIRST
 		return FALSE;
 	if (!LoadBitmap(IDB_PLAYBAR))
 		return FALSE;
-	if (!m_cmnPorgress.Create(WS_CHILD|WS_VISIBLE|WS_DISABLED|TBS_HORZ|TBS_BOTH|TBS_NOTICKS|TBS_FIXEDLENGTH, CRect(), this, AFX_IDW_PANE_FIRST))
+	if (!m_cmnPorgress.Create(WS_CHILD|WS_VISIBLE|WS_DISABLED|TBS_HORZ|TBS_BOTH|TBS_NOTICKS|TBS_FIXEDLENGTH|TBS_ENABLESELRANGE, 
+		CRect(), this, AFX_IDW_PANE_FIRST))
 		return FALSE;
 	m_cmnPorgress.SetThumbLength(PROGRESSCMN_THUMBLENGTH);
 	if (!m_cmnVolumn.Create(WS_CHILD|WS_VISIBLE|TBS_HORZ|TBS_TOP|TBS_NOTICKS|TBS_FIXEDLENGTH, CRect(), this, AFX_IDW_PANE_FIRST))
@@ -56,21 +57,24 @@ BOOL CPlayerBar::Create( CWnd* pParentWnd, UINT nID /*= AFX_IDW_CONTROLBAR_FIRST
 	return TRUE;
 }
 
-void CPlayerBar::UpdateProgress( int *piPos, int *piDuration )
-{
-	if (piDuration != NULL)
-	{
-		m_cmnPorgress.SetRange(0, *piDuration);
-	}
-	if (piPos != NULL)
-	{
-		m_cmnPorgress.SetPos(*piPos);
-	}
-}
-
 void CPlayerBar::EnableProgress( BOOL bEnable )
 {
 	m_cmnPorgress.EnableWindow(bEnable);
+}
+
+void CPlayerBar::UpdateProgress( int iPosition )
+{
+	m_cmnPorgress.SetPos(iPosition);
+}
+
+void CPlayerBar::UpdateDuration( int iDuration )
+{
+	m_cmnPorgress.SetRange(0, iDuration);
+}
+
+void CPlayerBar::UpdateAvailable( int iEarliest, int iLastest )
+{
+	m_cmnPorgress.SetSelection(iEarliest, iLastest);
 }
 
 BEGIN_MESSAGE_MAP(CPlayerBar, CToolBar)
@@ -102,4 +106,6 @@ void CPlayerBar::OnSize(UINT nType, int cx, int cy)
 		m_cmnVolumn.SetWindowPos(NULL, rctCmn.left, rctCmn.top, rctCmn.Width(), rctCmn.Height(), SWP_NOZORDER);
 	}
 }
+
+
 

@@ -45,12 +45,18 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;
 	}
 
-	if (!m_barControl.Create(this))
+	/*if (!m_barControl.Create(this))
 	{
 		TRACE0("未能创建控制条\n");
 		return -1;
 	}
-	m_wndView.m_pCtrlBar = &m_barControl;
+	m_wndView.m_pCtrlBar = &m_barControl;*/
+
+	if (!m_pnlTest.Create(this, UIAL_NONE, WS_CHILD|WS_VISIBLE, CRect(200, 50, 300, 150), AFX_IDW_CONTROLBAR_LAST - 1))
+	{
+		TRACE0("未能创建控制条\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -65,6 +71,13 @@ BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs)
 	cs.dwExStyle &= ~WS_EX_CLIENTEDGE;
 	cs.lpszClass = AfxRegisterWndClass(0);
 	return TRUE;
+}
+
+void CMainFrame::ActivateFrame(int nCmdShow)
+{
+	CFrameWnd::ActivateFrame(nCmdShow);
+	OnIdleUpdateCmdUI();
+	UpdateWindow();
 }
 
 // CMainFrame 诊断
@@ -108,3 +121,4 @@ void CMainFrame::OnCtrlPlaypause()
 {
 		
 }
+

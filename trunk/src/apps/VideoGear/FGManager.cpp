@@ -182,6 +182,7 @@ HRESULT CFGManager::GetDuration( int &nDuration )
 
 		RIF(m_pMS->GetDuration(&llDuration));
 		nDuration = (int)(llDuration / RTimePerMSec);
+		XTRACE(L"GetDuration() = %dms\n", nDuration);
 		return S_OK;
 	}
 	else
@@ -196,7 +197,7 @@ HRESULT CFGManager::GetAvailable( int &nEarliest, int &nLastest )
 		
 		RIF(m_pMS->GetAvailable(&llEarliest, &llLastest));
 		nEarliest = (int)(llEarliest / RTimePerMSec);
-		nLastest /= (int)(llLastest / RTimePerMSec);
+		nLastest = (int)(llLastest / RTimePerMSec);
 		return S_OK;
 	}
 	else
@@ -207,10 +208,13 @@ HRESULT CFGManager::GetPosition( int &nPosition )
 {
 	if (m_iState >= STATE_RUNNING)
 	{
+		double dRate;
 		LONGLONG llPosition;
 		
+		RIF(m_pMS->GetRate(&dRate));
 		RIF(m_pMS->GetCurrentPosition(&llPosition));
 		nPosition = (int)(llPosition / RTimePerMSec);
+		XTRACE(L"GetPosition() = %dms\n", nPosition);
 		return S_OK;
 	}
 	else
@@ -273,7 +277,11 @@ HRESULT CFGManager::Stop( void )
 	case STATE_RUNNING:
 		hr = m_pMC->Stop();
 		if (SUCCEEDED(hr))
+		{
+			LONGLONG llPos = 0;
+			m_pMS->SetPositions(&llPos, AM_SEEKING_AbsolutePositioning, NULL, AM_SEEKING_NoPositioning);
 			SetState(STATE_STOPPED);
+		}
 		return hr;
 	default:
 		return E_FAIL;

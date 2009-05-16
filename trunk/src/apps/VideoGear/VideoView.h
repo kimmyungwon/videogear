@@ -16,8 +16,8 @@ public:
 	CVideoView();
 	virtual ~CVideoView();
 	int GetState(void)	{ return m_pFGMgr->GetState(); }
-	void SetItemIndex(UINT nIndex);
 protected:
+	void SetItemIndex(UINT nIndex);
 	void FGManagerStateChanged(int iNewState);
 	void FGManagerMediaCompleted(void);
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);

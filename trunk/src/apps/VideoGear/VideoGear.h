@@ -18,16 +18,13 @@ class CVideoGearApp : public CWinApp
 public:
 	CVideoGearApp();
 	~CVideoGearApp();
-
-// ÷ÿ–¥
-public:
 	virtual BOOL InitInstance();
-
-//  µœ÷
-
-public:
-	afx_msg void OnAppAbout();
+private:
+	Gdiplus::GdiplusStartupInput m_gpInput;
+	ULONG_PTR m_ulToken;
+private:
 	DECLARE_MESSAGE_MAP()
+	afx_msg void OnAppAbout();
 };
 
 extern CVideoGearApp theApp;

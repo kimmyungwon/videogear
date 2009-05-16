@@ -5,6 +5,7 @@
 #pragma once
 #include "VideoView.h"
 #include "PlayerBar.h"
+#include "UIControl.h"
 
 class CMainFrame : public CFrameWnd
 {
@@ -18,16 +19,18 @@ public:
 #endif
 protected: 
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
+	virtual void ActivateFrame(int nCmdShow = -1);
 	virtual BOOL OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo);
 private:
 	CVideoView	m_wndView;
 	CPlayerBar	m_barControl;
+	CUIControlBar	m_pnlTest;
 protected:
 	DECLARE_MESSAGE_MAP()
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnSetFocus(CWnd *pOldWnd);
 	afx_msg void OnFileOpen();
-	afx_msg void OnCtrlPlaypause();
+	afx_msg void OnCtrlPlaypause();	
 };
 
 
