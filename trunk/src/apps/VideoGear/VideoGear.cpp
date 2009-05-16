@@ -3,7 +3,6 @@
 //
 
 #include "stdafx.h"
-#include "afxwinappex.h"
 #include "VideoGear.h"
 #include "MainFrm.h"
 

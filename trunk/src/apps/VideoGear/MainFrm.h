@@ -5,7 +5,6 @@
 #pragma once
 #include "VideoView.h"
 #include "PlayerBar.h"
-#include "UIControl.h"
 
 class CMainFrame : public CFrameWnd
 {
@@ -24,7 +23,6 @@ protected:
 private:
 	CVideoView	m_wndView;
 	CPlayerBar	m_barControl;
-	CUIControlBar	m_pnlTest;
 protected:
 	DECLARE_MESSAGE_MAP()
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);

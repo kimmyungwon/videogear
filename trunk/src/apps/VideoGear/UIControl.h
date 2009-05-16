@@ -1,7 +1,5 @@
 #pragma once
 
-using namespace Gdiplus;
-
 template<typename BaseT>
 class CUIControlImpl : public BaseT
 {
@@ -41,14 +39,4 @@ void CUIControlImpl<BaseT>::OnPaint()
 	}
 }
 
-enum UIAlign
-{
-	UIAL_NONE,
-	UIAL_LEFT,
-	UIAL_TOP,
-	UIAL_RIGHT,
-	UIAL_BOTTOM
-};
-
 typedef CUIControlImpl<CWnd> CUIWnd;
-typedef CUIControlImpl<CControlBar> CUIControlBar;

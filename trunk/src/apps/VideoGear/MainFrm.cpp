@@ -45,18 +45,12 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;
 	}
 
-	/*if (!m_barControl.Create(this))
+	if (!m_barControl.Create(this))
 	{
 		TRACE0("未能创建控制条\n");
 		return -1;
 	}
-	m_wndView.m_pCtrlBar = &m_barControl;*/
-
-	if (!m_pnlTest.Create(this, UIAL_NONE, WS_CHILD|WS_VISIBLE, CRect(200, 50, 300, 150), AFX_IDW_CONTROLBAR_LAST - 1))
-	{
-		TRACE0("未能创建控制条\n");
-		return -1;
-	}
+	m_wndView.m_pCtrlBar = &m_barControl;
 
 	return 0;
 }
