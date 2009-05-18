@@ -31,6 +31,8 @@ public:
 	HRESULT GetPosition(int &nPosition);
 	// 设置当前位置
 	HRESULT SetPosition(int nPosition);
+	// 获取当前音量
+	HRESULT GetVolume(BYTE &nVolume);
 	// 开始播放
 	HRESULT Run(void);
 	// 停止播放
@@ -75,6 +77,7 @@ private:
 	CComPtr<IMediaEventEx> m_pME;
 	CComPtr<IMediaControl> m_pMC;
 	CComPtr<IMediaSeeking> m_pMS;
+	CComPtr<IBasicAudio> m_pBA;
 	CThread<CFGManager> *m_pEventThread;
 	VideoRenderMode m_cfgVRM;
 	bool m_cfgUseAudioSwitcher;

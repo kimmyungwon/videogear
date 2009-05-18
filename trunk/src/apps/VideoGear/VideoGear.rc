@@ -86,10 +86,10 @@ BEGIN
     END
     POPUP "øÿ÷∆"
     BEGIN
-        MENUITEM "≤•∑≈",                          ID_CTRL_PLAYPAUSE
+        MENUITEM "≤•∑≈/‘›Õ£",                       ID_CTRL_PLAYPAUSE
         MENUITEM "Õ£÷π",                          ID_CTRL_STOP
         MENUITEM SEPARATOR
-        MENUITEM "æ≤“Ù",                          ID_CTRL_MUTE
+        MENUITEM "“Ù∆µ ‰≥ˆ",                        ID_CTRL_AUDIO, CHECKED
     END
     POPUP "∞Ô÷˙"
     BEGIN

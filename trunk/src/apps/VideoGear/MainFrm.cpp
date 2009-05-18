@@ -19,7 +19,6 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_WM_CREATE()
 	ON_WM_SETFOCUS()
 	ON_COMMAND(ID_FILE_OPEN, &CMainFrame::OnFileOpen)
-	ON_COMMAND(ID_CTRL_PLAYPAUSE, &CMainFrame::OnCtrlPlaypause)
 END_MESSAGE_MAP()
 
 // CMainFrame ππ‘Ï/Œˆππ
@@ -70,8 +69,8 @@ BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs)
 void CMainFrame::ActivateFrame(int nCmdShow)
 {
 	CFrameWnd::ActivateFrame(nCmdShow);
-	OnIdleUpdateCmdUI();
-	UpdateWindow();
+	/*OnIdleUpdateCmdUI();
+	UpdateWindow();*/
 }
 
 // CMainFrame ’Ô∂œ
@@ -110,9 +109,3 @@ BOOL CMainFrame::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO*
 void CMainFrame::OnFileOpen()
 {
 }
-
-void CMainFrame::OnCtrlPlaypause()
-{
-		
-}
-

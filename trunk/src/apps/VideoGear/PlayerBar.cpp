@@ -9,7 +9,7 @@ enum {
 	BTN_PLAYPAUSE,
 	BTN_STOP,
 	CMN_PROGRESS,
-	BTN_MUTE,
+	BTN_AUDIO,
 	CMN_VOLUMN
 };
 
@@ -43,6 +43,8 @@ BOOL CPlayerBar::Create( CWnd* pParentWnd, UINT nID /*= AFX_IDW_CONTROLBAR_FIRST
 	if (!m_cmnVolumn.Create(WS_CHILD|WS_VISIBLE|TBS_HORZ|TBS_TOP|TBS_NOTICKS|TBS_FIXEDLENGTH, CRect(), this, AFX_IDW_PANE_FIRST))
 		return FALSE;
 	m_cmnVolumn.SetThumbLength(VOLUMNCMN_THUMBLENGTH);
+	m_cmnVolumn.SetRange(0, 255);
+	m_cmnVolumn.SetPos(255);
 
 	SetBorders(1, 0, 1, 0);
 	SetSizes(CSize(23, 22), CSize(16, 16));
@@ -50,11 +52,17 @@ BOOL CPlayerBar::Create( CWnd* pParentWnd, UINT nID /*= AFX_IDW_CONTROLBAR_FIRST
 	SetButtonInfo(BTN_PLAYPAUSE, ID_CTRL_PLAYPAUSE, TBBS_BUTTON, 0);
 	SetButtonInfo(BTN_STOP, ID_CTRL_STOP, TBBS_BUTTON, 2);
 	SetButtonInfo(CMN_PROGRESS, ID_SEPARATOR, TBBS_SEPARATOR, -1);
-	SetButtonInfo(BTN_MUTE, ID_CTRL_MUTE, TBBS_BUTTON, 12);
+	SetButtonInfo(BTN_AUDIO, ID_CTRL_AUDIO, TBBS_BUTTON, 12);
 	SetButtonInfo(CMN_VOLUMN, ID_SEPARATOR, TBBS_SEPARATOR, -1);
 	m_bCreated = true;
 
 	return TRUE;
+}
+
+void CPlayerBar::SwitchPlaypause( bool bPaused )
+{
+	SetButtonInfo(BTN_PLAYPAUSE, ID_CTRL_PLAYPAUSE, TBBS_BUTTON, bPaused ? 1 : 0);
+	RedrawWindow();
 }
 
 void CPlayerBar::EnableProgress( BOOL bEnable )
@@ -77,8 +85,14 @@ void CPlayerBar::UpdateAvailable( int iEarliest, int iLastest )
 	m_cmnPorgress.SetSelection(iEarliest, iLastest);
 }
 
+void CPlayerBar::UpdateVolume( BYTE nVolume )
+{
+	m_cmnVolumn.SetPos(nVolume);
+}
+
 BEGIN_MESSAGE_MAP(CPlayerBar, CToolBar)
 	ON_WM_SIZE()
+	//ON_UPDATE_COMMAND_UI(ID_CTRL_PLAYPAUSE, &CPlayerBar::OnUpdateCtrlStop)
 END_MESSAGE_MAP()
 
 // CPlayerBar message handlers
@@ -92,7 +106,7 @@ void CPlayerBar::OnSize(UINT nType, int cx, int cy)
 		CRect rctClient, rctMute, rctCmn;
 		
 		GetClientRect(rctClient);
-		GetItemRect(BTN_MUTE, rctMute);
+		GetItemRect(BTN_AUDIO, rctMute);
 		GetItemRect(CMN_PROGRESS, rctCmn);
 		rctCmn.right = rctClient.right - rctMute.Width() - VOLUMNCMN_WIDTH;
 		SetButtonInfo(CMN_PROGRESS, ID_SEPARATOR, TBBS_SEPARATOR, rctCmn.Width());
@@ -105,6 +119,11 @@ void CPlayerBar::OnSize(UINT nType, int cx, int cy)
 		GetItemRect(CMN_VOLUMN, rctCmn);
 		m_cmnVolumn.SetWindowPos(NULL, rctCmn.left, rctCmn.top, rctCmn.Width(), rctCmn.Height(), SWP_NOZORDER);
 	}
+}
+
+void CPlayerBar::OnUpdateCtrlStop( CCmdUI *pCmdUI )
+{
+	//pCmdUI->SetCheck(0);
 }
 
 

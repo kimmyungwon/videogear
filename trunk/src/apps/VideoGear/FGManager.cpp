@@ -160,6 +160,7 @@ HRESULT CFGManager::RenderFile( LPCWSTR pszFile )
 	/* ·µ»Ø */
 	if (SUCCEEDED(hr))
 	{
+		m_pGraph.QueryInterface(&m_pBA);
 		// äÖÈ¾³É¹¦
 		SetState(STATE_STOPPED);
 		DumpGraph(m_pGraph, 0);
@@ -245,6 +246,16 @@ HRESULT CFGManager::SetPosition( int nPosition )
 	}
 	else
 		return E_FAIL;	
+}
+
+HRESULT CFGManager::GetVolume( BYTE &nVolume )
+{
+	long lVol;
+	RIF(m_pBA->get_Volume(&lVol));
+	lVol /= 100;
+	lVol = max(-100, min(lVol, 0));
+	nVolume = (BYTE)((255 * lVol + 25500) / 100);
+	return S_OK;
 }
 
 HRESULT CFGManager::Run( void )
@@ -541,6 +552,7 @@ HRESULT CFGManager::ClearGraph( void )
 	if (m_iState == STATE_UNKNOWN)
 		return E_UNEXPECTED;
 	RIF(m_pMC->Stop());
+	m_pBA = NULL;
 	m_rctVideo.SetRectEmpty();
 	m_pVMR9WC = NULL;
 	m_pVMR9Cfg = NULL;
@@ -692,4 +704,5 @@ void CFGManager::SetState( int iNewState )
 	m_iState = iNewState;
 	__raise OnStateChanged(m_iState);
 }
+
 

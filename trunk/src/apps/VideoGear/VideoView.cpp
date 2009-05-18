@@ -45,6 +45,7 @@ void CVideoView::SetItemIndex( UINT nIndex )
 			if (SUCCEEDED(hr))
 			{
 				int iDuration;
+				BYTE nVolume;
 
 				m_pFGMgr->Run();
 				m_nItemIndex = nIndex;
@@ -53,6 +54,8 @@ void CVideoView::SetItemIndex( UINT nIndex )
 				m_pCtrlBar->UpdateDuration(iDuration);
 				m_pCtrlBar->UpdateProgress(0);
 				SetTimer(TIMER_PROGRESS, 200, NULL);
+				m_pFGMgr->GetVolume(nVolume);
+				m_pCtrlBar->UpdateVolume(nVolume);
 			}
 		}
 	}
@@ -60,7 +63,6 @@ void CVideoView::SetItemIndex( UINT nIndex )
 
 void CVideoView::FGManagerStateChanged( int iNewState )
 {
-	
 }
 
 void CVideoView::FGManagerMediaCompleted( void )
@@ -86,6 +88,11 @@ BEGIN_MESSAGE_MAP(CVideoView, CWnd)
 	ON_WM_CREATE()
 	ON_WM_DROPFILES()
 	ON_WM_TIMER()
+	ON_COMMAND(ID_CTRL_PLAYPAUSE, &CVideoView::OnCtrlPlaypause)
+	ON_COMMAND(ID_CTRL_STOP, &CVideoView::OnCtrlStop)
+	ON_UPDATE_COMMAND_UI(ID_CTRL_STOP, &CVideoView::OnUpdateCtrlStop)
+	ON_UPDATE_COMMAND_UI(ID_CTRL_PLAYPAUSE, &CVideoView::OnUpdateCtrlPlaypause)
+	ON_COMMAND(ID_CTRL_AUDIO, &CVideoView::OnCtrlAudio)
 END_MESSAGE_MAP()
 
 int CVideoView::OnCreate(LPCREATESTRUCT lpCreateStruct)
@@ -143,3 +150,42 @@ void CVideoView::OnTimer( UINT_PTR nIDEvent )
 	}
 }
 
+
+void CVideoView::OnCtrlPlaypause()
+{
+	// TODO: Add your command handler code here
+}
+
+void CVideoView::OnUpdateCtrlPlaypause(CCmdUI *pCmdUI)
+{
+	int nState = m_pFGMgr->GetState();
+	if (nState == CFGManager::STATE_RUNNING)
+	{
+		pCmdUI->SetCheck(1);
+		m_pCtrlBar->SwitchPlaypause(true);
+	}
+	else
+	{
+		pCmdUI->SetCheck(0);
+		m_pCtrlBar->SwitchPlaypause(false);
+	}
+}
+
+void CVideoView::OnCtrlStop()
+{
+	// TODO: Add your command handler code here
+}
+
+void CVideoView::OnUpdateCtrlStop(CCmdUI *pCmdUI)
+{
+	int nState = m_pFGMgr->GetState();
+	if (nState == CFGManager::STATE_RUNNING)
+		pCmdUI->Enable(TRUE);
+	else
+		pCmdUI->Enable(FALSE);
+}
+
+void CVideoView::OnCtrlAudio()
+{
+	// TODO: Add your command handler code here
+}
