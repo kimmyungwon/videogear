@@ -59,13 +59,20 @@ BOOL CPlayerBar::Create( CWnd* pParentWnd, UINT nID /*= AFX_IDW_CONTROLBAR_FIRST
 	return TRUE;
 }
 
-void CPlayerBar::SwitchPlaypause( bool bPaused )
+void CPlayerBar::SwitchPlaypause( bool bDoPause )
 {
-	SetButtonInfo(BTN_PLAYPAUSE, ID_CTRL_PLAYPAUSE, TBBS_BUTTON, bPaused ? 1 : 0);
-	RedrawWindow();
+	SetButtonInfo(BTN_PLAYPAUSE, ID_CTRL_PLAYPAUSE, TBBS_BUTTON, bDoPause ? 1 : 0);
 }
 
-void CPlayerBar::EnableProgress( BOOL bEnable )
+void CPlayerBar::EnableStop( bool bEnable )
+{
+	if (bEnable)
+		SetButtonStyle(BTN_STOP, TBBS_BUTTON);
+	else
+		SetButtonStyle(BTN_STOP, TBBS_DISABLED);
+}
+
+void CPlayerBar::EnableProgress( bool bEnable )
 {
 	m_cmnPorgress.EnableWindow(bEnable);
 }
@@ -90,9 +97,13 @@ void CPlayerBar::UpdateVolume( BYTE nVolume )
 	m_cmnVolumn.SetPos(nVolume);
 }
 
+void CPlayerBar::OnUpdateCmdUI( CFrameWnd* pTarget, BOOL bDisableIfNoHndler )
+{
+	CToolBar::OnUpdateCmdUI(pTarget, FALSE);
+}
+
 BEGIN_MESSAGE_MAP(CPlayerBar, CToolBar)
 	ON_WM_SIZE()
-	//ON_UPDATE_COMMAND_UI(ID_CTRL_PLAYPAUSE, &CPlayerBar::OnUpdateCtrlStop)
 END_MESSAGE_MAP()
 
 // CPlayerBar message handlers
@@ -119,11 +130,6 @@ void CPlayerBar::OnSize(UINT nType, int cx, int cy)
 		GetItemRect(CMN_VOLUMN, rctCmn);
 		m_cmnVolumn.SetWindowPos(NULL, rctCmn.left, rctCmn.top, rctCmn.Width(), rctCmn.Height(), SWP_NOZORDER);
 	}
-}
-
-void CPlayerBar::OnUpdateCtrlStop( CCmdUI *pCmdUI )
-{
-	//pCmdUI->SetCheck(0);
 }
 
 

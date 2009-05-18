@@ -16,10 +16,9 @@
 // CVideoView
 
 CVideoView::CVideoView()
-: m_nItemIndex(INVALID_ITEM_INDEX)
-{m_pFGMgr = new CFGManager;
-	__hook(&CFGManager::OnStateChanged, m_pFGMgr, &CVideoView::FGManagerStateChanged);
-	__hook(&CFGManager::OnMediaCompleted, m_pFGMgr, &CVideoView::FGManagerMediaCompleted);
+: m_pFGMgr(NULL), m_nItemIndex(INVALID_ITEM_INDEX)
+{
+	
 }
 
 CVideoView::~CVideoView()
@@ -63,6 +62,29 @@ void CVideoView::SetItemIndex( UINT nIndex )
 
 void CVideoView::FGManagerStateChanged( int iNewState )
 {
+	CMenu *pmnCtrl = AfxGetMainWnd()->GetMenu()->GetSubMenu(1);
+	switch (iNewState)
+	{
+	case CFGManager::STATE_IDLE:
+	case CFGManager::STATE_STOPPED:
+		pmnCtrl->CheckMenuItem(ID_CTRL_PLAYPAUSE, MF_UNCHECKED);
+		m_pCtrlBar->SwitchPlaypause(false);
+		pmnCtrl->EnableMenuItem(ID_CTRL_STOP, MF_DISABLED|MF_GRAYED);
+		m_pCtrlBar->EnableStop(false);
+		break;
+	case CFGManager::STATE_RUNNING:
+		pmnCtrl->CheckMenuItem(ID_CTRL_PLAYPAUSE, MF_CHECKED);
+		m_pCtrlBar->SwitchPlaypause(true);
+		pmnCtrl->EnableMenuItem(ID_CTRL_STOP, MF_ENABLED);
+		m_pCtrlBar->EnableStop(true);
+		break;
+	case CFGManager::STATE_PAUSED:
+		pmnCtrl->CheckMenuItem(ID_CTRL_PLAYPAUSE, MF_UNCHECKED);
+		m_pCtrlBar->SwitchPlaypause(false);
+		pmnCtrl->EnableMenuItem(ID_CTRL_STOP, MF_ENABLED);
+		m_pCtrlBar->EnableStop(true);
+		break;
+	}
 }
 
 void CVideoView::FGManagerMediaCompleted( void )
@@ -90,8 +112,6 @@ BEGIN_MESSAGE_MAP(CVideoView, CWnd)
 	ON_WM_TIMER()
 	ON_COMMAND(ID_CTRL_PLAYPAUSE, &CVideoView::OnCtrlPlaypause)
 	ON_COMMAND(ID_CTRL_STOP, &CVideoView::OnCtrlStop)
-	ON_UPDATE_COMMAND_UI(ID_CTRL_STOP, &CVideoView::OnUpdateCtrlStop)
-	ON_UPDATE_COMMAND_UI(ID_CTRL_PLAYPAUSE, &CVideoView::OnUpdateCtrlPlaypause)
 	ON_COMMAND(ID_CTRL_AUDIO, &CVideoView::OnCtrlAudio)
 END_MESSAGE_MAP()
 
@@ -100,6 +120,9 @@ int CVideoView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (CWnd::OnCreate(lpCreateStruct) == -1)
 		return -1;
 
+	m_pFGMgr = new CFGManager;
+	__hook(&CFGManager::OnStateChanged, m_pFGMgr, &CVideoView::FGManagerStateChanged);
+	__hook(&CFGManager::OnMediaCompleted, m_pFGMgr, &CVideoView::FGManagerMediaCompleted);
 	if (FAILED(m_pFGMgr->Initialize(this)))
 		return -1;
 
@@ -153,36 +176,16 @@ void CVideoView::OnTimer( UINT_PTR nIDEvent )
 
 void CVideoView::OnCtrlPlaypause()
 {
-	// TODO: Add your command handler code here
-}
-
-void CVideoView::OnUpdateCtrlPlaypause(CCmdUI *pCmdUI)
-{
-	int nState = m_pFGMgr->GetState();
-	if (nState == CFGManager::STATE_RUNNING)
-	{
-		pCmdUI->SetCheck(1);
-		m_pCtrlBar->SwitchPlaypause(true);
-	}
-	else
-	{
-		pCmdUI->SetCheck(0);
-		m_pCtrlBar->SwitchPlaypause(false);
-	}
+	int iState = m_pFGMgr->GetState();
+	if (iState == CFGManager::STATE_STOPPED || iState == CFGManager::STATE_PAUSED)
+		m_pFGMgr->Run();
+	else if (iState == CFGManager::STATE_RUNNING)
+		m_pFGMgr->Pause();
 }
 
 void CVideoView::OnCtrlStop()
 {
-	// TODO: Add your command handler code here
-}
-
-void CVideoView::OnUpdateCtrlStop(CCmdUI *pCmdUI)
-{
-	int nState = m_pFGMgr->GetState();
-	if (nState == CFGManager::STATE_RUNNING)
-		pCmdUI->Enable(TRUE);
-	else
-		pCmdUI->Enable(FALSE);
+	m_pFGMgr->Stop();
 }
 
 void CVideoView::OnCtrlAudio()

@@ -25,6 +25,7 @@ END_MESSAGE_MAP()
 
 CMainFrame::CMainFrame()
 {
+	m_bAutoMenuEnable = FALSE;
 }
 
 CMainFrame::~CMainFrame()
@@ -36,6 +37,13 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (CFrameWnd::OnCreate(lpCreateStruct) == -1)
 		return -1;
 
+	if (!m_barControl.Create(this))
+	{
+		TRACE0("未能创建控制条\n");
+		return -1;
+	}
+	m_wndView.m_pCtrlBar = &m_barControl;
+	
 	// 创建一个视图以占用框架的工作区
 	if (!m_wndView.Create(NULL, NULL, AFX_WS_DEFAULT_VIEW,
 		CRect(0, 0, 0, 0), this, AFX_IDW_PANE_FIRST, NULL))
@@ -43,13 +51,6 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		TRACE0("未能创建视图窗口\n");
 		return -1;
 	}
-
-	if (!m_barControl.Create(this))
-	{
-		TRACE0("未能创建控制条\n");
-		return -1;
-	}
-	m_wndView.m_pCtrlBar = &m_barControl;
 
 	return 0;
 }

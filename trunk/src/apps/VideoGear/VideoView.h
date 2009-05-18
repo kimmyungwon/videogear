@@ -31,9 +31,7 @@ protected:
 	afx_msg void OnDropFiles(HDROP hDropInfo);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnCtrlPlaypause();
-	afx_msg void OnUpdateCtrlPlaypause(CCmdUI *pCmdUI);
 	afx_msg void OnCtrlStop();
-	afx_msg void OnUpdateCtrlStop(CCmdUI *pCmdUI);
 	afx_msg void OnCtrlAudio();
 };
 

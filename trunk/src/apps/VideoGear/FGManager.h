@@ -12,7 +12,8 @@ public:
 		STATE_UNKNOWN = -1,
 		STATE_IDLE,
 		STATE_STOPPED,
-		STATE_RUNNING
+		STATE_RUNNING,
+		STATE_PAUSED
 	};
 
 	CFGManager(void);
@@ -35,6 +36,8 @@ public:
 	HRESULT GetVolume(BYTE &nVolume);
 	// 开始播放
 	HRESULT Run(void);
+	// 暂停播放
+	HRESULT Pause(void);
 	// 停止播放
 	HRESULT Stop(void);
 public:

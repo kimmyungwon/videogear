@@ -266,11 +266,30 @@ HRESULT CFGManager::Run( void )
 	{
 	case STATE_STOPPED:
 		AdjustVideoPosition();
+	case STATE_PAUSED:
 		hr = m_pMC->Run();
 		if (SUCCEEDED(hr))
 			SetState(STATE_RUNNING);
 		return hr;
 	case STATE_RUNNING:
+		return S_FALSE;
+	default:
+		return E_FAIL;
+	}
+}
+
+HRESULT CFGManager::Pause( void )
+{
+	HRESULT hr;;
+	
+	switch (m_iState)
+	{
+	case STATE_RUNNING:
+		hr = m_pMC->Pause();
+		if (SUCCEEDED(hr))
+			SetState(STATE_PAUSED);
+		return hr;
+	case STATE_PAUSED:
 		return S_FALSE;
 	default:
 		return E_FAIL;
@@ -286,6 +305,7 @@ HRESULT CFGManager::Stop( void )
 	case STATE_STOPPED:
 		return S_FALSE;
 	case STATE_RUNNING:
+	case STATE_PAUSED:
 		hr = m_pMC->Stop();
 		if (SUCCEEDED(hr))
 		{
@@ -704,5 +724,6 @@ void CFGManager::SetState( int iNewState )
 	m_iState = iNewState;
 	__raise OnStateChanged(m_iState);
 }
+
 
 
