@@ -19,7 +19,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			ConfigurationType="1"
-			InheritedPropertySheets="..\..\common.vsprops"
+			InheritedPropertySheets="..\..\common.vsprops;..\..\debug.vsprops"
 			UseOfMFC="1"
 			CharacterSet="1"
 			>
@@ -97,7 +97,7 @@
 		<Configuration
 			Name="Release|Win32"
 			ConfigurationType="1"
-			InheritedPropertySheets="..\..\common.vsprops"
+			InheritedPropertySheets="..\..\common.vsprops;..\..\release.vsprops"
 			UseOfMFC="1"
 			CharacterSet="1"
 			WholeProgramOptimization="1"

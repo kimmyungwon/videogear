@@ -1,14 +1,16 @@
 #include "StdAfx.h"
 #include "VideoGear.h"
 #include "FilterManager.h"
+#include "DSUtil.h"
 #include "..\..\filters\parser\avisplitter\AviSplitter.h"
 #include "..\..\filters\parser\matroskasplitter\MatroskaSplitter.h"
 #include "..\..\filters\parser\realmediasplitter\RealMediaSplitter.h"
+#include "..\..\filters\parser\mpegsplitter\MpegSplitter.h"
 #include "..\..\filters\transform\mpcvideodec\MPCVideoDecFilter.h"
+#include "..\..\filters\transform\mpeg2decfilter\Mpeg2DecFilter.h"
 #include "..\..\filters\transform\mpadecfilter\MpaDecFilter.h"
 #include "..\..\filters\switcher\audioswitcher\AudioSwitcher.h"
 #include "DbgUtil.h"
-#include "DSUtil.h"
 
 namespace std
 {
@@ -54,7 +56,8 @@ namespace AVI
 
 	const InternalFilterSetupInfo sudFilters[] =
 	{
-		{&__uuidof(CAviSplitterFilter), L"MPC - Avi Splitter", CreateInstance<CAviSplitterFilter>, _countof(sudpPins), sudpPins}
+		{&__uuidof(CAviSplitterFilter), L"MPC - Avi Splitter", CreateInstance<CAviSplitterFilter>, _countof(sudpPins), sudpPins},
+		{&__uuidof(CAviSourceFilter), L"MPC - Avi Source", CreateInstance<CAviSourceFilter>, 0, NULL},
 	};
 }
 
@@ -75,6 +78,7 @@ namespace MKV
 	const InternalFilterSetupInfo sudFilters[] =
 	{
 		{&__uuidof(CMatroskaSplitterFilter), L"MPC - Matroska Splitter", CreateInstance<CMatroskaSplitterFilter>, _countof(sudpPins), sudpPins},
+		{&__uuidof(CMatroskaSourceFilter), L"MPC - Matroska Source", CreateInstance<CMatroskaSourceFilter>, 0, NULL}
 	};
 }
 
@@ -137,6 +141,7 @@ namespace RMDec
 	const InternalFilterSetupInfo sudFilters[] =
 	{
 		{&__uuidof(CRealMediaSplitterFilter), L"MPC - RealMedia Splitter", CreateInstance<CRealMediaSplitterFilter>, _countof(sudpPins), sudpPins},
+		{&__uuidof(CRealMediaSourceFilter), L"MPC - RealMedia Source", CreateInstance<CRealMediaSourceFilter>, 0, NULL},
 		{&__uuidof(CRealVideoDecoder), L"MPC - RealVideo Decoder", CreateInstance<CRealVideoDecoder>, _countof(sudpPins2), sudpPins2},
 		{&__uuidof(CRealAudioDecoder), L"MPC - RealAudio Decoder", CreateInstance<CRealAudioDecoder>, _countof(sudpPins3), sudpPins3}
 	};
@@ -265,8 +270,15 @@ CFilterManager::CFilterManager(void)
 {
 	/* 内部滤镜 */
 	RegisterInternalFilter(_countof(AVI::sudFilters), AVI::sudFilters);
+	RegisterInternalSource(__uuidof(CAviSourceFilter), 
+		L"0,4,,52494646,8,4,,41564920",	// 'RIFF' ... 'AVI '
+		L"0,4,,52494646,8,4,,41564958",	// 'RIFF' ... 'AVIX'
+		L"0,4,,52494646,8,4,,414D5620", // 'RIFF' ... 'AMV '
+		NULL, L".avi", L".divx", L".vp6", L".amv", NULL);
 	RegisterInternalFilter(_countof(MKV::sudFilters), MKV::sudFilters);
+	RegisterInternalSource(__uuidof(CMatroskaSourceFilter), L"0,4,,1A45DFA3", NULL, L".mkv", L".mka", L".mks", NULL);
 	RegisterInternalFilter(_countof(RMDec::sudFilters), RMDec::sudFilters);
+	RegisterInternalSource(__uuidof(CRealMediaSourceFilter), L"0,4,,2E524D46", NULL, L".rm", L".rmvb", L".ram", NULL);
 	RegisterInternalFilter(_countof(VideoDec::sudFilters), VideoDec::sudFilters);
 	RegisterInternalFilter(_countof(AudioDec::sudFilters), AudioDec::sudFilters);
 	RegisterInternalFilter(_countof(AudioSw::sudFilters), AudioSw::sudFilters, true);
@@ -287,12 +299,12 @@ void CFilterManager::EnumMatchingFilters( const CAtlList<CMediaType>& mts, Match
 	while (posMT != NULL)
 	{
 		const CMediaType &mt = mts.GetNext(posMT);
-		MajorTypes::iterator itMajor = m_InternalMajorTypes.find(mt.majortype);
+		FilterMajorTypes::iterator itMajor = m_InternalMajorTypes.find(mt.majortype);
 		if (itMajor == m_InternalMajorTypes.end())
 			continue;
 		/* 精确匹配 */
-		std::pair<MinorTypes::const_iterator, MinorTypes::const_iterator> pii = itMajor->second.equal_range(mt.subtype);
-		for (MinorTypes::const_iterator itMinor = pii.first; itMinor != pii.second; itMinor++)
+		std::pair<FilterMinorTypes::const_iterator, FilterMinorTypes::const_iterator> pii = itMajor->second.equal_range(mt.subtype);
+		for (FilterMinorTypes::const_iterator itMinor = pii.first; itMinor != pii.second; itMinor++)
 		{
 			CFilter *pFilter = itMinor->second;
 			filters.insert(MatchedFilter(pFilter, nPriority));
@@ -338,6 +350,31 @@ HRESULT CFilterManager::RegisterInternalFilter( UINT nFilterCount, const Interna
 			}
 		}		
 	}
+	return S_OK;
+}
+
+HRESULT CFilterManager::RegisterInternalSource( const CLSID &clsID, LPCWSTR pszSigns /*= NULL*/, LPCWSTR pszExts /*= NULL*/, ... )
+{
+	CFilter *pFilter;
+	va_list args;
+
+	FilterList::iterator it = m_InternalFilters.find(clsID);
+	if (it == m_InternalFilters.end())
+		return E_INVALIDARG;
+	pFilter = it->second;
+	va_start(args, pszSigns);
+	while (pszSigns != NULL)
+	{
+		XTRACE(L"CheckBytes: %s\n", pszSigns);
+		m_InternalCheckBytes.insert(std::make_pair(MediaSignature(pszSigns), pFilter));
+		pszSigns = va_arg(args, LPCWSTR);
+	}
+	while (pszExts = va_arg(args, LPCWSTR))
+	{
+		XTRACE(L"Extension: %s\n", pszExts);
+		m_InternalExtensions.insert(std::make_pair(CStringW(pszExts).MakeLower(), pFilter));
+	}
+	va_end(args);
 	return S_OK;
 }
 
@@ -504,4 +541,3 @@ HRESULT CFilterManager::DecodeFilterData( BYTE* pData, DWORD cbData, RegisterFil
 
 #undef ChkLen
 }
-

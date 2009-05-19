@@ -43,3 +43,21 @@ bool IsPinDir(IPin *pPin, PIN_DIRECTION dir)
 
 	return SUCCEEDED(pPin->QueryDirection(&pinDir)) && pinDir == dir;
 }
+
+void CStringToBin(const CStringW &str, CStringA &bytes)
+{
+	ASSERT(str.GetLength() % 2 == 0);
+
+	LPCWSTR pszSrc = str;
+	wchar_t szNum[3];
+	char cVal;
+
+	bytes.Empty();
+	while (*pszSrc != 0)
+	{
+		wcsncpy_s(szNum, _countof(szNum), pszSrc, 2);
+		cVal = (char)wcstol(szNum, NULL, 16);
+		bytes += cVal;
+		pszSrc += 2;
+	}
+}

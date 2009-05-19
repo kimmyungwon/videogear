@@ -9,6 +9,7 @@
 	<Tool
 		Name="VCCLCompilerTool"
 		AdditionalIncludeDirectories="&quot;$(SolutionDir)..\inc&quot;;&quot;$(SolutionDir)filters\BaseClasses&quot;"
+		PreprocessorDefinitions="WINVER=0x0502"
 	/>
 	<Tool
 		Name="VCLinkerTool"
