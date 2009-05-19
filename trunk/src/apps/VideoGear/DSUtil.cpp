@@ -44,7 +44,7 @@ bool IsPinDir(IPin *pPin, PIN_DIRECTION dir)
 	return SUCCEEDED(pPin->QueryDirection(&pinDir)) && pinDir == dir;
 }
 
-void CStringToBin(const CStringW &str, CStringA &bytes)
+void CStringToBin(const CStringW &str, std::string &bytes)
 {
 	ASSERT(str.GetLength() % 2 == 0);
 
@@ -52,7 +52,7 @@ void CStringToBin(const CStringW &str, CStringA &bytes)
 	wchar_t szNum[3];
 	char cVal;
 
-	bytes.Empty();
+	bytes.clear();
 	while (*pszSrc != 0)
 	{
 		wcsncpy_s(szNum, _countof(szNum), pszSrc, 2);

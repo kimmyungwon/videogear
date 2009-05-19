@@ -58,6 +58,7 @@ class CFilterManager
 public:
 	CFilterManager(void);
 	virtual ~CFilterManager(void);
+	void EnumMatchingSources(CFile &file, MatchedFilters &filters);
 	void EnumMatchingFilters(const CAtlList<CMediaType> &mts, MatchedFilters &filters);
 	HRESULT AddAudioSwitcherToGraph(IFilterGraph *pGraph, IBaseFilter **ppvObj);
 protected:

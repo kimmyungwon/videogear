@@ -183,7 +183,6 @@ HRESULT CFGManager::GetDuration( int &nDuration )
 
 		RIF(m_pMS->GetDuration(&llDuration));
 		nDuration = (int)(llDuration / RTimePerMSec);
-		XTRACE(L"GetDuration() = %dms\n", nDuration);
 		return S_OK;
 	}
 	else
@@ -215,7 +214,6 @@ HRESULT CFGManager::GetPosition( int &nPosition )
 		RIF(m_pMS->GetRate(&dRate));
 		RIF(m_pMS->GetCurrentPosition(&llPosition));
 		nPosition = (int)(llPosition / RTimePerMSec);
-		XTRACE(L"GetPosition() = %dms\n", nPosition);
 		return S_OK;
 	}
 	else
@@ -321,11 +319,46 @@ HRESULT CFGManager::Stop( void )
 
 HRESULT CFGManager::AddSourceFilter( LPCWSTR pszFile, IBaseFilter **ppFilter )
 {
+	WCHAR szProto[URL_SCHEME_MAXVALUE];
+	DWORD cchProto = _countof(szProto);
 	HRESULT hr;
 	CComPtr<IFileSourceFilter> pFileSource;
 
 	if (ppFilter == NULL)
 		return E_POINTER;
+	if (SUCCEEDED(UrlGetPartW(pszFile, szProto, &cchProto, URL_PART_SCHEME, 0))
+		&& (*szProto == 0 || _wcsicmp(szProto, L"FILE") == 0))
+	{
+		WCHAR szPath[MAX_PATH];
+		DWORD cchPath = _countof(szPath);
+		CFile file;
+		MatchedFilters filters;
+
+		if (SUCCEEDED(PathCreateFromUrlW(pszFile, szPath, &cchPath, 0)))
+			pszFile = szPath;
+		if (file.Open(pszFile, CFile::modeRead|CFile::shareDenyNone))
+		{
+			g_FilterMgr.EnumMatchingSources(file, filters);
+			for (MatchedFilters::iterator itFilter = filters.begin(); itFilter != filters.end(); itFilter++)
+			{
+				if (FAILED(itFilter->pFilter->CreateInstance(NULL, ppFilter)))
+					continue;
+				if (SUCCEEDED(hr = (*ppFilter)->QueryInterface(IID_IFileSourceFilter, (LPVOID*)&pFileSource))
+					&& SUCCEEDED(hr = pFileSource->Load(pszFile, NULL))
+					&& SUCCEEDED(hr = m_pGraph->AddFilter(*ppFilter, pszFile)))
+				{
+					return S_OK;
+				}
+				else
+				{
+					pFileSource = NULL;
+					(*ppFilter)->Release();
+					*ppFilter = NULL;
+				}
+			}
+		}
+	}
+
 	RIF(CoCreateInstance(CLSID_AsyncReader, NULL, CLSCTX_ALL, IID_IBaseFilter, (LPVOID*)ppFilter));
 	if (SUCCEEDED(hr = (*ppFilter)->QueryInterface(IID_IFileSourceFilter, (LPVOID*)&pFileSource))
 		&& SUCCEEDED(hr = pFileSource->Load(pszFile, NULL))
@@ -334,7 +367,11 @@ HRESULT CFGManager::AddSourceFilter( LPCWSTR pszFile, IBaseFilter **ppFilter )
 		return S_FALSE;
 	}
 	else
+	{
+		(*ppFilter)->Release();
+		*ppFilter = NULL;
 		return hr;
+	}
 }
 
 HRESULT CFGManager::SplitSource( IBaseFilter *pSource, IBaseFilter **ppFilter )

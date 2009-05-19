@@ -292,6 +292,37 @@ CFilterManager::~CFilterManager(void)
 	m_SystemFilters.clear();
 }
 
+void CFilterManager::EnumMatchingSources( CFile &file, MatchedFilters &filters )
+{
+	for (SourceCheckBytes::const_iterator it = m_InternalCheckBytes.begin(); it != m_InternalCheckBytes.end(); it++)
+	{
+		bool bMatched = true;
+
+		for (std::vector<CheckBytes>::const_iterator itSign = it->first.signs.begin(); itSign != it->first.signs.end(); itSign++)
+		{
+			const CheckBytes &chkBytes = *itSign;
+			CAutoVectorPtr<char> szBuf;
+
+			szBuf.Allocate(chkBytes.strSign.size());
+			file.Seek(chkBytes.llOffset, chkBytes.llOffset >= 0 ? CFile::begin : CFile::end);
+			if (file.Read(szBuf.m_p, chkBytes.strSign.size()) != chkBytes.strSign.size())
+			{
+				bMatched = false;
+				break;
+			}
+			if (memcmp(szBuf.m_p, chkBytes.strSign.c_str(), chkBytes.strSign.size()) != 0)
+			{
+				bMatched = false;
+				break;
+			}
+		}
+		if (bMatched)
+		{
+			filters.insert(MatchedFilter(it->second, 0));
+		}
+	}
+}
+
 void CFilterManager::EnumMatchingFilters( const CAtlList<CMediaType>& mts, MatchedFilters& filters )
 {
 	UINT nPriority = 0;
@@ -541,3 +572,4 @@ HRESULT CFilterManager::DecodeFilterData( BYTE* pData, DWORD cbData, RegisterFil
 
 #undef ChkLen
 }
+

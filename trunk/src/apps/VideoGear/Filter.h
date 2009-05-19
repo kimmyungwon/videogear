@@ -23,7 +23,7 @@ struct CheckBytes
 {
 	LONGLONG llOffset;
 	LONGLONG llLength;
-	CStringA strSign;
+	std::string strSign;
 };
 
 struct MediaSignature
