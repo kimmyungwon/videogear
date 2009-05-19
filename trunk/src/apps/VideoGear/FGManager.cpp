@@ -311,6 +311,7 @@ HRESULT CFGManager::Stop( void )
 			m_pMS->SetPositions(&llPos, AM_SEEKING_AbsolutePositioning, NULL, AM_SEEKING_NoPositioning);
 			SetState(STATE_STOPPED);
 		}
+		m_pVidWnd->RedrawWindow();
 		return hr;
 	default:
 		return E_FAIL;
@@ -345,7 +346,7 @@ HRESULT CFGManager::AddSourceFilter( LPCWSTR pszFile, IBaseFilter **ppFilter )
 					continue;
 				if (SUCCEEDED(hr = (*ppFilter)->QueryInterface(IID_IFileSourceFilter, (LPVOID*)&pFileSource))
 					&& SUCCEEDED(hr = pFileSource->Load(pszFile, NULL))
-					&& SUCCEEDED(hr = m_pGraph->AddFilter(*ppFilter, pszFile)))
+					&& SUCCEEDED(hr = m_pGraph->AddFilter(*ppFilter, itFilter->pFilter->GetName())))
 				{
 					return S_OK;
 				}

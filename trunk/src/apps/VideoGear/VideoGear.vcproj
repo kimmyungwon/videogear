@@ -19,7 +19,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			ConfigurationType="1"
-			InheritedPropertySheets="..\..\common.vsprops;..\..\debug.vsprops"
+			InheritedPropertySheets="..\..\common.vsprops"
 			UseOfMFC="1"
 			CharacterSet="1"
 			>
@@ -66,7 +66,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="strmiids.lib winmm.lib d3d9.lib gdiplus.lib strmbaseDU.lib libvorbisidecD.lib decssDU.lib basesplitterDU.lib AviSplitterDU.lib MatroskaSplitterDU.lib RealMediaSplitterDU.lib MPCVideoDecDU.lib MpaDecFilterDU.lib audioswitcherDU.lib"
+				AdditionalDependencies="strmiids.lib winmm.lib d3d9.lib gdiplus.lib strmbaseDU.lib libvorbisidecD.lib decssDU.lib basesplitterDU.lib AviSplitterDU.lib MatroskaSplitterDU.lib RealMediaSplitterDU.lib FLVSplitterDU.lib MP4SplitterDU.lib MPCVideoDecDU.lib MpaDecFilterDU.lib audioswitcherDU.lib"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -97,7 +97,7 @@
 		<Configuration
 			Name="Release|Win32"
 			ConfigurationType="1"
-			InheritedPropertySheets="..\..\common.vsprops;..\..\release.vsprops"
+			InheritedPropertySheets="..\..\common.vsprops"
 			UseOfMFC="1"
 			CharacterSet="1"
 			WholeProgramOptimization="1"

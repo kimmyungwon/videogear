@@ -5,9 +5,9 @@
 #include "..\..\filters\parser\avisplitter\AviSplitter.h"
 #include "..\..\filters\parser\matroskasplitter\MatroskaSplitter.h"
 #include "..\..\filters\parser\realmediasplitter\RealMediaSplitter.h"
-#include "..\..\filters\parser\mpegsplitter\MpegSplitter.h"
+#include "..\..\filters\parser\flvsplitter\FLVSplitter.h"
+#include "..\..\filters\parser\mp4splitter\MP4Splitter.h"
 #include "..\..\filters\transform\mpcvideodec\MPCVideoDecFilter.h"
-#include "..\..\filters\transform\mpeg2decfilter\Mpeg2DecFilter.h"
 #include "..\..\filters\transform\mpadecfilter\MpaDecFilter.h"
 #include "..\..\filters\switcher\audioswitcher\AudioSwitcher.h"
 #include "DbgUtil.h"
@@ -147,6 +147,55 @@ namespace RMDec
 	};
 }
 
+namespace FLV
+{
+	const AMOVIESETUP_MEDIATYPE sudPinTypesIn[] =
+	{
+		{&MEDIATYPE_Stream, &MEDIASUBTYPE_FLV},
+		{&MEDIATYPE_Stream, &MEDIASUBTYPE_NULL},
+	};
+
+	const AMOVIESETUP_PIN sudpPins[] =
+	{
+		{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, _countof(sudPinTypesIn), sudPinTypesIn},
+		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, 0, NULL}
+	};
+
+	const AMOVIESETUP_MEDIATYPE sudPinTypesOut2[] =
+	{
+		{&MEDIATYPE_Video, &MEDIASUBTYPE_NULL},
+	};
+
+	const InternalFilterSetupInfo sudFilters[] =
+	{
+		{&__uuidof(CFLVSplitterFilter), L"MPC - FLV Splitter", CreateInstance<CFLVSplitterFilter>, _countof(sudpPins), sudpPins},
+		{&__uuidof(CFLVSourceFilter), L"MPC - FLV Source", CreateInstance<CFLVSourceFilter>, 0, NULL},
+	};
+}
+
+namespace MP4
+{
+	const AMOVIESETUP_MEDIATYPE sudPinTypesIn[] =
+	{
+		{&MEDIATYPE_Stream, &MEDIASUBTYPE_MP4},
+		{&MEDIATYPE_Stream, &MEDIASUBTYPE_NULL},
+	};
+
+	const AMOVIESETUP_PIN sudpPins[] =
+	{
+		{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, _countof(sudPinTypesIn), sudPinTypesIn},
+		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, 0, NULL}
+	};
+
+	const InternalFilterSetupInfo sudFilters[] =
+	{
+		{&__uuidof(CMP4SplitterFilter), L"MPC - MP4 Splitter", CreateInstance<CMP4SplitterFilter>, _countof(sudpPins), sudpPins},
+		{&__uuidof(CMP4SourceFilter), L"MPC - MP4 Source", CreateInstance<CMP4SourceFilter>, 0, NULL},
+		{&__uuidof(CMPEG4VideoSplitterFilter), L"MPC - MPEG4 Video Splitter", CreateInstance<CMPEG4VideoSplitterFilter>, _countof(sudpPins), sudpPins},
+		{&__uuidof(CMPEG4VideoSourceFilter), L"MPC - MPEG4 Video Source", CreateInstance<CMPEG4VideoSourceFilter>, 0, NULL},	
+	};
+}
+
 namespace VideoDec
 {
 	const AMOVIESETUP_PIN sudpPinsVideoDec[] =
@@ -279,6 +328,25 @@ CFilterManager::CFilterManager(void)
 	RegisterInternalSource(__uuidof(CMatroskaSourceFilter), L"0,4,,1A45DFA3", NULL, L".mkv", L".mka", L".mks", NULL);
 	RegisterInternalFilter(_countof(RMDec::sudFilters), RMDec::sudFilters);
 	RegisterInternalSource(__uuidof(CRealMediaSourceFilter), L"0,4,,2E524D46", NULL, L".rm", L".rmvb", L".ram", NULL);
+	RegisterInternalFilter(_countof(FLV::sudFilters), FLV::sudFilters);
+	RegisterInternalSource(__uuidof(CFLVSourceFilter), L"0,4,,464C5601", NULL, NULL);
+	RegisterInternalFilter(_countof(MP4::sudFilters), MP4::sudFilters);
+	RegisterInternalSource(__uuidof(CMP4SourceFilter),
+		L"4,4,,66747970",	// ftyp
+		L"4,4,,6d6f6f76",	// moov
+		L"4,4,,6d646174",	// mdat
+		L"4,4,,736b6970",	// skip
+		L"4,12,ffffffff00000000ffffffff,77696465027fe3706d646174",	// wide ? mdat
+		L"3,3,,000001",
+		NULL, NULL);
+	RegisterInternalSource(__uuidof(CMPEG4VideoSourceFilter),
+		L"4,4,,66747970",	// ftyp
+		L"4,4,,6d6f6f76",	// moov
+		L"4,4,,6d646174",	// mdat
+		L"4,4,,736b6970",	// skip
+		L"4,12,ffffffff00000000ffffffff,77696465027fe3706d646174",	// wide ? mdat
+		L"3,3,,000001",
+		NULL, NULL);
 	RegisterInternalFilter(_countof(VideoDec::sudFilters), VideoDec::sudFilters);
 	RegisterInternalFilter(_countof(AudioDec::sudFilters), AudioDec::sudFilters);
 	RegisterInternalFilter(_countof(AudioSw::sudFilters), AudioSw::sudFilters, true);
