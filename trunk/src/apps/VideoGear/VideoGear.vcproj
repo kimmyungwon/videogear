@@ -66,7 +66,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="strmiids.lib winmm.lib d3d9.lib gdiplus.lib strmbaseDU.lib libvorbisidecD.lib decssDU.lib basesplitterDU.lib AviSplitterDU.lib MatroskaSplitterDU.lib RealMediaSplitterDU.lib FLVSplitterDU.lib MP4SplitterDU.lib MPCVideoDecDU.lib MpaDecFilterDU.lib audioswitcherDU.lib"
+				AdditionalDependencies="strmiids.lib winmm.lib d3d9.lib gdiplus.lib"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -180,6 +180,42 @@
 		</Configuration>
 	</Configurations>
 	<References>
+		<ProjectReference
+			ReferencedProjectIdentifier="{9738B023-FC46-48A2-953A-0035FD897678}"
+			RelativePathToProject=".\filters\parser\avisplitter\AviSplitter.vcproj"
+		/>
+		<ProjectReference
+			ReferencedProjectIdentifier="{3F5EA225-F4B7-4413-AEB3-4E4E5751E438}"
+			RelativePathToProject=".\filters\parser\matroskasplitter\MatroskaSplitter.vcproj"
+		/>
+		<ProjectReference
+			ReferencedProjectIdentifier="{9ED4B036-7399-4128-868D-6E71188E0277}"
+			RelativePathToProject=".\filters\parser\mp4splitter\MP4Splitter.vcproj"
+		/>
+		<ProjectReference
+			ReferencedProjectIdentifier="{4421516D-10A6-41C1-ADF3-099573BBB0C6}"
+			RelativePathToProject=".\filters\transform\mpadecfilter\MpaDecFilter.vcproj"
+		/>
+		<ProjectReference
+			ReferencedProjectIdentifier="{58E36BF5-4A06-47E4-BD40-4CCEF8C634DF}"
+			RelativePathToProject=".\filters\transform\mpcvideodec\MPCVideoDec.vcproj"
+		/>
+		<ProjectReference
+			ReferencedProjectIdentifier="{53CF9195-19DB-457D-8F55-8DB1706DFA84}"
+			RelativePathToProject=".\filters\parser\realmediasplitter\RealMediaSplitter.vcproj"
+		/>
+		<ProjectReference
+			ReferencedProjectIdentifier="{FC70988B-1AE5-4381-866D-4F405E28AC42}"
+			RelativePathToProject=".\dsutil\dsutil.vcproj"
+		/>
+		<ProjectReference
+			ReferencedProjectIdentifier="{D8DB3E7E-D50E-4EC3-A9B9-DAD18F5FE466}"
+			RelativePathToProject=".\filters\switcher\audioswitcher\audioswitcher.vcproj"
+		/>
+		<ProjectReference
+			ReferencedProjectIdentifier="{E62223EF-8263-41EB-8174-CD78BBEEF368}"
+			RelativePathToProject=".\filters\parser\flvsplitter\FLVSplitter.vcproj"
+		/>
 	</References>
 	<Files>
 		<Filter

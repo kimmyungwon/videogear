@@ -1,7 +1,21 @@
-<?xml version="1.0"?>
-<VisualStudioPropertySheet 
-	ProjectType="Visual C++" 
-	Version="8.00" 
+<?xml version="1.0" encoding="gb2312"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
 	Name="debug"
 	>
+	<Tool
+		Name="VCCLCompilerTool"
+		Optimization="0"
+		MinimalRebuild="true"
+		BasicRuntimeChecks="3"
+		RuntimeLibrary="1"
+		EnableFunctionLevelLinking="true"
+		WarningLevel="3"
+		DebugInformationFormat="4"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		GenerateDebugInformation="true"
+	/>
 </VisualStudioPropertySheet>
