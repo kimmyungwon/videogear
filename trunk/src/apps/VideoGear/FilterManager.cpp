@@ -418,6 +418,7 @@ CFilterManager::CFilterManager(void)
 	RegisterInternalFilter(_countof(AudioSw::sudFilters), AudioSw::sudFilters, true);
 	/* 系统滤镜 */
 	RegisterSystemFilters();
+	RegisterSystemSources();
 }
 
 CFilterManager::~CFilterManager(void)
@@ -428,7 +429,13 @@ CFilterManager::~CFilterManager(void)
 
 void CFilterManager::EnumMatchingSources( CFile &file, MatchedFilters &filters )
 {
-	for (SourceCheckBytes::const_iterator it = m_InternalCheckBytes.begin(); it != m_InternalCheckBytes.end(); it++)
+	EnumMatchingSources(m_InternalCheckBytes, 0, file, filters);
+	EnumMatchingSources(m_SystemCheckBytes, 1, file, filters);
+}
+
+void CFilterManager::EnumMatchingSources( SourceCheckBytes &chkBytesList, UINT nBasePriority, CFile &file, MatchedFilters &filters )
+{
+	for (SourceCheckBytes::const_iterator it = chkBytesList.begin(); it != chkBytesList.end(); it++)
 	{
 		bool bMatched = true;
 
@@ -453,9 +460,9 @@ void CFilterManager::EnumMatchingSources( CFile &file, MatchedFilters &filters )
 		}
 		if (bMatched)
 		{
-			filters.insert(MatchedFilter(it->second, 0));
+			filters.insert(MatchedFilter(it->second, nBasePriority));
 		}
-	}
+	}	
 }
 
 void CFilterManager::EnumMatchingFilters( const CAtlList<CMediaType>& mts, MatchedFilters& filters )
@@ -546,7 +553,7 @@ HRESULT CFilterManager::RegisterInternalSource( const CLSID &clsID, LPCWSTR pszS
 
 HRESULT CFilterManager::RegisterSystemFilter( const RegisterFilterSetupInfo& setupInfo, bool bFilterOnly /*= false*/ )
 {
-	if (setupInfo.dwInPins == 0 || setupInfo.dwOutPins == 0)	// 不注册Source和Renderer
+	if (setupInfo.dwInPins != 0 && setupInfo.dwOutPins == 0)
 		return S_FALSE;
 	if (m_InternalFilters.find(setupInfo.clsID) != m_InternalFilters.end()
 		|| m_SystemFilters.find(setupInfo.clsID) != m_SystemFilters.end())	// 不注册重复的滤镜
@@ -629,6 +636,66 @@ next_key:
 	return S_OK;
 }
 
+HRESULT CFilterManager::RegisterSystemSources( void )
+{
+	HKEY hkSources;
+	DWORD dwFilters;
+	WCHAR szSubKey[256];
+	DWORD cchSubKey;
+
+	if (RegOpenKeyExW(HKEY_CLASSES_ROOT, L"Media Type\\{e436eb83-524f-11ce-9f53-0020af0ba770}", 0, 
+		KEY_ENUMERATE_SUB_KEYS|KEY_QUERY_VALUE, &hkSources) != ERROR_SUCCESS)
+		return HRESULT_FROM_WIN32(GetLastError());
+	if (RegQueryInfoKeyW(hkSources, NULL, NULL, NULL, &dwFilters, NULL, NULL, NULL, NULL, NULL, NULL, 
+		NULL) != ERROR_SUCCESS)
+		return HRESULT_FROM_WIN32(GetLastError());
+	for (DWORD i = 0; i < dwFilters; i++, cchSubKey = _countof(szSubKey))
+	{
+		HKEY hkSource;
+		DWORD dwMaxValueLen;
+		CAutoVectorPtr<BYTE> pValue;
+		DWORD cbData;
+		CStringW strCLSID;
+		CLSID clsID;
+		FilterList::iterator itFilter;
+		CFilter *pFilter;
+		
+		if (RegEnumKeyExW(hkSources, i, szSubKey, &cchSubKey, NULL, NULL, NULL, NULL) != ERROR_SUCCESS)
+			break;
+		if (RegOpenKeyExW(hkSources, szSubKey, 0, KEY_QUERY_VALUE, &hkSource) != ERROR_SUCCESS)
+			break;
+		if (RegQueryInfoKeyW(hkSource, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &dwMaxValueLen, NULL, NULL))
+			goto next_key;
+		pValue.Allocate(dwMaxValueLen);
+		// 源滤镜CLSID
+		cbData = dwMaxValueLen;
+		if (RegQueryValueExW(hkSource, L"Source Filter", NULL, NULL, pValue, &cbData) != ERROR_SUCCESS)
+			goto next_key;
+		strCLSID = (WCHAR*)pValue.m_p;
+		clsID = GUIDFromCString(strCLSID);
+		if (clsID == CLSID_AsyncReader || clsID == CLSID_URLReader)
+			goto next_key;
+		itFilter = m_SystemFilters.find(clsID);
+		if (itFilter == m_SystemFilters.end())
+			goto next_key;
+		pFilter = itFilter->second;
+		// 文件标记
+		for (int iIndex = 0; ; iIndex++)
+		{
+			CStringW strValueName;
+
+			strValueName.Format(L"%d", iIndex);
+			cbData = dwMaxValueLen;
+			if (RegQueryValueExW(hkSource, strValueName, NULL, NULL, pValue, &cbData) != ERROR_SUCCESS)
+				break;
+			m_SystemCheckBytes.insert(std::make_pair(MediaSignature((WCHAR*)pValue.m_p), pFilter));
+		}	
+next_key:
+		RegCloseKey(hkSource);
+	}
+	return S_OK;
+}
+
 HRESULT CFilterManager::DecodeFilterData( BYTE* pData, DWORD cbData, RegisterFilterSetupInfo &info )
 {
 	struct Header
@@ -707,4 +774,5 @@ HRESULT CFilterManager::DecodeFilterData( BYTE* pData, DWORD cbData, RegisterFil
 
 #undef ChkLen
 }
+
 

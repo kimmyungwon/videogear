@@ -66,6 +66,7 @@ protected:
 	HRESULT RegisterInternalSource(const CLSID &clsID, LPCWSTR pszSigns = NULL, LPCWSTR pszExts = NULL, ...);
 	HRESULT RegisterSystemFilter(const RegisterFilterSetupInfo& setupInfo, bool bFilterOnly = false);
 	HRESULT RegisterSystemFilters(void);
+	HRESULT RegisterSystemSources(void);
 	HRESULT DecodeFilterData(BYTE* pData, DWORD cbData, RegisterFilterSetupInfo &info);
 private:
 	typedef boost::ptr_map<CLSID, CFilter> FilterList;
@@ -74,10 +75,12 @@ private:
 	typedef std::multimap<CStringW, CFilter*> SourceExtensions;
 	typedef std::multimap<MediaSignature, CFilter*> SourceCheckBytes;
 
+	void EnumMatchingSources(SourceCheckBytes &chkBytesList, UINT nBasePriority, CFile &file, MatchedFilters &filters);
+private:
 	FilterList m_InternalFilters, m_SystemFilters;
 	FilterMajorTypes m_InternalMajorTypes, m_SystemMajorTypes;
 	SourceExtensions m_InternalExtensions;
-	SourceCheckBytes m_InternalCheckBytes;
+	SourceCheckBytes m_InternalCheckBytes, m_SystemCheckBytes;
  };
 
 extern CFilterManager g_FilterMgr;
