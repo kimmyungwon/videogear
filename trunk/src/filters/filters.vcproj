@@ -20,7 +20,7 @@
 	</ToolFiles>
 	<Configurations>
 		<Configuration
-			Name="Debug Unicode lib|Win32"
+			Name="Debug|Win32"
 			ConfigurationType="4"
 			InheritedPropertySheets="..\common.vsprops;..\debug.vsprops"
 			UseOfMFC="1"
@@ -74,11 +74,12 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Release Unicode lib|Win32"
+			Name="Release|Win32"
 			ConfigurationType="4"
 			InheritedPropertySheets="..\common.vsprops;..\release.vsprops"
 			UseOfMFC="1"
 			CharacterSet="1"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -97,7 +98,11 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="true"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
+				DebugInformationFormat="0"
 				DisableSpecificWarnings="4244"
 			/>
 			<Tool
@@ -188,7 +193,7 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Release Unicode lib|x64"
+			Name="Release|x64"
 			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="4"
@@ -269,7 +274,7 @@
 				RelativePath="stdafx.cpp"
 				>
 				<FileConfiguration
-					Name="Debug Unicode lib|Win32"
+					Name="Debug|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -277,7 +282,7 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release Unicode lib|Win32"
+					Name="Release|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -293,7 +298,7 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release Unicode lib|x64"
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"

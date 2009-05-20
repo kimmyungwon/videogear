@@ -25,6 +25,7 @@
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -43,9 +44,13 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="true"
 				AdditionalIncludeDirectories=".,../include, ..\..\..\..\..\..\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				PrecompiledHeaderFile=".\Release\liba52.pch"
+				DebugInformationFormat="0"
 				CompileAs="0"
 				DisableSpecificWarnings="4244"
 			/>
@@ -62,7 +67,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="..\..\..\..\..\..\lib\liba52R.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"

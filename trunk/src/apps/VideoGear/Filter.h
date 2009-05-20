@@ -23,6 +23,7 @@ struct CheckBytes
 {
 	LONGLONG llOffset;
 	LONGLONG llLength;
+	std::string strMask;
 	std::string strSign;
 };
 
@@ -48,11 +49,15 @@ struct MediaSignature
 			CheckBytes sign;
 			CStringW strOff = lst.RemoveHead();
 			CStringW strLen = lst.RemoveHead();
-			lst.RemoveHeadNoReturn();
+			CStringW strMask = lst.RemoveHead();
 			CStringW strBytes = lst.RemoveHead();
 			sign.llOffset = _wcstoi64(strOff, NULL, 10);
 			sign.llLength = _wcstoi64(strLen, NULL, 10);
 			CStringToBin(strBytes, sign.strSign);
+			if (!strMask.IsEmpty())
+				CStringToBin(strMask, sign.strMask);
+			else
+				sign.strMask.resize(sign.strSign.size(), (char)0xFF);
 			signs.push_back(sign);
 		}
 	}

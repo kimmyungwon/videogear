@@ -88,6 +88,7 @@
 			ConfigurationType="4"
 			InheritedPropertySheets="..\..\..\..\..\..\common.vsprops;..\..\..\..\..\..\release.vsprops"
 			CharacterSet="1"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -117,7 +118,7 @@
 				UsePrecompiledHeader="0"
 				WarningLevel="2"
 				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="3"
+				DebugInformationFormat="0"
 				CompileAs="1"
 				DisableSpecificWarnings="4267;4996"
 			/>
@@ -132,7 +133,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="..\..\..\..\..\..\..\lib\libflac.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -298,11 +298,11 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\include\protected\all.h"
+				RelativePath=".\include\private\all.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\private\all.h"
+				RelativePath=".\include\protected\all.h"
 				>
 			</File>
 			<File

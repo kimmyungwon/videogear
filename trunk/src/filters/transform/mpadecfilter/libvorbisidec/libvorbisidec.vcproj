@@ -88,6 +88,7 @@
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -106,11 +107,15 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="true"
 				AdditionalIncludeDirectories=".,  ..\..\..\..\..\include"
 				PreprocessorDefinitions="_LIB;_WIN32;WIN32;NDEBUG"
 				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile=".\Release\libvorbisidec.pch"
 				WarningLevel="1"
+				DebugInformationFormat="0"
 				CompileAs="0"
 				DisableSpecificWarnings="4244"
 			/>
@@ -127,7 +132,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="..\..\..\..\..\lib\libvorbisidecR.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"

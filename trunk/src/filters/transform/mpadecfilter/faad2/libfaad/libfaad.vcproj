@@ -25,6 +25,7 @@
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -44,10 +45,14 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions=""
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="true"
 				AdditionalIncludeDirectories="..\include"
 				PreprocessorDefinitions="NDEBUG;WIN32;_LIB"
 				PrecompiledHeaderFile=".\Release\libfaad.pch"
 				WarningLevel="2"
+				DebugInformationFormat="0"
 				DisableSpecificWarnings="4244"
 			/>
 			<Tool
@@ -64,7 +69,6 @@
 			<Tool
 				Name="VCLibrarianTool"
 				AdditionalOptions=""
-				OutputFile="..\..\..\..\..\..\lib\libfaad2R.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"

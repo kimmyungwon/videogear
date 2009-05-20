@@ -28,6 +28,8 @@
 #include <initguid.h>
 #include <moreuuids.h>
 
+#ifdef REGISTER_FILTER
+
 /////////////////////////////////////////////////////////////////////////////
 // CVSFilterApp 
 
@@ -176,3 +178,5 @@ void CALLBACK DirectVobSub(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nC
 
 	::CoUninitialize();
 }
+
+#endif

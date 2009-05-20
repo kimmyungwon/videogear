@@ -61,3 +61,15 @@ void CStringToBin(const CStringW &str, std::string &bytes)
 		pszSrc += 2;
 	}
 }
+
+void ApplyMask(LPSTR pszBuf, LPCSTR pszMask, UINT nLength)
+{
+	LPSTR pPtr = pszBuf;
+	LPCSTR pPtrM = pszMask;
+	while (nLength-- > 0)
+	{
+		*pPtr &= *pPtrM;
+		pPtr++;
+		pPtrM++;
+	}
+}

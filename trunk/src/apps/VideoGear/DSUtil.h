@@ -7,3 +7,4 @@ bool IsSourceFilter(IBaseFilter *pFilter);
 bool IsPinConnected(IPin *pPin);
 bool IsPinDir(IPin *pPin, PIN_DIRECTION dir);
 void CStringToBin(const CStringW &str, std::string &bytes);
+void ApplyMask(LPSTR pszBuf, LPCSTR pszMask, UINT nLength);

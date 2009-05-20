@@ -7,7 +7,9 @@
 #include "..\..\filters\parser\realmediasplitter\RealMediaSplitter.h"
 #include "..\..\filters\parser\flvsplitter\FLVSplitter.h"
 #include "..\..\filters\parser\mp4splitter\MP4Splitter.h"
+#include "..\..\filters\parser\mpegsplitter\MpegSplitter.h"
 #include "..\..\filters\transform\mpcvideodec\MPCVideoDecFilter.h"
+#include "..\..\filters\transform\mpeg2decfilter\Mpeg2DecFilter.h"
 #include "..\..\filters\transform\mpadecfilter\MpaDecFilter.h"
 #include "..\..\filters\switcher\audioswitcher\AudioSwitcher.h"
 #include "DbgUtil.h"
@@ -196,6 +198,31 @@ namespace MP4
 	};
 }
 
+namespace MPEG
+{
+	const AMOVIESETUP_MEDIATYPE sudPinTypesIn[] =
+	{
+		{&MEDIATYPE_Stream, &MEDIASUBTYPE_MPEG1System},
+		//	{&MEDIATYPE_Stream, &MEDIASUBTYPE_MPEG1VideoCD}, // cdxa filter should take care of this
+		{&MEDIATYPE_Stream, &MEDIASUBTYPE_MPEG2_PROGRAM},
+		{&MEDIATYPE_Stream, &MEDIASUBTYPE_MPEG2_TRANSPORT},
+		{&MEDIATYPE_Stream, &MEDIASUBTYPE_MPEG2_PVA},
+		{&MEDIATYPE_Stream, &MEDIASUBTYPE_NULL},
+	};
+
+	const AMOVIESETUP_PIN sudpPins[] =
+	{
+		{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, _countof(sudPinTypesIn), sudPinTypesIn},
+		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, 0, NULL},
+	};
+
+	const InternalFilterSetupInfo sudFilters[] =
+	{
+		{&__uuidof(CMpegSplitterFilter), L"MPC - Mpeg Splitter", CreateInstance<CMpegSplitterFilter>, _countof(sudpPins), sudpPins},
+		{&__uuidof(CMpegSourceFilter), L"MPC - Mpeg Source", CreateInstance<CMpegSourceFilter>, 0, NULL},
+	};
+}
+
 namespace VideoDec
 {
 	const AMOVIESETUP_PIN sudpPinsVideoDec[] =
@@ -207,6 +234,35 @@ namespace VideoDec
 	const InternalFilterSetupInfo sudFilters[] =
 	{
 		{&__uuidof(CMPCVideoDecFilter), L"MPC - Video decoder", CreateInstance<CMPCVideoDecFilter>, _countof(sudpPinsVideoDec), sudpPinsVideoDec}
+	};
+}
+
+namespace MpegDec
+{
+	const AMOVIESETUP_MEDIATYPE sudPinTypesIn[] =
+	{
+		{&MEDIATYPE_DVD_ENCRYPTED_PACK, &MEDIASUBTYPE_MPEG2_VIDEO},
+		{&MEDIATYPE_MPEG2_PACK, &MEDIASUBTYPE_MPEG2_VIDEO},
+		{&MEDIATYPE_MPEG2_PES, &MEDIASUBTYPE_MPEG2_VIDEO},
+		{&MEDIATYPE_Video, &MEDIASUBTYPE_MPEG2_VIDEO},
+		{&MEDIATYPE_Video, &MEDIASUBTYPE_MPEG1Packet},
+		{&MEDIATYPE_Video, &MEDIASUBTYPE_MPEG1Payload},
+	};
+
+	const AMOVIESETUP_MEDIATYPE sudPinTypesOut[] =
+	{
+		{&MEDIATYPE_Video, &MEDIASUBTYPE_IYUV},
+	};
+
+	const AMOVIESETUP_PIN sudpPins[] =
+	{
+		{L"Input", FALSE, FALSE, FALSE, FALSE, &CLSID_NULL, NULL, _countof(sudPinTypesIn), sudPinTypesIn},
+		{L"Output", FALSE, TRUE, FALSE, FALSE, &CLSID_NULL, NULL, _countof(sudPinTypesOut), sudPinTypesOut}
+	};
+
+	const InternalFilterSetupInfo sudFilters[] =
+	{
+		{&__uuidof(CMpeg2DecFilter), L"MPC - MPEG Video Decoder", CreateInstance<CMpeg2DecFilter>, _countof(sudpPins), sudpPins},
 	};
 }
 
@@ -347,7 +403,17 @@ CFilterManager::CFilterManager(void)
 		L"4,12,ffffffff00000000ffffffff,77696465027fe3706d646174",	// wide ? mdat
 		L"3,3,,000001",
 		NULL, NULL);
+	RegisterInternalFilter(_countof(MPEG::sudFilters), MPEG::sudFilters);
+	RegisterInternalSource(__uuidof(CMpegSourceFilter), 
+		L"0,16,FFFFFFFFF100010001800001FFFFFFFF,000001BA2100010001800001000001BB",
+		L"0,5,FFFFFFFFC0,000001BA40",
+		L"0,8,fffffc00ffe00000,4156000055000000",
+		L"0,1,,47,188,1,,47,376,1,,47",
+		L"4,1,,47,196,1,,47,388,1,,47",
+		L"0,4,,54467263,1660,1,,47",
+		NULL, NULL);
 	RegisterInternalFilter(_countof(VideoDec::sudFilters), VideoDec::sudFilters);
+	RegisterInternalFilter(_countof(MpegDec::sudFilters), MpegDec::sudFilters);
 	RegisterInternalFilter(_countof(AudioDec::sudFilters), AudioDec::sudFilters);
 	RegisterInternalFilter(_countof(AudioSw::sudFilters), AudioSw::sudFilters, true);
 	/* ÏµÍ³ÂË¾µ */
@@ -378,6 +444,7 @@ void CFilterManager::EnumMatchingSources( CFile &file, MatchedFilters &filters )
 				bMatched = false;
 				break;
 			}
+			ApplyMask(szBuf.m_p, chkBytes.strMask.c_str(), chkBytes.strSign.size());
 			if (memcmp(szBuf.m_p, chkBytes.strSign.c_str(), chkBytes.strSign.size()) != 0)
 			{
 				bMatched = false;
