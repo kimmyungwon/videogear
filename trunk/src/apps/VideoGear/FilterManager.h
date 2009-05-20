@@ -58,6 +58,7 @@ class CFilterManager
 public:
 	CFilterManager(void);
 	virtual ~CFilterManager(void);
+	void Initialize(void);
 	void EnumMatchingSources(CFile &file, MatchedFilters &filters);
 	void EnumMatchingFilters(const CAtlList<CMediaType> &mts, MatchedFilters &filters);
 	HRESULT AddAudioSwitcherToGraph(IFilterGraph *pGraph, IBaseFilter **ppvObj);
@@ -65,7 +66,7 @@ protected:
 	HRESULT RegisterInternalFilter(UINT nFilterCount, const InternalFilterSetupInfo* pSetupInfo, bool bFilterOnly = false);
 	HRESULT RegisterInternalSource(const CLSID &clsID, LPCWSTR pszSigns = NULL, LPCWSTR pszExts = NULL, ...);
 	HRESULT RegisterSystemFilter(const RegisterFilterSetupInfo& setupInfo, bool bFilterOnly = false);
-	HRESULT RegisterSystemFilters(void);
+	HRESULT RegisterSystemFilters(const CLSID &category);
 	HRESULT RegisterSystemSources(void);
 	HRESULT DecodeFilterData(BYTE* pData, DWORD cbData, RegisterFilterSetupInfo &info);
 private:
@@ -76,6 +77,7 @@ private:
 	typedef std::multimap<MediaSignature, CFilter*> SourceCheckBytes;
 
 	void EnumMatchingSources(SourceCheckBytes &chkBytesList, UINT nBasePriority, CFile &file, MatchedFilters &filters);
+	void EnumMatchingFilters(FilterMajorTypes &majorTypes, UINT &nBasePriority, const CAtlList<CMediaType> &mts, MatchedFilters &filters);
 private:
 	FilterList m_InternalFilters, m_SystemFilters;
 	FilterMajorTypes m_InternalMajorTypes, m_SystemMajorTypes;

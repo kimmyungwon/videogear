@@ -373,6 +373,14 @@ CFilterManager g_FilterMgr;
 
 CFilterManager::CFilterManager(void)
 {
+}
+
+CFilterManager::~CFilterManager(void)
+{
+}
+
+void CFilterManager::Initialize( void )
+{
 	/* ÄÚ²¿ÂË¾µ */
 	RegisterInternalFilter(_countof(AVI::sudFilters), AVI::sudFilters);
 	RegisterInternalSource(__uuidof(CAviSourceFilter), 
@@ -417,14 +425,8 @@ CFilterManager::CFilterManager(void)
 	RegisterInternalFilter(_countof(AudioDec::sudFilters), AudioDec::sudFilters);
 	RegisterInternalFilter(_countof(AudioSw::sudFilters), AudioSw::sudFilters, true);
 	/* ÏµÍ³ÂË¾µ */
-	RegisterSystemFilters();
+	RegisterSystemFilters(CLSID_LegacyAmFilterCategory);
 	RegisterSystemSources();
-}
-
-CFilterManager::~CFilterManager(void)
-{
-	m_InternalFilters.clear();
-	m_SystemFilters.clear();
 }
 
 void CFilterManager::EnumMatchingSources( CFile &file, MatchedFilters &filters )
@@ -467,22 +469,28 @@ void CFilterManager::EnumMatchingSources( SourceCheckBytes &chkBytesList, UINT n
 
 void CFilterManager::EnumMatchingFilters( const CAtlList<CMediaType>& mts, MatchedFilters& filters )
 {
-	UINT nPriority = 0;
+	UINT nPriority = 0; 
+	EnumMatchingFilters(m_InternalMajorTypes, nPriority, mts, filters);
+	EnumMatchingFilters(m_SystemMajorTypes, nPriority, mts, filters);
+}
+
+void CFilterManager::EnumMatchingFilters( FilterMajorTypes &majorTypes, UINT &nBasePriority, const CAtlList<CMediaType> &mts, MatchedFilters &filters )
+{
 	POSITION posMT = mts.GetHeadPosition();
 	while (posMT != NULL)
 	{
 		const CMediaType &mt = mts.GetNext(posMT);
-		FilterMajorTypes::iterator itMajor = m_InternalMajorTypes.find(mt.majortype);
-		if (itMajor == m_InternalMajorTypes.end())
+		FilterMajorTypes::iterator itMajor = majorTypes.find(mt.majortype);
+		if (itMajor == majorTypes.end())
 			continue;
 		/* ¾«È·Æ¥Åä */
 		std::pair<FilterMinorTypes::const_iterator, FilterMinorTypes::const_iterator> pii = itMajor->second.equal_range(mt.subtype);
 		for (FilterMinorTypes::const_iterator itMinor = pii.first; itMinor != pii.second; itMinor++)
 		{
 			CFilter *pFilter = itMinor->second;
-			filters.insert(MatchedFilter(pFilter, nPriority));
+			filters.insert(MatchedFilter(pFilter, nBasePriority));
 		}
-		nPriority++;
+		nBasePriority++;
 	}
 }
 
@@ -579,15 +587,62 @@ HRESULT CFilterManager::RegisterSystemFilter( const RegisterFilterSetupInfo& set
 	return S_OK;
 }
 
-HRESULT CFilterManager::RegisterSystemFilters( void )
+HRESULT CFilterManager::RegisterSystemFilters( const CLSID &category )
 {
+	CComPtr<ICreateDevEnum> pCDE;
+	CComPtr<IEnumMoniker> pEnum;
+
+	RIF(pCDE.CoCreateInstance(CLSID_SystemDeviceEnum));
+	RIF(pCDE->CreateClassEnumerator(CLSID_LegacyAmFilterCategory, &pEnum, CDEF_DEVMON_FILTER|CDEF_DEVMON_DMO));
+	for (CComPtr<IMoniker> pMon; pEnum->Next(1, &pMon, NULL) == S_OK; pMon = NULL)
+	{
+		CComPtr<IPropertyBag> pProp;
+		RegisterFilterSetupInfo filterInfo;
+		CComVariant varCLSID, varName, varData; 
+		CStringW strCLSID;
+		LONG lIndex = 0;
+		LPVOID pFilterData;
+		UINT cbFilterData;
+
+		if (FAILED(pMon->BindToStorage(NULL, NULL, IID_IPropertyBag, (LPVOID*)&pProp)))
+			continue;
+		/* ÂË¾µCLSID */
+		/*if (FAILED(pProp->Read(L"CLSID", &varCLSID, NULL)))
+			continue;
+		strCLSID = varCLSID.bstrVal;
+		filterInfo.clsID = GUIDFromCString(strCLSID);*/
+		/* ÂË¾µÃû */
+		if (FAILED(pProp->Read(L"FriendlyName", &varName, NULL)))
+			continue;
+		ASSERT(varName.vt == VT_BSTR);
+		filterInfo.strName = varName.bstrVal;
+		/* ÂË¾µÅäÖÃÐÅÏ¢ */
+		if (FAILED(pProp->Read(L"FilterData", &varData, NULL)))
+			continue;
+		ASSERT(varData.vt == (VT_ARRAY|VT_UI1));
+		SafeArrayLock(varData.parray);
+		if (SafeArrayGetDim(varData.parray) != 1)
+		{
+			SafeArrayUnlock(varData.parray);
+			continue;
+		}
+		SafeArrayAccessData(varData.parray, &pFilterData);
+		cbFilterData = SafeArrayGetElemsize(varData.parray);
+		DecodeFilterData((BYTE*)pFilterData, cbFilterData, filterInfo);
+		SafeArrayUnlock(varData.parray);
+		/* ×¢²á¸ÃÂË¾µ */
+		RegisterSystemFilter(filterInfo, false);
+	}
+	return S_OK;
+	
+#if 0
 	CStringW strCategory;
 	HKEY hkFilters;
 	DWORD dwFilters;
 	WCHAR szSubKey[256];
 	DWORD cchSubKey;
 
-	strCategory = CStringFromGUID(CLSID_LegacyAmFilterCategory);
+	strCategory = CStringFromGUID(category);
 	if (RegOpenKeyExW(HKEY_CLASSES_ROOT, L"CLSID\\" + strCategory + L"\\Instance", 0, KEY_ENUMERATE_SUB_KEYS|KEY_QUERY_VALUE, 
 		&hkFilters) != ERROR_SUCCESS)
 		return HRESULT_FROM_WIN32(GetLastError());
@@ -634,6 +689,7 @@ next_key:
 	}
 	RegCloseKey(hkFilters);
 	return S_OK;
+#endif
 }
 
 HRESULT CFilterManager::RegisterSystemSources( void )
@@ -774,5 +830,6 @@ HRESULT CFilterManager::DecodeFilterData( BYTE* pData, DWORD cbData, RegisterFil
 
 #undef ChkLen
 }
+
 
 

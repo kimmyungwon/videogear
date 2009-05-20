@@ -5,7 +5,7 @@
 #include "stdafx.h"
 #include "VideoGear.h"
 #include "MainFrm.h"
-
+#include "FilterManager.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -24,6 +24,7 @@ END_MESSAGE_MAP()
 CVideoGearApp::CVideoGearApp()
 {
 	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+	g_FilterMgr.Initialize();
 	Gdiplus::GdiplusStartup(&m_ulToken, &m_gpInput, NULL);
 }
 
