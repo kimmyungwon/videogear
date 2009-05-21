@@ -32,7 +32,6 @@
 #include <list>
 #include <set>
 #include <map>
-#include <unordered_map>
 #include <boost\ptr_container\ptr_vector.hpp>
 #include <boost\ptr_container\ptr_map.hpp>
 

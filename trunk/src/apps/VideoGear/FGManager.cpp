@@ -96,8 +96,6 @@ HRESULT CFGManager::RenderFile( LPCWSTR pszFile )
 		if (m_cfgVRM == VRM_VMR9)
 		{
 			RIF(m_pVMR9Cfg->SetRenderingMode(VMR9Mode_Windowless));
-			RIF(m_pVideoRenderer.QueryInterface(&m_pVMR9WC));
-			RIF(m_pVMR9WC->SetVideoClippingWindow(m_pVidWnd->m_hWnd));
 		}
 		else
 		{
@@ -109,6 +107,8 @@ HRESULT CFGManager::RenderFile( LPCWSTR pszFile )
 			RIF(m_pVMR9SAN->AdviseSurfaceAllocator((DWORD_PTR)this, pVMR9SA));
 			RIF(pVMR9SA->AdviseNotify(m_pVMR9SAN));
 		}
+		RIF(m_pVideoRenderer.QueryInterface(&m_pVMR9WC));
+		RIF(m_pVMR9WC->SetVideoClippingWindow(m_pVidWnd->m_hWnd));
 		if FAILED(hr = m_pGraph->AddFilter(m_pVideoRenderer, L"Video Mixing Renderer 9"))
 		{
 			m_pVideoRenderer = NULL;
@@ -660,7 +660,7 @@ HRESULT CFGManager::AdjustVideoPosition( void )
 	ASSERT(m_pVidWnd != NULL);
 	m_pVidWnd->GetClientRect(rctWnd);
 	/* 获取视频原始大小 */
-	if (m_cfgVRM == VRM_VMR9 && m_pVMR9WC != NULL)
+	if ((m_cfgVRM == VRM_VMR9 || m_cfgVRM == VRM_VMR9Renderless) && m_pVMR9WC != NULL)
 	{
 		RIF(m_pVMR9WC->GetNativeVideoSize(&sizeVideo.cx, &sizeVideo.cy, &sizeARVideo.cx, &sizeARVideo.cy));	
 	}
@@ -687,7 +687,7 @@ HRESULT CFGManager::AdjustVideoPosition( void )
 	lNewLeft = (rctWnd.Width() - lNewWidth) / 2;
 	lNewTop = (rctWnd.Height() - lNewHeight) / 2;
 	m_rctVideo.SetRect(lNewLeft, lNewTop, lNewLeft + lNewWidth, lNewTop + lNewHeight);
-	if (m_cfgVRM == VRM_VMR9)
+	if (m_cfgVRM == VRM_VMR9 || m_cfgVRM == VRM_VMR9Renderless)
 	{
 		return m_pVMR9WC->SetVideoPosition(NULL, m_rctVideo);
 	}

@@ -90,6 +90,7 @@ void CPlayerBar::UpdateDuration( int iDuration )
 void CPlayerBar::UpdateAvailable( int iEarliest, int iLastest )
 {
 	m_cmnPorgress.SetSelection(iEarliest, iLastest);
+	m_cmnPorgress.RedrawWindow();
 }
 
 void CPlayerBar::UpdateVolume( BYTE nVolume )
