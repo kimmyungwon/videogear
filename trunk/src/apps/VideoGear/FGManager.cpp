@@ -4,6 +4,7 @@
 #include "FilterManager.h"
 #include "DSUtil.h"
 #include "DbgUtil.h"
+#include "DX9AllocatorPresenter.h"
 
 #define AUTOLOCK	CAutoLock __lock__(this);
 #define RTimePerMSec	((LONGLONG)10000)
@@ -89,11 +90,25 @@ HRESULT CFGManager::RenderFile( LPCWSTR pszFile )
 	switch (m_cfgVRM)
 	{
 	case VRM_VMR9:
+	case VRM_VMR9Renderless:
 		RIF(m_pVideoRenderer.CoCreateInstance(CLSID_VideoMixingRenderer9));
 		RIF(m_pVideoRenderer.QueryInterface(&m_pVMR9Cfg));
-		RIF(m_pVMR9Cfg->SetRenderingMode(VMR9Mode_Windowless));
-		RIF(m_pVideoRenderer.QueryInterface(&m_pVMR9WC));
-		RIF(m_pVMR9WC->SetVideoClippingWindow(m_pVidWnd->m_hWnd));
+		if (m_cfgVRM == VRM_VMR9)
+		{
+			RIF(m_pVMR9Cfg->SetRenderingMode(VMR9Mode_Windowless));
+			RIF(m_pVideoRenderer.QueryInterface(&m_pVMR9WC));
+			RIF(m_pVMR9WC->SetVideoClippingWindow(m_pVidWnd->m_hWnd));
+		}
+		else
+		{
+			CComPtr<IVMRSurfaceAllocator9> pVMR9SA;
+			
+			RIF(m_pVMR9Cfg->SetRenderingMode(VMR9Mode_Renderless));
+			RIF(m_pVideoRenderer.QueryInterface(&m_pVMR9SAN));
+			pVMR9SA = new CDX9AllocatorPresenter(m_pVidWnd->m_hWnd, NULL);
+			RIF(m_pVMR9SAN->AdviseSurfaceAllocator((DWORD_PTR)this, pVMR9SA));
+			RIF(pVMR9SA->AdviseNotify(m_pVMR9SAN));
+		}
 		if FAILED(hr = m_pGraph->AddFilter(m_pVideoRenderer, L"Video Mixing Renderer 9"))
 		{
 			m_pVideoRenderer = NULL;
@@ -612,6 +627,7 @@ HRESULT CFGManager::ClearGraph( void )
 	RIF(m_pMC->Stop());
 	m_pBA = NULL;
 	m_rctVideo.SetRectEmpty();
+	m_pVMR9SAN = NULL;
 	m_pVMR9WC = NULL;
 	m_pVMR9Cfg = NULL;
 	m_pEVRWC = NULL;

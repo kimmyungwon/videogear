@@ -3,6 +3,7 @@
 enum VideoRenderMode
 {
 	VRM_VMR9,
+	VRM_VMR9Renderless,
 	VRM_EVR
 };
 

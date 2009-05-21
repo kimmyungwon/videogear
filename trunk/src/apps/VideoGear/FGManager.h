@@ -87,6 +87,7 @@ private:
 	CRect m_rctVideo;
 	CComPtr<IBaseFilter> m_pVideoRenderer;
 	CComPtr<IVMRFilterConfig9> m_pVMR9Cfg;
+	CComPtr<IVMRSurfaceAllocatorNotify9> m_pVMR9SAN;
 	CComPtr<IVMRWindowlessControl9> m_pVMR9WC;
 	CComPtr<IMFVideoDisplayControl> m_pEVRWC;
 	CComPtr<IBaseFilter> m_pAudioRenderer;

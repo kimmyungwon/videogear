@@ -66,7 +66,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="strmiids.lib winmm.lib d3d9.lib gdiplus.lib dmoguids.lib"
+				AdditionalDependencies="strmiids.lib winmm.lib d3d9.lib d3dx9d.lib gdiplus.lib dmoguids.lib"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -200,6 +200,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DX9AllocatorPresenter.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\FGManager.cpp"
 				>
 			</File>
@@ -275,6 +279,10 @@
 			</File>
 			<File
 				RelativePath=".\DSUtil.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DX9AllocatorPresenter.h"
 				>
 			</File>
 			<File
