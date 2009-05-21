@@ -41,6 +41,7 @@
 #include <DShow.h>
 #include <vmr9.h>
 #include <evr9.h>
+#include <dmodshow.h>
 #include <streams.h>
 #include <InitGuid.h>
 #include <moreuuids.h>

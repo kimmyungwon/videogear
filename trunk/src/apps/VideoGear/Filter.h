@@ -104,3 +104,12 @@ public:
 	CFilterRegister(const CLSID& clsID, LPCWSTR pszName);
 	virtual HRESULT CreateInstance(LPUNKNOWN pUnk, IBaseFilter** ppv);
 };
+
+class CFilterDMO : public CFilter
+{
+public:
+	CFilterDMO(const CLSID &clsID, LPCWSTR pszName, const CLSID &clsidCategory);
+	virtual HRESULT CreateInstance(LPUNKNOWN pUnk, IBaseFilter** ppv);
+private:
+	CLSID m_clsidCategory;
+};

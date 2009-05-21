@@ -20,6 +20,7 @@ struct RegisterPinSetupInfo
 struct RegisterFilterSetupInfo
 {
 	CLSID clsID;
+	CLSID clsidCategory;
 	CStringW strName;
 	DWORD dwMerit;
 	DWORD dwInPins, dwOutPins;
@@ -65,8 +66,9 @@ public:
 protected:
 	HRESULT RegisterInternalFilter(UINT nFilterCount, const InternalFilterSetupInfo* pSetupInfo, bool bFilterOnly = false);
 	HRESULT RegisterInternalSource(const CLSID &clsID, LPCWSTR pszSigns = NULL, LPCWSTR pszExts = NULL, ...);
-	HRESULT RegisterSystemFilter(const RegisterFilterSetupInfo& setupInfo, bool bFilterOnly = false);
-	HRESULT RegisterSystemFilters(const CLSID &category);
+	HRESULT RegisterSystemFilter(bool bIsDMO, const RegisterFilterSetupInfo& setupInfo, bool bFilterOnly = false);
+	HRESULT RegisterSystemFilters(void);
+	HRESULT RegisterSystemDMOs(void);
 	HRESULT RegisterSystemSources(void);
 	HRESULT DecodeFilterData(BYTE* pData, DWORD cbData, RegisterFilterSetupInfo &info);
 private:

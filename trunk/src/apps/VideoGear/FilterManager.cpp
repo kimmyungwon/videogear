@@ -425,7 +425,8 @@ void CFilterManager::Initialize( void )
 	RegisterInternalFilter(_countof(AudioDec::sudFilters), AudioDec::sudFilters);
 	RegisterInternalFilter(_countof(AudioSw::sudFilters), AudioSw::sudFilters, true);
 	/* ÏµÍ³ÂË¾µ */
-	RegisterSystemFilters(CLSID_LegacyAmFilterCategory);
+	RegisterSystemFilters();
+	RegisterSystemDMOs();
 	RegisterSystemSources();
 }
 
@@ -559,14 +560,19 @@ HRESULT CFilterManager::RegisterInternalSource( const CLSID &clsID, LPCWSTR pszS
 	return S_OK;
 }
 
-HRESULT CFilterManager::RegisterSystemFilter( const RegisterFilterSetupInfo& setupInfo, bool bFilterOnly /*= false*/ )
+HRESULT CFilterManager::RegisterSystemFilter( bool bIsDMO, const RegisterFilterSetupInfo& setupInfo, bool bFilterOnly /*= false*/ )
 {
+	CFilter *pFilter;
+	
 	if (setupInfo.dwInPins != 0 && setupInfo.dwOutPins == 0)
 		return S_FALSE;
 	if (m_InternalFilters.find(setupInfo.clsID) != m_InternalFilters.end()
 		|| m_SystemFilters.find(setupInfo.clsID) != m_SystemFilters.end())	// ²»×¢²áÖØ¸´µÄÂË¾µ
 		return S_FALSE;
-	CFilter *pFilter = new CFilterRegister(setupInfo.clsID, setupInfo.strName);
+	if (bIsDMO)
+		pFilter = new CFilterDMO(setupInfo.clsID, setupInfo.strName, setupInfo.clsidCategory);
+	else
+		pFilter = new CFilterRegister(setupInfo.clsID, setupInfo.strName);
 	m_SystemFilters.insert(CLSID(setupInfo.clsID), pFilter);
 	XTRACE(L"ÒÑ×¢²áÏµÍ³ÂË¾µ [%s(IN:%d, OUT:%d)]\n", setupInfo.strName, setupInfo.dwInPins, setupInfo.dwOutPins);
 	if (!bFilterOnly)
@@ -587,62 +593,15 @@ HRESULT CFilterManager::RegisterSystemFilter( const RegisterFilterSetupInfo& set
 	return S_OK;
 }
 
-HRESULT CFilterManager::RegisterSystemFilters( const CLSID &category )
-{
-	CComPtr<ICreateDevEnum> pCDE;
-	CComPtr<IEnumMoniker> pEnum;
-
-	RIF(pCDE.CoCreateInstance(CLSID_SystemDeviceEnum));
-	RIF(pCDE->CreateClassEnumerator(CLSID_LegacyAmFilterCategory, &pEnum, CDEF_DEVMON_FILTER|CDEF_DEVMON_DMO));
-	for (CComPtr<IMoniker> pMon; pEnum->Next(1, &pMon, NULL) == S_OK; pMon = NULL)
-	{
-		CComPtr<IPropertyBag> pProp;
-		RegisterFilterSetupInfo filterInfo;
-		CComVariant varCLSID, varName, varData; 
-		CStringW strCLSID;
-		LONG lIndex = 0;
-		LPVOID pFilterData;
-		UINT cbFilterData;
-
-		if (FAILED(pMon->BindToStorage(NULL, NULL, IID_IPropertyBag, (LPVOID*)&pProp)))
-			continue;
-		/* ÂË¾µCLSID */
-		/*if (FAILED(pProp->Read(L"CLSID", &varCLSID, NULL)))
-			continue;
-		strCLSID = varCLSID.bstrVal;
-		filterInfo.clsID = GUIDFromCString(strCLSID);*/
-		/* ÂË¾µÃû */
-		if (FAILED(pProp->Read(L"FriendlyName", &varName, NULL)))
-			continue;
-		ASSERT(varName.vt == VT_BSTR);
-		filterInfo.strName = varName.bstrVal;
-		/* ÂË¾µÅäÖÃÐÅÏ¢ */
-		if (FAILED(pProp->Read(L"FilterData", &varData, NULL)))
-			continue;
-		ASSERT(varData.vt == (VT_ARRAY|VT_UI1));
-		SafeArrayLock(varData.parray);
-		if (SafeArrayGetDim(varData.parray) != 1)
-		{
-			SafeArrayUnlock(varData.parray);
-			continue;
-		}
-		SafeArrayAccessData(varData.parray, &pFilterData);
-		cbFilterData = SafeArrayGetElemsize(varData.parray);
-		DecodeFilterData((BYTE*)pFilterData, cbFilterData, filterInfo);
-		SafeArrayUnlock(varData.parray);
-		/* ×¢²á¸ÃÂË¾µ */
-		RegisterSystemFilter(filterInfo, false);
-	}
-	return S_OK;
-	
-#if 0
+HRESULT CFilterManager::RegisterSystemFilters( void )
+{	
 	CStringW strCategory;
 	HKEY hkFilters;
 	DWORD dwFilters;
 	WCHAR szSubKey[256];
 	DWORD cchSubKey;
 
-	strCategory = CStringFromGUID(category);
+	strCategory = CStringFromGUID(CLSID_LegacyAmFilterCategory);
 	if (RegOpenKeyExW(HKEY_CLASSES_ROOT, L"CLSID\\" + strCategory + L"\\Instance", 0, KEY_ENUMERATE_SUB_KEYS|KEY_QUERY_VALUE, 
 		&hkFilters) != ERROR_SUCCESS)
 		return HRESULT_FROM_WIN32(GetLastError());
@@ -681,15 +640,75 @@ HRESULT CFilterManager::RegisterSystemFilters( const CLSID &category )
 		cbData = dwMaxValueLen;
 		if (RegQueryValueExW(hkFilter, L"FilterData", NULL, NULL, pValue, &cbData) != ERROR_SUCCESS)
 			goto next_key;
-		DecodeFilterData(pValue.m_p, cbData, filterInfo);
-		/* ×¢²á¸ÃÂË¾µ */
-		RegisterSystemFilter(filterInfo, false);
+		if (SUCCEEDED(DecodeFilterData(pValue.m_p, cbData, filterInfo)))
+		{
+			/* ×¢²á¸ÃÂË¾µ */
+			RegisterSystemFilter(false, filterInfo, false);
+		}
 next_key:
 		RegCloseKey(hkFilter);
 	}
 	RegCloseKey(hkFilters);
 	return S_OK;
-#endif
+}
+
+HRESULT CFilterManager::RegisterSystemDMOs( void )
+{
+	CComPtr<ICreateDevEnum> pCDE;
+	CComPtr<IEnumMoniker> pEnum;
+	CComPtr<IMalloc> pMalloc;
+
+	RIF(pCDE.CoCreateInstance(CLSID_SystemDeviceEnum));
+	RIF(pCDE->CreateClassEnumerator(CLSID_LegacyAmFilterCategory, &pEnum, CDEF_DEVMON_DMO));
+	RIF(CoGetMalloc(1, &pMalloc));
+	for (CComPtr<IMoniker> pMon; pEnum->Next(1, &pMon, NULL) == S_OK; pMon = NULL)
+	{
+		CComPtr<IPropertyBag> pProp;
+		RegisterFilterSetupInfo filterInfo;
+		LPOLESTR pszDisplayName;
+		CStringW strDispName;
+		int nChPos;
+		CStringW strCLSID;
+		CComVariant varName, varData; 
+		LONG lIndex = 0;
+		LPVOID pFilterData;
+		UINT cbFilterData;
+
+		if (FAILED(pMon->BindToStorage(NULL, NULL, IID_IPropertyBag, (LPVOID*)&pProp)))
+			continue;
+		if (FAILED(pMon->GetDisplayName(NULL, NULL, &pszDisplayName)))
+			continue;
+		strDispName = pszDisplayName;
+		pMalloc->Free(pszDisplayName);
+		/* ÂË¾µCLSID */
+		nChPos = strDispName.Find(L'{');
+		ASSERT(nChPos >= 0);
+		strCLSID = strDispName.Mid(nChPos, 38);
+		GUIDFromCString(strCLSID, filterInfo.clsID);
+		/* ÂË¾µÀà±ðCLSID */
+		nChPos = strDispName.Find(L'{', nChPos + strCLSID.GetLength());
+		ASSERT(nChPos >= 0);
+		strCLSID = strDispName.Mid(nChPos, 38);
+		GUIDFromCString(strCLSID, filterInfo.clsidCategory);
+		/* ÂË¾µÃû */
+		if (FAILED(pProp->Read(L"FriendlyName", &varName, NULL)))
+			continue;
+		ASSERT(varName.vt == VT_BSTR);
+		filterInfo.strName = varName.bstrVal;
+		/* ÂË¾µÅäÖÃÐÅÏ¢ */
+		if (FAILED(pProp->Read(L"FilterData", &varData, NULL)))
+			continue;
+		ASSERT(varData.vt == (VT_ARRAY|VT_UI1));
+		SafeArrayAccessData(varData.parray, &pFilterData);
+		cbFilterData = varData.parray->rgsabound[0].cElements;
+		if (SUCCEEDED(DecodeFilterData((BYTE*)pFilterData, cbFilterData, filterInfo)))
+		{
+			/* ×¢²á¸ÃÂË¾µ */
+			RegisterSystemFilter(true, filterInfo, false);
+		}
+		SafeArrayUnaccessData(varData.parray);		
+	}
+	return S_OK;
 }
 
 HRESULT CFilterManager::RegisterSystemSources( void )
@@ -830,6 +849,4 @@ HRESULT CFilterManager::DecodeFilterData( BYTE* pData, DWORD cbData, RegisterFil
 
 #undef ChkLen
 }
-
-
 
