@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="gb2312"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="VideoGear.Common"
+	OutputDirectory="$(SolutionDir)build\bin\$(PlatformName)\$(ConfigurationName)"
+	IntermediateDirectory="$(SolutionDir)build\temp\$(PlatformName)\$(ConfigurationName)\$(ProjectName)"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalIncludeDirectories="&quot;$(SolutionDir)include&quot;;&quot;$(SolutionDir)thirdparty\BaseClasses&quot;;&quot;$(SolutionDir)thirdparty\ffmpeg\include&quot;"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		AdditionalDependencies="strmiids.lib winmm.lib"
+		AdditionalLibraryDirectories="&quot;$(SolutionDir)lib&quot;;&quot;$(SolutionDir)thirdparty\ffmpeg\lib&quot;"
+	/>
+</VisualStudioPropertySheet>
