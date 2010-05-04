@@ -8,11 +8,11 @@
 	>
 	<Tool
 		Name="VCCLCompilerTool"
-		AdditionalIncludeDirectories="&quot;$(SolutionDir)include&quot;;&quot;$(SolutionDir)thirdparty\BaseClasses&quot;;&quot;$(SolutionDir)thirdparty\ffmpeg\include&quot;"
+		AdditionalIncludeDirectories="&quot;$(SolutionDir)include&quot;;&quot;$(SolutionDir)thirdparty\BaseClasses&quot;"
 	/>
 	<Tool
 		Name="VCLinkerTool"
 		AdditionalDependencies="strmiids.lib winmm.lib"
-		AdditionalLibraryDirectories="&quot;$(SolutionDir)lib&quot;;&quot;$(SolutionDir)thirdparty\ffmpeg\lib&quot;"
+		AdditionalLibraryDirectories="&quot;$(SolutionDir)lib&quot;"
 	/>
 </VisualStudioPropertySheet>
