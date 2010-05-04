@@ -199,7 +199,7 @@ public:
 
     // override this to say what interfaces we support where
     STDMETHODIMP NonDelegatingQueryInterface(REFIID riid, __deref_out void ** ppv);
-#ifdef _DEBUG
+#ifdef DEBUG
     STDMETHODIMP_(ULONG) NonDelegatingRelease();
 #endif
 
@@ -349,13 +349,13 @@ protected:
     CRefTime        m_tStop;                    // time from NewSegment
     double          m_dRate;                    // rate from NewSegment
 
-#ifdef _DEBUG
+#ifdef DEBUG
     LONG            m_cRef;                     // Ref count tracing
 #endif
 
     // displays pin connection information
 
-#ifdef _DEBUG
+#ifdef DEBUG
     void DisplayPinInfo(IPin *pReceivePin);
     void DisplayTypeInfo(IPin *pPin, const CMediaType *pmt);
 #else
@@ -593,7 +593,7 @@ class CEnumPins : public IEnumPins      // The interface we support
 				    // so they should not be dereferenced.  They are
 				    // merely kept to ID which pins have been enumerated.
 
-#ifdef _DEBUG
+#ifdef DEBUG
     DWORD m_dwCookie;
 #endif
 
@@ -655,7 +655,7 @@ class CEnumMediaTypes : public IEnumMediaTypes    // The interface we support
     CBasePin *m_pPin;         // The pin who owns us
     LONG m_Version;           // Media type version value
     LONG m_cRef;
-#ifdef _DEBUG
+#ifdef DEBUG
     DWORD m_dwCookie;
 #endif
 
@@ -981,7 +981,7 @@ public:
     //  Set graph config info
     void SetConfigInfo(IGraphConfig *pGraphConfig, HANDLE hStopEvent);
 
-    #ifdef _DEBUG
+    #ifdef DEBUG
     virtual HRESULT Deliver(IMediaSample *pSample);
     virtual HRESULT DeliverEndOfStream(void);
     virtual HRESULT DeliverNewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
@@ -1075,7 +1075,7 @@ private:
     HRESULT Initialize(void);
     HRESULT ChangeMediaTypeHelper(const CMediaType *pmt);
 
-    #ifdef _DEBUG
+    #ifdef DEBUG
     void AssertValid(void);
     #endif // DEBUG
 };
@@ -1118,7 +1118,7 @@ inline CAutoUsingOutputPin::~CAutoUsingOutputPin()
     }
 }
 
-#ifdef _DEBUG
+#ifdef DEBUG
 
 inline HRESULT CDynamicOutputPin::Deliver(IMediaSample *pSample)
 {
@@ -1354,7 +1354,7 @@ class AM_NOVTABLE CBaseAllocator : public CUnknown,// A non delegating IUnknown
     {
     public:
         CSampleList() : m_List(NULL), m_nOnList(0) {};
-#ifdef _DEBUG
+#ifdef DEBUG
         ~CSampleList()
         {
             ASSERT(m_nOnList == 0);

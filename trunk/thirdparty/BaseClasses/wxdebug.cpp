@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <dvdmedia.h>
 
-#ifdef _DEBUG
+#ifdef DEBUG
 #ifdef UNICODE
 #ifndef _UNICODE
 #define _UNICODE
@@ -26,7 +26,7 @@
 #include <tchar.h>
 #include <strsafe.h>
 
-#ifdef _DEBUG
+#ifdef DEBUG
 static void DisplayBITMAPINFO(const BITMAPINFOHEADER* pbmi);
 static void DisplayRECT(LPCTSTR szLabel, const RECT& rc);
 
@@ -248,7 +248,7 @@ HRESULT  DbgUniqueProcessName(LPCTSTR inName, LPTSTR outName)
     }
     else
     {
-        TCHAR pathAndBasename[_MAX_PATH] = {0};
+        TCHAR pathAndBasename[MAX_PATH] = {0};
         
         //there's an extension  - zero-terminate the path and basename first by copying
         hr = StringCchCopyN(pathAndBasename, MAX_PATH, inName, (size_t)dotPos);
@@ -271,7 +271,7 @@ void WINAPI DbgInitLogTo (
     LONG  lReturn;
     DWORD dwKeyType;
     DWORD dwKeySize;
-    TCHAR szFile[_MAX_PATH] = {0};
+    TCHAR szFile[MAX_PATH] = {0};
     static const TCHAR cszKey[] = TEXT("LogToFile");
 
     dwKeySize = MAX_PATH;
@@ -326,7 +326,7 @@ void WINAPI DbgInitLogTo (
             if (INVALID_HANDLE_VALUE == m_hOutput &&
                 GetLastError() == ERROR_SHARING_VIOLATION)
             {
-               TCHAR uniqueName[_MAX_PATH] = {0};
+               TCHAR uniqueName[MAX_PATH] = {0};
                if (SUCCEEDED(DbgUniqueProcessName(szFile, uniqueName)))
                {
                     m_hOutput = CreateFile(uniqueName, GENERIC_WRITE,
@@ -1264,7 +1264,7 @@ CDisp::CDisp(double d)
    We also display the fields in the BITMAPINFOHEADER structure, this should
    succeed as we do not accept input types unless the format is big enough */
 
-#ifdef _DEBUG
+#ifdef DEBUG
 void WINAPI DisplayType(LPCTSTR label, const AM_MEDIA_TYPE *pmtIn)
 {
 

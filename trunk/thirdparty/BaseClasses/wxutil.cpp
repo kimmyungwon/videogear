@@ -457,7 +457,7 @@ HRESULT AMSafeMemMoveOffset(
 }
 
 
-#ifdef _DEBUG
+#ifdef DEBUG
 /******************************Public*Routine******************************\
 * Debug CCritSec helpers
 *
@@ -506,26 +506,6 @@ void CCritSec::Lock()
             DbgLog((LOG_LOCKING, tracelevel, TEXT("Thread %d now owns lock %x"), m_currentOwner, &m_CritSec));
         }
     }
-}
-
-bool CCritSec::TryLock()
-{
-    UINT tracelevel=3;
-    DWORD us = GetCurrentThreadId();
-    DWORD currentOwner = m_currentOwner;
-    BOOL bSuccess = TryEnterCriticalSection(&m_CritSec);
-	if (bSuccess)
-	{
-		if (0 == m_lockCount++) {
-			// we now own it for the first time.  Set owner information
-			m_currentOwner = us;
-
-			if (m_fTrace) {
-				DbgLog((LOG_LOCKING, tracelevel, TEXT("Thread %d now owns lock %x"), m_currentOwner, &m_CritSec));
-			}
-		}
-	}
-	return bSuccess != 0;
 }
 
 void CCritSec::Unlock() {

@@ -163,7 +163,7 @@ HRESULT CBaseRenderer::SourceThreadCanWait(BOOL bCanWait)
 }
 
 
-#ifdef _DEBUG
+#ifdef DEBUG
 // Dump the current renderer state to the debug terminal. The hardest part of
 // the renderer is the window where we unlock everything to wait for a clock
 // to signal it is time to draw or for the application to cancel everything
@@ -262,7 +262,7 @@ HRESULT CBaseRenderer::WaitForRenderTime()
     while (Result == WAIT_TIMEOUT) {
         Result = WaitForMultipleObjects(2,WaitObjects,FALSE,RENDER_TIMEOUT);
 
-#ifdef _DEBUG
+#ifdef DEBUG
         if (Result == WAIT_TIMEOUT) DisplayRendererState();
 #endif
 

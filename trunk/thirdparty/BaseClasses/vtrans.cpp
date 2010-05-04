@@ -110,7 +110,7 @@ HRESULT CVideoTransformFilter::Receive(IMediaSample *pSample)
 
     ASSERT(CritCheckIn(&m_csReceive));
     AM_MEDIA_TYPE *pmtOut, *pmt;
-#ifdef _DEBUG
+#ifdef DEBUG
     FOURCCMap fccOut;
 #endif
     HRESULT hr;
@@ -134,7 +134,7 @@ HRESULT CVideoTransformFilter::Receive(IMediaSample *pSample)
 
 	// spew some debug output
 	ASSERT(!IsEqualGUID(pmt->majortype, GUID_NULL));
-#ifdef _DEBUG
+#ifdef DEBUG
         fccOut.SetFOURCC(&pmt->subtype);
 	LONG lCompression = HEADER(pmt->pbFormat)->biCompression;
 	LONG lBitCount = HEADER(pmt->pbFormat)->biBitCount;
@@ -194,7 +194,7 @@ HRESULT CVideoTransformFilter::Receive(IMediaSample *pSample)
 
 	// spew some debug output
 	ASSERT(!IsEqualGUID(pmtOut->majortype, GUID_NULL));
-#ifdef _DEBUG
+#ifdef DEBUG
         fccOut.SetFOURCC(&pmtOut->subtype);
 	LONG lCompression = HEADER(pmtOut->pbFormat)->biCompression;
 	LONG lBitCount = HEADER(pmtOut->pbFormat)->biBitCount;

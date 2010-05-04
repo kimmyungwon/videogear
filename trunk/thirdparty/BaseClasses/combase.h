@@ -120,7 +120,6 @@ typedef struct _AMOVIESETUP_FILTER
   DWORD      dwMerit;
   UINT       nPins;
   const AMOVIESETUP_PIN * lpPin;
-  const CLSID filterCategory;
 }
 AMOVIESETUP_FILTER, * PAMOVIESETUP_FILTER, * FAR LPAMOVIESETUP_FILTER;
 
@@ -171,7 +170,7 @@ private:
     static LONG m_cObjects;     /* Total number of objects active */
 
 protected:
-#ifdef _DEBUG
+#ifdef DEBUG
     DWORD m_dwCookie;           /* Cookie identifying this object */
 #endif
 

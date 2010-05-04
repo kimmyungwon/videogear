@@ -74,7 +74,7 @@ public:
 
     CBaseWindow(BOOL bDoGetDC = TRUE, bool bPostToDestroy = false);
 
-#ifdef _DEBUG
+#ifdef DEBUG
     virtual ~CBaseWindow();
 #endif
 
@@ -121,13 +121,13 @@ public:
     HDC GetMemoryHDC();
     HDC GetWindowHDC();
 
-    #ifdef _DEBUG
+    #ifdef DEBUG
     HPALETTE GetPalette();
     #endif // DEBUG
 
     // This is the window procedure the derived object should override
 
-    virtual INT_PTR OnReceiveMessage(HWND hwnd,          // Window handle
+    virtual LRESULT OnReceiveMessage(HWND hwnd,          // Window handle
                                      UINT uMsg,          // Message ID
                                      WPARAM wParam,      // First parameter
                                      LPARAM lParam);     // Other parameter
@@ -299,7 +299,7 @@ public:
     // Constructor and destructor
 
     CImageAllocator(__inout CBaseFilter *pFilter,__in_opt LPCTSTR pName,__inout HRESULT *phr);
-#ifdef _DEBUG
+#ifdef DEBUG
     ~CImageAllocator();
 #endif
 
@@ -339,7 +339,7 @@ public:
                   __inout CBaseWindow *pBaseWindow,
                   __inout CDrawImage *pDrawImage);
 
-#ifdef _DEBUG
+#ifdef DEBUG
     virtual ~CImagePalette();
 #endif
 

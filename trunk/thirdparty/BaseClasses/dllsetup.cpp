@@ -116,7 +116,7 @@ AMovieSetupRegisterServer( CLSID   clsServer
 {
   // temp buffer
   //
-  TCHAR achTemp[_MAX_PATH];
+  TCHAR achTemp[MAX_PATH];
 
   // convert CLSID uuid to string and write
   // out subkey as string - CLSID\{}
@@ -278,8 +278,6 @@ AMovieSetupRegisterFilter2( const AMOVIESETUP_FILTER * const psetupdata
     rf2.dwMerit = psetupdata->dwMerit;
     rf2.cPins = psetupdata->nPins;
     rf2.rgPins = psetupdata->lpPin;
-
-    const CLSID *filterCategory=&psetupdata->filterCategory;
     
     // register filter
     //
@@ -287,7 +285,7 @@ AMovieSetupRegisterFilter2( const AMOVIESETUP_FILTER * const psetupdata
     hr = pIFM2->RegisterFilter(*psetupdata->clsID
                              , psetupdata->strName
                              , 0 // moniker
-                             ,filterCategory // category
+                             , 0 // category
                              , NULL // instance
                              , &rf2);
   }
@@ -376,12 +374,12 @@ AMovieDllRegisterServer2( BOOL bRegister )
   // get file name (where g_hInst is the
   // instance handle of the filter dll)
   //
-  WCHAR achFileName[_MAX_PATH];
+  WCHAR achFileName[MAX_PATH];
 
   // WIN95 doesn't support GetModuleFileNameW
   //
   {
-    char achTemp[_MAX_PATH];
+    char achTemp[MAX_PATH];
 
     DbgLog((LOG_TRACE, 2, TEXT("- get module file name")));
 
@@ -538,12 +536,12 @@ AMovieDllRegisterServer( void )
   // get file name (where g_hInst is the
   // instance handle of the filter dll)
   //
-  WCHAR achFileName[_MAX_PATH];
+  WCHAR achFileName[MAX_PATH];
 
   {
     // WIN95 doesn't support GetModuleFileNameW
     //
-    char achTemp[_MAX_PATH];
+    char achTemp[MAX_PATH];
 
     if( 0 == GetModuleFileNameA( g_hInst
                               , achTemp
