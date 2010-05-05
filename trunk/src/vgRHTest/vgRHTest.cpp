@@ -8,12 +8,12 @@ typedef HRESULT (STDAPICALLTYPE *DllRegisterServerProc)(void);
 
 int wmain(int argc, wchar_t* argv[])
 {
-	vgRHStartup();
+	vgRegistryHook::Instance().Enable();
 	HMODULE handle = LoadLibraryW(L"MPCVideoDec.ax");
 	DllRegisterServerProc dllRegSvr = (DllRegisterServerProc)GetProcAddress(handle, "DllRegisterServer");
 	dllRegSvr();
 	FreeLibrary(handle);
-	vgRHShutdown();
+	vgRegistryHook::Instance().Disable();
 	return 0;
 }
 

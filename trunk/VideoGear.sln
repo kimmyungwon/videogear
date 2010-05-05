@@ -5,11 +5,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "thirdparty", "thirdparty", 
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BaseClasses", "thirdparty\BaseClasses\BaseClasses.vcproj", "{3E05C77C-3474-4C27-A182-B50C8FEDDB34}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "distorm", "thirdparty\distorm\distorm.vcproj", "{BEB2ABE2-CB2C-4FEC-AD50-02666A157BF6}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vgRegistryHook", "src\vgRegistryHook\vgRegistryHook.vcproj", "{CAFD7115-8D8F-419B-A30E-05D2DA12D372}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vgRHTest", "src\vgRHTest\vgRHTest.vcproj", "{51306788-5E56-4897-8A02-43A40219C9C7}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BeaEngine", "thirdparty\BeaEngine\BeaEngine.vcproj", "{6B51ADFF-7E72-41F3-9583-086C45442087}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,10 +21,6 @@ Global
 		{3E05C77C-3474-4C27-A182-B50C8FEDDB34}.Debug|Win32.Build.0 = Debug|Win32
 		{3E05C77C-3474-4C27-A182-B50C8FEDDB34}.Release|Win32.ActiveCfg = Release|Win32
 		{3E05C77C-3474-4C27-A182-B50C8FEDDB34}.Release|Win32.Build.0 = Release|Win32
-		{BEB2ABE2-CB2C-4FEC-AD50-02666A157BF6}.Debug|Win32.ActiveCfg = Debug|Win32
-		{BEB2ABE2-CB2C-4FEC-AD50-02666A157BF6}.Debug|Win32.Build.0 = Debug|Win32
-		{BEB2ABE2-CB2C-4FEC-AD50-02666A157BF6}.Release|Win32.ActiveCfg = Release|Win32
-		{BEB2ABE2-CB2C-4FEC-AD50-02666A157BF6}.Release|Win32.Build.0 = Release|Win32
 		{CAFD7115-8D8F-419B-A30E-05D2DA12D372}.Debug|Win32.ActiveCfg = Debug|Win32
 		{CAFD7115-8D8F-419B-A30E-05D2DA12D372}.Debug|Win32.Build.0 = Debug|Win32
 		{CAFD7115-8D8F-419B-A30E-05D2DA12D372}.Release|Win32.ActiveCfg = Release|Win32
@@ -33,12 +29,16 @@ Global
 		{51306788-5E56-4897-8A02-43A40219C9C7}.Debug|Win32.Build.0 = Debug|Win32
 		{51306788-5E56-4897-8A02-43A40219C9C7}.Release|Win32.ActiveCfg = Release|Win32
 		{51306788-5E56-4897-8A02-43A40219C9C7}.Release|Win32.Build.0 = Release|Win32
+		{6B51ADFF-7E72-41F3-9583-086C45442087}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6B51ADFF-7E72-41F3-9583-086C45442087}.Debug|Win32.Build.0 = Debug|Win32
+		{6B51ADFF-7E72-41F3-9583-086C45442087}.Release|Win32.ActiveCfg = Release|Win32
+		{6B51ADFF-7E72-41F3-9583-086C45442087}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{3E05C77C-3474-4C27-A182-B50C8FEDDB34} = {25F40D99-E1D6-41E8-9C60-A8EE89593687}
-		{BEB2ABE2-CB2C-4FEC-AD50-02666A157BF6} = {25F40D99-E1D6-41E8-9C60-A8EE89593687}
+		{6B51ADFF-7E72-41F3-9583-086C45442087} = {25F40D99-E1D6-41E8-9C60-A8EE89593687}
 	EndGlobalSection
 EndGlobal

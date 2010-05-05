@@ -8,7 +8,7 @@
 	>
 	<Tool
 		Name="VCCLCompilerTool"
-		AdditionalIncludeDirectories="&quot;$(SolutionDir)include&quot;;&quot;$(SolutionDir)thirdparty\BaseClasses&quot;"
+		AdditionalIncludeDirectories="&quot;$(SolutionDir)include&quot;;&quot;$(SolutionDir)thirdparty\BaseClasses&quot;;&quot;$(SolutionDir)thirdparty\BeaEngine&quot;"
 	/>
 	<Tool
 		Name="VCLinkerTool"
