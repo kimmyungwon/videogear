@@ -195,6 +195,10 @@
 				RelativePath=".\vgInclude.h"
 				>
 			</File>
+			<File
+				RelativePath=".\vgWinDDK.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

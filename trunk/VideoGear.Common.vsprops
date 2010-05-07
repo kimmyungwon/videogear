@@ -12,7 +12,7 @@
 	/>
 	<Tool
 		Name="VCLinkerTool"
-		AdditionalDependencies="shlwapi.lib strmiids.lib winmm.lib"
+		AdditionalDependencies="ntdll.lib shlwapi.lib strmiids.lib winmm.lib"
 		AdditionalLibraryDirectories="&quot;$(SolutionDir)lib&quot;"
 	/>
 </VisualStudioPropertySheet>

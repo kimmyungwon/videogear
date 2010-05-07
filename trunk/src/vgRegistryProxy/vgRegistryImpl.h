@@ -51,8 +51,6 @@ private:
 			>
 		>
 	> RootNodeList;
-
-	typedef map<HKEY, vgRegistryPath> KeyToPathMap;
 private:
 	bool MapKey(HKEY key, const wstring &subKey, vgRegistryPath &path);
 	vgRegistryNode* MapRoot(HKEY rootKey);
@@ -64,5 +62,4 @@ private:
 	void Print(const vgRegistryNode &node, int level);
 private:
 	RootNodeList m_rootNodes;
-	KeyToPathMap m_keyToPathMap;
 };

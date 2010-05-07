@@ -1,12 +1,12 @@
 #include "StdAfx.h"
 #include "vgRegistryImpl.h"
 #include "vgCommon/vgConsole.h"
+#include "vgCommon/vgWinDDK.h"
 
 #include "vgRegistryImpl_Impl.inl"
 
 #define DECLARE_ROOT(key) \
-	m_rootNodes.insert(boost::shared_ptr<vgRegistryNode>(vgRegistryNode::CreateRoot(key, L#key))); \
-	m_keyToPathMap.insert(make_pair(key, vgRegistryPath(key, L"")))
+	m_rootNodes.insert(boost::shared_ptr<vgRegistryNode>(vgRegistryNode::CreateRoot(key, L#key)))
 
 vgRegistryImpl& vgRegistryImpl::GetInstance( void )
 {
@@ -31,34 +31,41 @@ void vgRegistryImpl::Print( void )
 
 LSTATUS APIENTRY vgRegistryImpl::RegCloseKey( HKEY hKey )
 {
-	return ERROR_SUCCESS;
+/*	return ERROR_SUCCESS;*/
+	return Real_RegCloseKey(hKey);
 }
 
 LSTATUS APIENTRY vgRegistryImpl::RegCreateKeyExW( HKEY hKey, LPCWSTR lpSubKey, DWORD Reserved, LPWSTR lpClass, DWORD dwOptions, REGSAM samDesired, LPSECURITY_ATTRIBUTES lpSecurityAttributes, PHKEY phkResult, LPDWORD lpdwDisposition )
 {
 	vgRegistryPath path;
-	if (MapKey(hKey, lpSubKey, path))
-	{
-		vgRegistryNode *node = CreateKey(path, false);
-		*phkResult = node->AsKey();
-		if (lpdwDisposition != NULL)
-			return REG_OPENED_EXISTING_KEY;
-		return ERROR_SUCCESS;
-	}
-	else
+	MapKey(hKey, lpSubKey, path);
+
+// 	vgRegistryPath path;
+// 	if (MapKey(hKey, lpSubKey, path))
+// 	{
+// 		vgRegistryNode *node = CreateKey(path, false);
+// 		*phkResult = node->AsKey();
+// 		if (lpdwDisposition != NULL)
+// 			return REG_OPENED_EXISTING_KEY;
+// 		return ERROR_SUCCESS;
+// 	}
+// 	else
 		return Real_RegCreateKeyExW(hKey, lpSubKey, Reserved, lpClass, dwOptions, samDesired, lpSecurityAttributes, phkResult, lpdwDisposition);
 }
 
 LSTATUS APIENTRY vgRegistryImpl::RegOpenKeyExW( HKEY hKey, LPCWSTR lpSubKey, DWORD ulOptions, REGSAM samDesired, PHKEY phkResult )
 {
 	vgRegistryPath path;
-	if (MapKey(hKey, lpSubKey, path))
-	{
-		vgRegistryNode *node = OpenKey(path);
-		*phkResult = node->AsKey();
-		return ERROR_SUCCESS;
-	}
-	else
+	MapKey(hKey, lpSubKey, path);
+
+// 	vgRegistryPath path;
+// 	if (MapKey(hKey, lpSubKey, path))
+// 	{
+// 		vgRegistryNode *node = OpenKey(path);
+// 		*phkResult = node->AsKey();
+// 		return ERROR_SUCCESS;
+// 	}
+// 	else
 		return Real_RegOpenKeyExW(hKey, lpSubKey, ulOptions, samDesired, phkResult);
 }
 
@@ -73,11 +80,36 @@ vgRegistryImpl::vgRegistryImpl(void)
 
 bool vgRegistryImpl::MapKey( HKEY key, const wstring &subKey, vgRegistryPath &path )
 {
-	KeyToPathMap::const_iterator iter = m_keyToPathMap.find(key);
-	if (iter == m_keyToPathMap.end())
-		return false;
-	path = vgRegistryPath(iter->second.m_rootKey, vgRegistryPath::Combine(iter->second.m_subKey, subKey));
-	return true;
+	if ((int)key < 0x80000000)
+	{
+		BYTE buffer[1024];
+		ULONG resultSize;
+		if (ZwQueryKey(key, KeyNameInformation, buffer, sizeof(buffer), &resultSize) != STATUS_SUCCESS)
+			return false;
+		KEY_BASIC_INFORMATION *keyInfo = (KEY_BASIC_INFORMATION*)buffer;
+		wstring keyPath(keyInfo->Name, (resultSize - sizeof(KEY_BASIC_INFORMATION)) / sizeof(wchar_t) + 1);
+
+		// 去掉开头的"TRY\"
+		keyPath = keyPath.substr(4);
+		// 解析Root
+		size_t sepPos = keyPath.find(L'\\');
+	 	wstring rootName = keyPath.substr(0, sepPos);
+		if (rootName == L"USER")
+			path.m_rootKey = HKEY_USERS;
+		else if (rootName == L"MACHINE")
+			path.m_rootKey = HKEY_LOCAL_MACHINE;
+		else
+			assert(false);
+		// 取得SubKey
+		path.m_subKey = keyPath.substr(sepPos + 1);
+
+		return true;
+	}
+	else
+	{
+		path = vgRegistryPath(key, subKey);
+		return true;	
+	}
 }
 
 vgRegistryNode* vgRegistryImpl::MapRoot( HKEY rootKey )
@@ -132,9 +164,6 @@ vgRegistryNode* vgRegistryImpl::CreateKey( const vgRegistryPath &path, bool crea
 			else
 				newParent = vgRegistryNode::CreateOverride(parent, childName).release();
 			parent->m_children.push_back(newParent);
-
-			if (realKey != NULL)
-				m_keyToPathMap.insert(make_pair(realKey, vgRegistryPath(newParent->m_rootKey, childSubKey)));
 		}
 
 		parent = newParent;
@@ -170,8 +199,6 @@ vgRegistryNode* vgRegistryImpl::OpenKey( const vgRegistryPath &path )
 			{
 				newParent = vgRegistryNode::CreateReal(parent, childName, realKey).release();
 				parent->m_children.push_back(newParent);
-
-				m_keyToPathMap.insert(make_pair(realKey, vgRegistryPath(newParent->m_rootKey, childSubKey)));
 			}
 		}
 
