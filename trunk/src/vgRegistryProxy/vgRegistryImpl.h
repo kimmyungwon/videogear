@@ -32,6 +32,8 @@ public:
 
 	~vgRegistryImpl(void);
 
+	void AddKey(const vgRegistryPath &path, bool asOverride);
+
 	void Print(void);
 private:
 	vgRegistryImpl(void);
@@ -51,7 +53,7 @@ private:
 	vgRegistryNode* MapRoot(HKEY rootKey);
 	vgRegistryNode* OpenChild(vgRegistryNode *parent, const wstring &childName);
 
-	vgRegistryNode* CreateKey(const vgRegistryPath &path);
+	vgRegistryNode* CreateKey(const vgRegistryPath &path, bool createAsOverride);
 	vgRegistryNode* OpenKey(const vgRegistryPath &path);
 	
 	void Print(const vgRegistryNode &node, int level);

@@ -36,6 +36,7 @@ protected:
 namespace vgRegistryNodeIndex
 {
 	struct Name {};
+	struct Type {};
 }
 
 typedef boost::multi_index::multi_index_container<
@@ -45,6 +46,10 @@ typedef boost::multi_index::multi_index_container<
 		boost::multi_index::ordered_unique<
 			boost::multi_index::tag<vgRegistryNodeIndex::Name>,
 			boost::multi_index::const_mem_fun<vgRegistryNodeBase, wstring, &vgRegistryNodeBase::GetNameForIndex>
+		>,
+		boost::multi_index::ordered_non_unique<
+			boost::multi_index::tag<vgRegistryNodeIndex::Type>,
+			boost::multi_index::member<vgRegistryNodeBase, vgRegistryNodeBase::Type, &vgRegistryNodeBase::m_type>
 		>
 	>
 > vgRegistryNodeList;
@@ -60,6 +65,9 @@ struct vgRegistryNode : vgRegistryNodeBase
 	static auto_ptr<vgRegistryNode> CreateOverride(vgRegistryNode *parent, const wstring &name);
 
 	virtual ~vgRegistryNode(void);
+
+	HKEY AsKey(void);
+	void SetType(Type newType);
 private:
 	vgRegistryNode(Type type);
 };

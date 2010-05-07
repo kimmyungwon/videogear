@@ -18,6 +18,11 @@ vgRegistryImpl::~vgRegistryImpl(void)
 {
 }
 
+void vgRegistryImpl::AddKey( const vgRegistryPath &path, bool asOverride )
+{
+	CreateKey(path, asOverride);
+}
+
 void vgRegistryImpl::Print( void )
 {
 	for (RootNodeList::const_iterator iter = m_rootNodes.begin(); iter != m_rootNodes.end(); iter++)
@@ -32,15 +37,17 @@ LSTATUS APIENTRY vgRegistryImpl::RegCloseKey( HKEY hKey )
 LSTATUS APIENTRY vgRegistryImpl::RegCreateKeyExW( HKEY hKey, LPCWSTR lpSubKey, DWORD Reserved, LPWSTR lpClass, DWORD dwOptions, REGSAM samDesired, LPSECURITY_ATTRIBUTES lpSecurityAttributes, PHKEY phkResult, LPDWORD lpdwDisposition )
 {
 	vgRegistryPath path = MapKey(hKey, lpSubKey);
-	vgRegistryNode *node = CreateKey(path);
-	return ERROR_NOT_FOUND;
+	vgRegistryNode *node = CreateKey(path, false);
+	*phkResult = node->AsKey();
+	return ERROR_SUCCESS;
 }
 
 LSTATUS APIENTRY vgRegistryImpl::RegOpenKeyExW( HKEY hKey, LPCWSTR lpSubKey, DWORD ulOptions, REGSAM samDesired, PHKEY phkResult )
 {
 	vgRegistryPath path = MapKey(hKey, lpSubKey);
 	vgRegistryNode *node = OpenKey(path);
-	return ERROR_NOT_FOUND;
+	*phkResult = node->AsKey();
+	return ERROR_SUCCESS;
 }
 
 vgRegistryImpl::vgRegistryImpl(void)
@@ -78,7 +85,7 @@ vgRegistryNode* vgRegistryImpl::OpenChild( vgRegistryNode *parent, const wstring
 		return NULL;
 }
 
-vgRegistryNode* vgRegistryImpl::CreateKey( const vgRegistryPath &path )
+vgRegistryNode* vgRegistryImpl::CreateKey( const vgRegistryPath &path, bool createAsOverride )
 {
 	vgRegistryNode *parent = MapRoot(path.m_rootKey);
 	size_t pos = 0;
@@ -98,7 +105,7 @@ vgRegistryNode* vgRegistryImpl::CreateKey( const vgRegistryPath &path )
 		if (newParent != NULL)
 		{
 			if (newParent->m_type == vgRegistryNode::Type_Real)
-				newParent->m_type = vgRegistryNode::Type_Virtual;
+				newParent->SetType(vgRegistryNode::Type_Virtual);
 		}
 		else
 		{	
@@ -120,6 +127,9 @@ vgRegistryNode* vgRegistryImpl::CreateKey( const vgRegistryPath &path )
 		parent = newParent;
 		pos = (newPos != wstring::npos ? newPos + 1 : wstring::npos);
 	}
+
+	if (createAsOverride)
+		parent->SetType(vgRegistryNode::Type_Override);
 	return parent;
 }
 
@@ -160,7 +170,7 @@ vgRegistryNode* vgRegistryImpl::OpenKey( const vgRegistryPath &path )
 
 void vgRegistryImpl::Print( const vgRegistryNode &node, int level )
 {
-	for (int i = 1; i <= level - 1; i++)
+	for (int i = 1; i <= level; i++)
 		vgConsole::GetInstance().Print(L"+---");
 
 	wstring nodeType = (
@@ -173,3 +183,4 @@ void vgRegistryImpl::Print( const vgRegistryNode &node, int level )
 	for (size_t i = 0, childCount = node.m_children.size(); i < childCount; i++)
 		Print(*node.m_children[i], level + 1);
 }
+

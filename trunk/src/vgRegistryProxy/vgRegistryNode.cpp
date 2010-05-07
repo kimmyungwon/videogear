@@ -65,4 +65,30 @@ vgRegistryNode::vgRegistryNode( Type type )
 	m_realKey = NULL;
 }
 
+HKEY vgRegistryNode::AsKey( void )
+{
+	if (m_type == Type_Real)
+		return m_realKey;
+	else
+		return (HKEY)((int)this | 0x40000000);
+}
+
+void vgRegistryNode::SetType( Type newType )
+{
+	if (m_type != newType)
+	{
+		typedef vgRegistryNodeList::index<vgRegistryNodeIndex::Type>::type Index;
+		Index &index = m_children.get<vgRegistryNodeIndex::Type>();
+		pair<Index::iterator, Index::iterator> range = index.equal_range(Type_Real);
+		for (Index::iterator iter = range.first; iter != range.second; )
+		{
+			vgRegistryNode *child = *iter;
+			index.erase(iter++);
+			delete child;
+		}
+
+		m_type = newType;
+	}
+}
+
 

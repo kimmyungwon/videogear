@@ -8,12 +8,17 @@ int wmain(int argc, wchar_t* argv[])
 {
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
-	HKEY key1;
-	vgRegistryImpl::GetInstance().RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\iLuE\\VideoGear", 0, NULL, 0, KEY_ALL_ACCESS, NULL, 
-		&key1, NULL);
-	vgRegistryImpl::GetInstance().RegCloseKey(key1);
+	vgRegistryImpl &impl = vgRegistryImpl::GetInstance();
+	impl.AddKey(vgRegistryPath(HKEY_LOCAL_MACHINE, L"Software\\iLuE"), true);
+	impl.AddKey(vgRegistryPath(HKEY_LOCAL_MACHINE, L"Software\\iLuE\\VideoGear"), true);
 
-	vgRegistryImpl::GetInstance().Print();
+	HKEY key1;
+	impl.RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft", 0, KEY_ALL_ACCESS, &key1);
+
+	HKEY key2;
+	impl.RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\iLuE\\VideoGear\\Settings", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key2, NULL);
+
+	impl.Print();
 	system("PAUSE");
 	return 0;
 }
