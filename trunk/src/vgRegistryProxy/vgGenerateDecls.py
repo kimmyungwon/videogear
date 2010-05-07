@@ -95,7 +95,7 @@ def main():
 	outputFile.write("\n")
 	for i in range(0, len(apis)):
 		generateImplDecl(outputFile, i)
-	outputFile.write("private:")
+	outputFile.write("")
 	for i in range(0, len(apis)):
 		generateMineDecl(outputFile, i)
 	outputFile.close()

@@ -15,6 +15,11 @@ struct vgRegistryPath
 		return result;
 	}
 
+	vgRegistryPath(void)
+	{
+		m_rootKey = NULL;
+	}
+
 	vgRegistryPath(HKEY rootKey, const wstring &subKey)
 	{
 		m_rootKey = rootKey;
@@ -49,7 +54,7 @@ private:
 
 	typedef map<HKEY, vgRegistryPath> KeyToPathMap;
 private:
-	vgRegistryPath MapKey(HKEY key, const wstring &subKey);
+	bool MapKey(HKEY key, const wstring &subKey, vgRegistryPath &path);
 	vgRegistryNode* MapRoot(HKEY rootKey);
 	vgRegistryNode* OpenChild(vgRegistryNode *parent, const wstring &childName);
 

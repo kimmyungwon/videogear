@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="vgRegistryProxy"
-	ProjectGUID="{533D5B07-F916-45F3-980B-E0FEF8F7178C}"
-	RootNamespace="vgRegistryProxy"
+	Name="vgRegistryProxyInject"
+	ProjectGUID="{E77E4236-A03F-4988-A8FB-8FE046CA24CB}"
+	RootNamespace="vgRegistryProxyInject"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -18,10 +18,9 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			ConfigurationType="4"
+			ConfigurationType="2"
 			InheritedPropertySheets="..\..\VideoGear.Common.vsprops"
 			CharacterSet="1"
-			WholeProgramOptimization="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -41,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;VGREGISTRYPROXYINJECT_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -59,10 +58,18 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
+				Name="VCLinkerTool"
+				LinkIncremental="2"
+				ModuleDefinitionFile="vgRegistryProxyInject.def"
+				GenerateDebugInformation="true"
+				SubSystem="2"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -74,12 +81,15 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			ConfigurationType="4"
+			ConfigurationType="2"
 			InheritedPropertySheets="..\..\VideoGear.Common.vsprops"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
@@ -101,13 +111,11 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="3"
-				InlineFunctionExpansion="2"
+				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="1"
-				OmitFramePointers="true"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
-				RuntimeLibrary="0"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;VGREGISTRYPROXYINJECT_EXPORTS"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -122,10 +130,20 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
+				Name="VCLinkerTool"
+				LinkIncremental="1"
+				ModuleDefinitionFile="vgRegistryProxyInject.def"
+				GenerateDebugInformation="true"
+				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -137,14 +155,17 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
 	</Configurations>
 	<References>
 		<ProjectReference
-			ReferencedProjectIdentifier="{D415FAF2-916C-48F7-8307-830E2EBDB566}"
-			RelativePathToProject=".\src\vgCommon\vgCommon.vcproj"
+			ReferencedProjectIdentifier="{533D5B07-F916-45F3-980B-E0FEF8F7178C}"
+			RelativePathToProject=".\src\vgRegistryProxy\vgRegistryProxy.vcproj"
 		/>
 	</References>
 	<Files>
@@ -153,6 +174,28 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
+			<File
+				RelativePath=".\dllmain.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						CompileAsManaged="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						CompileAsManaged="0"
+					/>
+				</FileConfiguration>
+			</File>
 			<File
 				RelativePath=".\stdafx.cpp"
 				>
@@ -174,11 +217,11 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\vgRegistryImpl.cpp"
+				RelativePath=".\vgRegistryProxyInject.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\vgRegistryNode.cpp"
+				RelativePath=".\vgRegistryProxyInject.def"
 				>
 			</File>
 		</Filter>
@@ -191,26 +234,6 @@
 				RelativePath=".\stdafx.h"
 				>
 			</File>
-			<File
-				RelativePath=".\vgInclude.h"
-				>
-			</File>
-			<File
-				RelativePath=".\vgRegistryImpl.h"
-				>
-			</File>
-			<File
-				RelativePath=".\vgRegistryImpl_Decl.inl"
-				>
-			</File>
-			<File
-				RelativePath=".\vgRegistryImpl_Impl.inl"
-				>
-			</File>
-			<File
-				RelativePath=".\vgRegistryNode.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
@@ -218,19 +241,6 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 		</Filter>
-		<File
-			RelativePath=".\vgGenerateDecls.py"
-			>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCustomBuildTool"
-					CommandLine="python &quot;$(InputPath)&quot; &quot;$(WindowsSdkDir)Include\WinReg.h&quot;&#x0D;&#x0A;"
-					Outputs="$(InputDir)vgRegistryImpl_Decl.inl;$(InputDir)vgRegistryImpl_Impl.inl"
-				/>
-			</FileConfiguration>
-		</File>
 	</Files>
 	<Globals>
 	</Globals>

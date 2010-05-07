@@ -13,6 +13,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BeaEngine", "thirdparty\Bea
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vgCommon", "src\vgCommon\vgCommon.vcproj", "{D415FAF2-916C-48F7-8307-830E2EBDB566}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vgRegistryProxyInject", "src\vgRegistryProxyInject\vgRegistryProxyInject.vcproj", "{E77E4236-A03F-4988-A8FB-8FE046CA24CB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -39,6 +41,10 @@ Global
 		{D415FAF2-916C-48F7-8307-830E2EBDB566}.Debug|Win32.Build.0 = Debug|Win32
 		{D415FAF2-916C-48F7-8307-830E2EBDB566}.Release|Win32.ActiveCfg = Release|Win32
 		{D415FAF2-916C-48F7-8307-830E2EBDB566}.Release|Win32.Build.0 = Release|Win32
+		{E77E4236-A03F-4988-A8FB-8FE046CA24CB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E77E4236-A03F-4988-A8FB-8FE046CA24CB}.Debug|Win32.Build.0 = Debug|Win32
+		{E77E4236-A03F-4988-A8FB-8FE046CA24CB}.Release|Win32.ActiveCfg = Release|Win32
+		{E77E4236-A03F-4988-A8FB-8FE046CA24CB}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

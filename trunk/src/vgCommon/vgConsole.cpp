@@ -16,6 +16,9 @@ void vgConsole::Print( const wchar_t *format, ... )
 	vswprintf_s(message, length, format, args);
 	DWORD writtenChars;
 	WriteConsoleW(m_outputHandle, message, length - 1, &writtenChars, NULL);
+#ifdef _DEBUG
+	OutputDebugStringW(message);
+#endif
 	free(message);
 }
 

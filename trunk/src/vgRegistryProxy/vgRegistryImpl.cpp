@@ -31,27 +31,39 @@ void vgRegistryImpl::Print( void )
 
 LSTATUS APIENTRY vgRegistryImpl::RegCloseKey( HKEY hKey )
 {
-	return ERROR_NOT_FOUND;
+	return ERROR_SUCCESS;
 }
 
 LSTATUS APIENTRY vgRegistryImpl::RegCreateKeyExW( HKEY hKey, LPCWSTR lpSubKey, DWORD Reserved, LPWSTR lpClass, DWORD dwOptions, REGSAM samDesired, LPSECURITY_ATTRIBUTES lpSecurityAttributes, PHKEY phkResult, LPDWORD lpdwDisposition )
 {
-	vgRegistryPath path = MapKey(hKey, lpSubKey);
-	vgRegistryNode *node = CreateKey(path, false);
-	*phkResult = node->AsKey();
-	return ERROR_SUCCESS;
+	vgRegistryPath path;
+	if (MapKey(hKey, lpSubKey, path))
+	{
+		vgRegistryNode *node = CreateKey(path, false);
+		*phkResult = node->AsKey();
+		if (lpdwDisposition != NULL)
+			return REG_OPENED_EXISTING_KEY;
+		return ERROR_SUCCESS;
+	}
+	else
+		return Real_RegCreateKeyExW(hKey, lpSubKey, Reserved, lpClass, dwOptions, samDesired, lpSecurityAttributes, phkResult, lpdwDisposition);
 }
 
 LSTATUS APIENTRY vgRegistryImpl::RegOpenKeyExW( HKEY hKey, LPCWSTR lpSubKey, DWORD ulOptions, REGSAM samDesired, PHKEY phkResult )
 {
-	vgRegistryPath path = MapKey(hKey, lpSubKey);
-	vgRegistryNode *node = OpenKey(path);
-	*phkResult = node->AsKey();
-	return ERROR_SUCCESS;
+	vgRegistryPath path;
+	if (MapKey(hKey, lpSubKey, path))
+	{
+		vgRegistryNode *node = OpenKey(path);
+		*phkResult = node->AsKey();
+		return ERROR_SUCCESS;
+	}
+	else
+		return Real_RegOpenKeyExW(hKey, lpSubKey, ulOptions, samDesired, phkResult);
 }
 
 vgRegistryImpl::vgRegistryImpl(void)
-{
+{	
 	DECLARE_ROOT(HKEY_CLASSES_ROOT);
 	DECLARE_ROOT(HKEY_CURRENT_USER);
 	DECLARE_ROOT(HKEY_LOCAL_MACHINE);
@@ -59,12 +71,13 @@ vgRegistryImpl::vgRegistryImpl(void)
 	DECLARE_ROOT(HKEY_CURRENT_CONFIG);
 }
 
-vgRegistryPath vgRegistryImpl::MapKey( HKEY key, const wstring &subKey )
+bool vgRegistryImpl::MapKey( HKEY key, const wstring &subKey, vgRegistryPath &path )
 {
 	KeyToPathMap::const_iterator iter = m_keyToPathMap.find(key);
-	assert(iter != m_keyToPathMap.end());
-	vgRegistryPath path(iter->second.m_rootKey, vgRegistryPath::Combine(iter->second.m_subKey, subKey));
-	return path;
+	if (iter == m_keyToPathMap.end())
+		return false;
+	path = vgRegistryPath(iter->second.m_rootKey, vgRegistryPath::Combine(iter->second.m_subKey, subKey));
+	return true;
 }
 
 vgRegistryNode* vgRegistryImpl::MapRoot( HKEY rootKey )
