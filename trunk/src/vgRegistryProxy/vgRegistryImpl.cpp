@@ -38,34 +38,28 @@ LSTATUS APIENTRY vgRegistryImpl::RegCloseKey( HKEY hKey )
 LSTATUS APIENTRY vgRegistryImpl::RegCreateKeyExW( HKEY hKey, LPCWSTR lpSubKey, DWORD Reserved, LPWSTR lpClass, DWORD dwOptions, REGSAM samDesired, LPSECURITY_ATTRIBUTES lpSecurityAttributes, PHKEY phkResult, LPDWORD lpdwDisposition )
 {
 	vgRegistryPath path;
-	MapKey(hKey, lpSubKey, path);
-
-// 	vgRegistryPath path;
-// 	if (MapKey(hKey, lpSubKey, path))
-// 	{
-// 		vgRegistryNode *node = CreateKey(path, false);
-// 		*phkResult = node->AsKey();
-// 		if (lpdwDisposition != NULL)
-// 			return REG_OPENED_EXISTING_KEY;
-// 		return ERROR_SUCCESS;
-// 	}
-// 	else
+	if (MapKey(hKey, lpSubKey, path))
+	{
+		vgRegistryNode *node = CreateKey(path, false);
+		*phkResult = node->AsKey();
+		if (lpdwDisposition != NULL)
+			return REG_OPENED_EXISTING_KEY;
+		return ERROR_SUCCESS;
+	}
+	else
 		return Real_RegCreateKeyExW(hKey, lpSubKey, Reserved, lpClass, dwOptions, samDesired, lpSecurityAttributes, phkResult, lpdwDisposition);
 }
 
 LSTATUS APIENTRY vgRegistryImpl::RegOpenKeyExW( HKEY hKey, LPCWSTR lpSubKey, DWORD ulOptions, REGSAM samDesired, PHKEY phkResult )
 {
 	vgRegistryPath path;
-	MapKey(hKey, lpSubKey, path);
-
-// 	vgRegistryPath path;
-// 	if (MapKey(hKey, lpSubKey, path))
-// 	{
-// 		vgRegistryNode *node = OpenKey(path);
-// 		*phkResult = node->AsKey();
-// 		return ERROR_SUCCESS;
-// 	}
-// 	else
+	if (MapKey(hKey, lpSubKey, path))
+	{
+		vgRegistryNode *node = OpenKey(path);
+		*phkResult = node->AsKey();
+		return ERROR_SUCCESS;
+	}
+	else
 		return Real_RegOpenKeyExW(hKey, lpSubKey, ulOptions, samDesired, phkResult);
 }
 
@@ -80,7 +74,18 @@ vgRegistryImpl::vgRegistryImpl(void)
 
 bool vgRegistryImpl::MapKey( HKEY key, const wstring &subKey, vgRegistryPath &path )
 {
-	if ((int)key < 0x80000000)
+	if ((int)key >= 0x80000000)
+	{
+		path = vgRegistryPath(key, subKey);
+		return true;	
+	}
+	else if ((int)key >= 0x40000000)
+	{
+		vgRegistryNode *node = (vgRegistryNode*)((int)key & ~0x40000000);
+		path = vgRegistryPath(node->m_rootKey, subKey);
+		return true;
+	}
+	else
 	{
 		BYTE buffer[1024];
 		ULONG resultSize;
@@ -104,11 +109,6 @@ bool vgRegistryImpl::MapKey( HKEY key, const wstring &subKey, vgRegistryPath &pa
 		path.m_subKey = keyPath.substr(sepPos + 1);
 
 		return true;
-	}
-	else
-	{
-		path = vgRegistryPath(key, subKey);
-		return true;	
 	}
 }
 
