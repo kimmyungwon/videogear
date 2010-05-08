@@ -1,0 +1,4 @@
+LIBRARY	"vgRegHackerTest"
+
+EXPORTS
+	vgInjected

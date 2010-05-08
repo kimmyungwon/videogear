@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vgRegHacker", "src\vgRegHacker\vgRegHacker.vcproj", "{46D1AE2F-E4C8-4232-AB7F-26BBED88A427}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E698C4CC-A70A-43BA-9348-0DEBABAC6BFE} = {E698C4CC-A70A-43BA-9348-0DEBABAC6BFE}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vgUtil", "src\vgUtil\vgUtil.vcproj", "{E698C4CC-A70A-43BA-9348-0DEBABAC6BFE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ThirdParty Libraries", "ThirdParty Libraries", "{CADF8B02-CDD3-4BD8-B715-BB6BF4D49C58}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BeaEngine", "thirdparty\BeaEngine\BeaEngine.vcproj", "{6B51ADFF-7E72-41F3-9583-086C45442087}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vgRegHackerTest", "src\vgRegHackerTest\vgRegHackerTest.vcproj", "{A6B47E57-A84F-4966-BB4E-766B4748B260}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{46D1AE2F-E4C8-4232-AB7F-26BBED88A427}.Debug|Win32.ActiveCfg = Debug|Win32
+		{46D1AE2F-E4C8-4232-AB7F-26BBED88A427}.Debug|Win32.Build.0 = Debug|Win32
+		{46D1AE2F-E4C8-4232-AB7F-26BBED88A427}.Release|Win32.ActiveCfg = Release|Win32
+		{46D1AE2F-E4C8-4232-AB7F-26BBED88A427}.Release|Win32.Build.0 = Release|Win32
+		{E698C4CC-A70A-43BA-9348-0DEBABAC6BFE}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E698C4CC-A70A-43BA-9348-0DEBABAC6BFE}.Debug|Win32.Build.0 = Debug|Win32
+		{E698C4CC-A70A-43BA-9348-0DEBABAC6BFE}.Release|Win32.ActiveCfg = Release|Win32
+		{E698C4CC-A70A-43BA-9348-0DEBABAC6BFE}.Release|Win32.Build.0 = Release|Win32
+		{6B51ADFF-7E72-41F3-9583-086C45442087}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6B51ADFF-7E72-41F3-9583-086C45442087}.Debug|Win32.Build.0 = Debug|Win32
+		{6B51ADFF-7E72-41F3-9583-086C45442087}.Release|Win32.ActiveCfg = Release|Win32
+		{6B51ADFF-7E72-41F3-9583-086C45442087}.Release|Win32.Build.0 = Release|Win32
+		{A6B47E57-A84F-4966-BB4E-766B4748B260}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A6B47E57-A84F-4966-BB4E-766B4748B260}.Debug|Win32.Build.0 = Debug|Win32
+		{A6B47E57-A84F-4966-BB4E-766B4748B260}.Release|Win32.ActiveCfg = Release|Win32
+		{A6B47E57-A84F-4966-BB4E-766B4748B260}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{6B51ADFF-7E72-41F3-9583-086C45442087} = {CADF8B02-CDD3-4BD8-B715-BB6BF4D49C58}
+	EndGlobalSection
+EndGlobal
