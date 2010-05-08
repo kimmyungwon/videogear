@@ -1,14 +1,18 @@
 #pragma once
 
-#include "vgInclude.h"
+#include "vgInclude.hpp"
 
-struct vgConsole
+VG_NAMESPACE_BEGIN
+
+struct Console
 {
-	static vgConsole& GetInstance(void);
+	static Console& GetInstance(void);
 
 	void Print(const wchar_t *format, ...);
 private:
-	vgConsole(void);
+	Console(void);
 private:
 	HANDLE m_outputHandle;
 };
+
+VG_NAMESPACE_END

@@ -43,7 +43,7 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="vgInclude.hpp"
 				WarningLevel="3"
@@ -155,6 +155,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\vgConsole.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\vgPCH.cpp"
 				>
 				<FileConfiguration
@@ -181,6 +185,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\vgConsole.h"
+				>
+			</File>
+			<File
 				RelativePath=".\vgHook.hpp"
 				>
 			</File>
@@ -189,15 +197,13 @@
 				>
 			</File>
 			<File
+				RelativePath=".\vgString.hpp"
+				>
+			</File>
+			<File
 				RelativePath=".\vgWinDDK.hpp"
 				>
 			</File>
-		</Filter>
-		<Filter
-			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
-			>
 		</Filter>
 	</Files>
 	<Globals>

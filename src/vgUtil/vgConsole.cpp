@@ -1,13 +1,14 @@
-#include "stdafx.h"
 #include "vgConsole.h"
 
-vgConsole& vgConsole::GetInstance( void )
+VG_NAMESPACE_BEGIN
+
+Console& Console::GetInstance( void )
 {
-	static vgConsole instance;
+	static Console instance;
 	return instance;
 }
 
-void vgConsole::Print( const wchar_t *format, ... )
+void Console::Print( const wchar_t *format, ... )
 {
 	va_list args;
 	va_start(args, format);
@@ -22,7 +23,9 @@ void vgConsole::Print( const wchar_t *format, ... )
 	free(message);
 }
 
-vgConsole::vgConsole( void )
+Console::Console( void )
 {
 	m_outputHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 }
+
+VG_NAMESPACE_END
