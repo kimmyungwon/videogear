@@ -71,7 +71,29 @@ struct RegPath
 {
 	HKEY m_rootKey;
 	vector<wstring> m_segments;
+
+	wstring ToString(void) const
+	{
+		wstring result;
+
+		switch ((int)m_rootKey)
+		{
+		case HKEY_LOCAL_MACHINE:
+			result += L"HKEY_LOCAL_MACHINE";
+			break;
+		case HKEY_USERS:
+			result += L"HKEY_USERS";
+			break;
+		}
+		
+		for (size_t i = 0; i < m_segments.size(); i++)
+			result += L"\\" + m_segments[i];
+
+		return result;
+	}
 };
+
+class CodeHook;
 
 class RegTree : public noncopyable
 {
@@ -80,10 +102,18 @@ class RegTree : public noncopyable
 
 public:
 	static RegTree& GetInstance(void);
+
+	~RegTree(void);
+
+	void Hook(void);
+	void Unhook(void);
 private:
 	RegTree(void);
 
 	bool ResolveKEY(HKEY key, RegPath &path);
+	bool ResolveKEY(HKEY key, const wstring &subKey, RegPath &path);
+private:
+	CodeHook *m_hook;
 };
 
 VG_NAMESPACE_END

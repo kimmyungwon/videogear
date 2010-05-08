@@ -7,11 +7,14 @@ import sys
 apis = [
 	'RegCloseKey',
 	'RegCreateKeyExW',
+	'RegDeleteKeyExW',
+	'RegDeleteValueW',
 	'RegEnumKeyExW',
 	'RegEnumValueW',
 	'RegOpenKeyExW',
 	'RegQueryInfoKeyW',
-	'RegQueryValueExW'
+	'RegQueryValueExW',
+	'RegSetValueExW'
 ]
 
 apiDecls = []

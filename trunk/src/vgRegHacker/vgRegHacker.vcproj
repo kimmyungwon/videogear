@@ -43,7 +43,7 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="vgInclude.hpp"
 				WarningLevel="3"
@@ -201,12 +201,6 @@
 				>
 			</File>
 		</Filter>
-		<Filter
-			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
-			>
-		</Filter>
 		<File
 			RelativePath=".\vgGenerateDecls.py"
 			>
@@ -215,7 +209,7 @@
 				>
 				<Tool
 					Name="VCCustomBuildTool"
-					CommandLine="python &quot;$(InputPath)&quot; &quot;$(WindowsSdkDir)Include\WinReg.h&quot;"
+					CommandLine="python &quot;$(InputPath)&quot; &quot;$(WindowsSdkDir)Include\WinReg.h&quot;&#x0D;&#x0A;"
 					Outputs="$(InputDir)vgRegTree_Decl.inl;$(InputDir)vgRegTree_Impl.inl"
 				/>
 			</FileConfiguration>
@@ -224,7 +218,7 @@
 				>
 				<Tool
 					Name="VCCustomBuildTool"
-					CommandLine="python &quot;$(InputPath)&quot; &quot;$(WindowsSdkDir)Include\WinReg.h&quot;"
+					CommandLine="python &quot;$(InputPath)&quot; &quot;$(WindowsSdkDir)Include\WinReg.h&quot;&#x0D;&#x0A;"
 					Outputs="$(InputDir)vgRegTree_Decl.inl;$(InputDir)vgRegTree_Impl.inl"
 				/>
 			</FileConfiguration>

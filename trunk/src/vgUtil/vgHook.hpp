@@ -20,7 +20,7 @@ typedef LongJump32 LongJump;
 typedef LongJump64 LongJump;
 #endif
 
-class Hook
+class CodeHook
 {
 private:
 	struct HookedItem
@@ -32,13 +32,13 @@ private:
 		int m_trampolineSize;
 	};
 public:
-	~Hook(void)
+	~CodeHook(void)
 	{
 		UnhookAll();
 	}
 
 	template<typename T>
-	T Hook(T original, T hook)
+	void Hook(T &original, T hook)
 	{
 		// 跟踪jmp指令来获得原函数真实的入口地址
 		original = (T)GetRealEntryPoint((long long)original);
@@ -49,12 +49,12 @@ public:
 		newItem.m_hook = (long long)hook;
 		std::pair<HookedItems::const_iterator, bool> itemsPairIB = m_hookedItems.push_back(newItem);
 		if (!itemsPairIB.second)
-			return original;
+			return;
 
 		// 计算原函数入口容纳一个LongJump所需转移的最小指令块的大小
 		newItem.m_entryBlockSize = CalcEntryBlockSize((long long)original);
 		if (newItem.m_entryBlockSize < sizeof(LongJump))
-			return original;
+			return;
 
 		// Trampoline需要容纳原函数入口的指令块以及一个LongJump
 		newItem.m_trampolineSize = newItem.m_entryBlockSize + sizeof(LongJump);
@@ -81,7 +81,7 @@ public:
 		FlushInstructionCache(GetCurrentProcess(), (LPCVOID)original, sizeof(LongJump));
 
 		m_hookedItems.replace(itemsPairIB.first, newItem);
-		return (T)newItem.m_trampoline;
+		original = (T)newItem.m_trampoline;
 	}
 
 	template<typename T>

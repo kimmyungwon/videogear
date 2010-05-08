@@ -1,5 +1,11 @@
 #include "vgRegTree.hpp"
+#include "vgUtil/vgConsole.h"
+#include "vgUtil/vgHook.hpp"
+#include "vgUtil/vgString.hpp"
 #include "vgUtil/vgWinDDK.hpp"
+
+#define HOOK(api)	m_hook->Hook(Real_##api, Mine_##api);
+#define UNHOOK(api)	m_hook->Unhook(Real_##api, Mine_##api);	
 
 VG_NAMESPACE_BEGIN
 
@@ -11,15 +17,101 @@ RegTree& RegTree::GetInstance( void )
 	return instance;
 }
 
-// LSTATUS APIENTRY RegTree::RegCloseKey(HKEY hKey);
-// LSTATUS APIENTRY RegTree::RegCreateKeyExW(HKEY hKey, LPCWSTR lpSubKey, DWORD Reserved, LPWSTR lpClass, DWORD dwOptions, REGSAM samDesired, LPSECURITY_ATTRIBUTES lpSecurityAttributes, PHKEY phkResult, LPDWORD lpdwDisposition);
-// LSTATUS APIENTRY RegTree::RegEnumKeyExW(HKEY hKey, DWORD dwIndex, LPWSTR lpName, LPDWORD lpcchName, LPDWORD lpReserved, LPWSTR lpClass, LPDWORD lpcchClass, PFILETIME lpftLastWriteTime);
-// LSTATUS APIENTRY RegTree::RegEnumValueW(HKEY hKey, DWORD dwIndex, LPWSTR lpValueName, LPDWORD lpcchValueName, LPDWORD lpReserved, LPDWORD lpType, LPBYTE lpData, LPDWORD lpcbData);
-// LSTATUS APIENTRY RegTree::RegOpenKeyExW(HKEY hKey, LPCWSTR lpSubKey, DWORD ulOptions, REGSAM samDesired, PHKEY phkResult);
-// LSTATUS APIENTRY RegTree::RegQueryInfoKeyW(HKEY hKey, LPWSTR lpClass, LPDWORD lpcchClass, LPDWORD lpReserved, LPDWORD lpcSubKeys, LPDWORD lpcbMaxSubKeyLen, LPDWORD lpcbMaxClassLen, LPDWORD lpcValues, LPDWORD lpcbMaxValueNameLen, LPDWORD lpcbMaxValueLen, LPDWORD lpcbSecurityDescriptor, PFILETIME lpftLastWriteTime);
+RegTree::~RegTree( void )
+{
+	delete m_hook;
+	m_hook = NULL;
+}
+
+void RegTree::Hook( void )
+{	
+	HOOK(RegCloseKey);	
+	HOOK(RegCreateKeyExW);
+	HOOK(RegEnumKeyExW);
+	HOOK(RegEnumValueW);
+	HOOK(RegOpenKeyExW);
+	HOOK(RegQueryInfoKeyW);
+	HOOK(RegQueryValueExW);
+}
+
+void RegTree::Unhook( void )
+{
+	UNHOOK(RegCloseKey);	
+	UNHOOK(RegCreateKeyExW);
+	UNHOOK(RegEnumKeyExW);
+	UNHOOK(RegEnumValueW);
+	UNHOOK(RegOpenKeyExW);
+	UNHOOK(RegQueryInfoKeyW);
+	UNHOOK(RegQueryValueExW);
+}
+
+LSTATUS APIENTRY RegTree::RegCloseKey(HKEY hKey)
+{
+	RegPath path;
+	ResolveKEY(hKey, path);
+	Console::GetInstance().Print(L"CloseKey: %s\n", path.ToString().c_str());
+	
+	return Real_RegCloseKey(hKey);
+}
+
+LSTATUS APIENTRY RegTree::RegCreateKeyExW(HKEY hKey, LPCWSTR lpSubKey, DWORD Reserved, LPWSTR lpClass, DWORD dwOptions, REGSAM samDesired, LPSECURITY_ATTRIBUTES lpSecurityAttributes, PHKEY phkResult, LPDWORD lpdwDisposition)
+{
+	RegPath path;
+	ResolveKEY(hKey, lpSubKey, path);
+	Console::GetInstance().Print(L"CreateKey: %s\n", path.ToString().c_str());
+	
+	return Real_RegCreateKeyExW(hKey, lpSubKey, Reserved, lpClass, dwOptions, samDesired, lpSecurityAttributes, phkResult, lpdwDisposition);
+}
+
+LSTATUS APIENTRY RegTree::RegEnumKeyExW(HKEY hKey, DWORD dwIndex, LPWSTR lpName, LPDWORD lpcchName, LPDWORD lpReserved, LPWSTR lpClass, LPDWORD lpcchClass, PFILETIME lpftLastWriteTime)
+{
+	RegPath path;
+	ResolveKEY(hKey, path);
+	Console::GetInstance().Print(L"EnumKey: %s\n", path.ToString().c_str());
+	
+	return Real_RegEnumKeyExW(hKey, dwIndex, lpName, lpcchName, lpReserved, lpClass, lpcchClass, lpftLastWriteTime);
+}
+
+LSTATUS APIENTRY RegTree::RegEnumValueW(HKEY hKey, DWORD dwIndex, LPWSTR lpValueName, LPDWORD lpcchValueName, LPDWORD lpReserved, LPDWORD lpType, LPBYTE lpData, LPDWORD lpcbData)
+{
+	RegPath path;
+	ResolveKEY(hKey, path);
+	Console::GetInstance().Print(L"EnumValue: %s\n", path.ToString().c_str());
+	
+	return Real_RegEnumValueW(hKey, dwIndex, lpValueName, lpcchValueName, lpReserved, lpType, lpData, lpcbData);
+}
+
+LSTATUS APIENTRY RegTree::RegOpenKeyExW(HKEY hKey, LPCWSTR lpSubKey, DWORD ulOptions, REGSAM samDesired, PHKEY phkResult)
+{
+	RegPath path;
+	ResolveKEY(hKey, lpSubKey, path);
+	Console::GetInstance().Print(L"OpenKey: %s\n", path.ToString().c_str());
+	
+	return Real_RegOpenKeyExW(hKey, lpSubKey, ulOptions, samDesired, phkResult);
+}
+
+LSTATUS APIENTRY RegTree::RegQueryInfoKeyW(HKEY hKey, LPWSTR lpClass, LPDWORD lpcchClass, LPDWORD lpReserved, LPDWORD lpcSubKeys, LPDWORD lpcbMaxSubKeyLen, LPDWORD lpcbMaxClassLen, LPDWORD lpcValues, LPDWORD lpcbMaxValueNameLen, LPDWORD lpcbMaxValueLen, LPDWORD lpcbSecurityDescriptor, PFILETIME lpftLastWriteTime)
+{
+	RegPath path;
+	ResolveKEY(hKey, path);
+	Console::GetInstance().Print(L"QueryInfoKey: %s\n", path.ToString().c_str());
+	
+	return Real_RegQueryInfoKeyW(hKey, lpClass, lpcchClass, lpReserved, lpcSubKeys, lpcbMaxSubKeyLen, lpcbMaxClassLen, lpcValues, lpcbMaxValueNameLen, lpcbMaxValueLen, lpcbSecurityDescriptor, lpftLastWriteTime);
+}
+
+LSTATUS APIENTRY RegTree::RegQueryValueExW(HKEY hKey, LPCWSTR lpValueName, LPDWORD lpReserved, LPDWORD lpType, LPBYTE lpData, LPDWORD lpcbData)
+{
+	RegPath path;
+	ResolveKEY(hKey, path);
+	Console::GetInstance().Print(L"QueryValue: %s\n", path.ToString().c_str());
+	
+	return Real_RegQueryValueExW(hKey, lpValueName, lpReserved, lpType, lpData, lpcbData);
+}
 
 RegTree::RegTree( void )
 {
+	m_hook = new CodeHook;
+	
 	HKEY key;
 	Real_RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts", 0, KEY_READ, &key);
 	RegPath path;
@@ -72,17 +164,22 @@ bool RegTree::ResolveKEY( HKEY key, RegPath &path )
 		// »°µ√SubKey
 		wstring subKey = keyPath.substr(sepPos + 1);
 		// ∑÷∏ÓSubKey
-		typedef tokenizer<char_separator<wchar_t>, wstring::const_iterator, wstring> tokenizer;
-		char_separator<wchar_t> sep(L"\\");
-		tokenizer tokens(subKey, sep);
 		path.m_segments.clear();
-		for (tokenizer::const_iterator iter = tokens.begin(); iter != tokens.end(); iter++)
-			path.m_segments.push_back(*iter);
+		String::Split(subKey, L"\\", path.m_segments);
 	}
 
 	return true;
 }
 
+bool RegTree::ResolveKEY( HKEY key, const wstring &subKey, RegPath &path )
+{
+	RegPath result;
+	if (!ResolveKEY(key, result))
+		return false;
+	path = result;
+	String::Split(subKey, L"\\", path.m_segments);
+	return true;
+}
 
 VG_NAMESPACE_END
 
