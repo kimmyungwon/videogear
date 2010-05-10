@@ -130,11 +130,20 @@ struct RegPath
 
 		switch ((int)m_rootKey)
 		{
+		case HKEY_CLASSES_ROOT:
+			result += L"HKEY_CLASSES_ROOT";
+			break;
+		case HKEY_CURRENT_USER:
+			result += L"HKEY_CURRENT_USER";
+			break;
 		case HKEY_LOCAL_MACHINE:
 			result += L"HKEY_LOCAL_MACHINE";
 			break;
 		case HKEY_USERS:
 			result += L"HKEY_USERS";
+			break;
+		case HKEY_CURRENT_CONFIG:
+			result += L"HKEY_CURRENT_CONFIG";
 			break;
 		}
 		
@@ -166,15 +175,20 @@ private:
 	RegNode* CreateKey(const RegPath &path, LPDWORD disposition);
 	RegNode* GetRoot(HKEY rootKey);
 	void LoadRealChildren(RegNode *node);
-	void InitUserSid(void);
+	void InitPrefixs(void);
 	bool IsVirtualKey(HKEY key);
 	RegNode* OpenKey(const RegPath &path, bool openAlways = false, LPDWORD disposition = NULL);
+	bool ResolveKey(HKEY key, wstring &path);
 	bool ResolveKey(HKEY key, RegPath &path);
 	bool ResolveKey(HKEY key, const wstring &subKey, RegPath &path);
 private:
 	typedef ptr_map<HKEY, RegNode> RootNodeList;
 private:
 	wstring m_userSid;
+	wstring m_classesRootPrefix;
+	wstring m_currentUserPrefix;
+	wstring m_currentConfigSoftwarePrefix;
+	wstring m_currentConfigSystemPrefix;
 	CodeHook *m_hook;
 	RootNodeList m_rootNodes;
 };

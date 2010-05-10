@@ -300,11 +300,14 @@ LSTATUS APIENTRY RegTree::RegUnLoadKeyW(HKEY hKey, LPCWSTR lpSubKey)
 
 RegTree::RegTree( void )
 {
-	InitUserSid();
+	InitPrefixs();
 	m_hook = new CodeHook;
 
+	m_rootNodes.insert(HKEY_CLASSES_ROOT, RegNode::CreateRoot(HKEY_CLASSES_ROOT));
+	m_rootNodes.insert(HKEY_CURRENT_USER, RegNode::CreateRoot(HKEY_CURRENT_USER));
 	m_rootNodes.insert(HKEY_LOCAL_MACHINE, RegNode::CreateRoot(HKEY_LOCAL_MACHINE));
 	m_rootNodes.insert(HKEY_USERS, RegNode::CreateRoot(HKEY_USERS));
+	m_rootNodes.insert(HKEY_CURRENT_CONFIG, RegNode::CreateRoot(HKEY_CURRENT_CONFIG));
 }
 
 void RegTree::ClearRealChildren( RegNode *node )
@@ -341,28 +344,26 @@ void RegTree::LoadRealChildren( RegNode *node )
 
 }
 
-void RegTree::InitUserSid( void )
+void RegTree::InitPrefixs( void )
 {
-	WCHAR userName[UNLEN + 1];
-	DWORD userNameLen = _countof(userName);
-	GetUserNameW(userName, &userNameLen);
+	HKEY key;
+	wstring path;
 
-	DWORD sidSize = 0;
-	DWORD domainNameLen = 0;
-	SID_NAME_USE sidNameUse;
-	LookupAccountNameW(NULL, userName, NULL, &sidSize, NULL, &domainNameLen, &sidNameUse);
+	RegOpenCurrentUser(KEY_READ, &key);
+	ResolveKey(key, path);
+	m_currentUserPrefix = path;
 
-	PSID sid = (PSID)malloc(sidSize);
-	LPWSTR domainName = (LPWSTR)calloc(domainNameLen, sizeof(WCHAR));
-	LookupAccountNameW(NULL, userName, sid, &sidSize, domainName, &domainNameLen, &sidNameUse);
-	free(domainName);
+	Real_RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Classes", 0, KEY_READ, &key);
+	ResolveKey(key, path);
+	m_classesRootPrefix = path;
 
-	LPWSTR sidStr;
-	ConvertSidToStringSidW(sid, &sidStr);
-	free(sid);
+	Real_RegOpenKeyExW(HKEY_CURRENT_CONFIG, L"Software", 0, KEY_READ, &key);
+	ResolveKey(key, path);
+	m_currentConfigSoftwarePrefix = path;
 
-	m_userSid = sidStr;
-	LocalFree(sidStr);
+	Real_RegOpenKeyExW(HKEY_CURRENT_CONFIG, L"System", 0, KEY_READ, &key);
+	ResolveKey(key, path);
+	m_currentConfigSystemPrefix = path;
 }
 
 bool RegTree::IsVirtualKey( HKEY key )
@@ -430,32 +431,29 @@ RegNode* RegTree::OpenKey( const RegPath &path, bool openAlways, LPDWORD disposi
 	return parent;
 }
 
+bool RegTree::ResolveKey( HKEY key, wstring &path )
+{
+	BYTE result[1024];
+	DWORD resultSize;
+	if (WinDDK::GetInstance().ZwQueryKey(key, KeyNameInformation, result, sizeof(result), &resultSize) == STATUS_SUCCESS)
+	{
+		KEY_BASIC_INFORMATION &info = *(KEY_BASIC_INFORMATION*)result;
+		path = wstring(info.Name, (resultSize - sizeof(KEY_BASIC_INFORMATION)) / sizeof(WCHAR) + 1);
+		if (!starts_with(path, L"TRY\\"))
+			return false;
+		path = path.substr(4);
+		return true;
+	}
+	else
+		return false;
+}
+
 bool RegTree::ResolveKey( HKEY key, RegPath &path )
 {
 	if ((int)key & 0x80000000)
 	{
-		switch ((int)key)
-		{
-		case HKEY_CLASSES_ROOT:
-			path.m_rootKey = HKEY_USERS;
-			path.m_segments.clear();
-			path.m_segments.push_back(m_userSid);
-			path.m_segments.push_back(L"Software");
-			path.m_segments.push_back(L"Classes");
-			break;
-		case HKEY_CURRENT_USER:
-			path.m_rootKey = HKEY_USERS;
-			path.m_segments.clear();
-			path.m_segments.push_back(m_userSid);
-			break;
-		case HKEY_LOCAL_MACHINE:
-		case HKEY_USERS:
-			path.m_rootKey = key;
-			path.m_segments.clear();
-			break;
-		default:
-			return false;
-		}
+		path.m_rootKey = key;
+		path.m_segments.clear();
 	}
 	else if ((int)key & 0x40000000)
 	{
@@ -466,29 +464,56 @@ bool RegTree::ResolveKey( HKEY key, RegPath &path )
 	}
 	else 
 	{
-		BYTE result[1024];
-		DWORD resultSize;
-		if (WinDDK::GetInstance().ZwQueryKey(key, KeyNameInformation, result, sizeof(result), &resultSize) != STATUS_SUCCESS)
+		wstring keyPath;
+		if (!ResolveKey(key, keyPath))
 			return false;
-
-		KEY_BASIC_INFORMATION &info = *(KEY_BASIC_INFORMATION*)result;
-		wstring keyPath(info.Name, (resultSize - sizeof(KEY_BASIC_INFORMATION)) / sizeof(WCHAR) + 1);
-
-		// 去掉开头的"TRY\"
-		if (!starts_with(keyPath, L"TRY\\"))
-			return false;
-		keyPath = keyPath.substr(4);
+		
 		// 解析Root
 		size_t sepPos = keyPath.find(L'\\');
 		wstring rootName = keyPath.substr(0, sepPos);
+		wstring subKey;
 		if (rootName == L"USER")
-			path.m_rootKey = HKEY_USERS;
+		{
+			if (istarts_with(keyPath, m_classesRootPrefix))
+			{
+				path.m_rootKey = HKEY_CLASSES_ROOT;
+				subKey = keyPath.substr(m_classesRootPrefix.length());
+				if (starts_with(subKey, L"\\"))
+					subKey = subKey.substr(1);
+			}
+			else if (istarts_with(keyPath, m_currentUserPrefix))
+			{
+				path.m_rootKey = HKEY_CURRENT_USER;
+				subKey = keyPath.substr(m_currentUserPrefix.length());
+				if (starts_with(subKey, L"\\"))
+					subKey = subKey.substr(1);
+			}
+			else
+			{
+				path.m_rootKey = HKEY_USERS;
+				subKey = keyPath.substr(sepPos + 1);
+			}
+		}
 		else if (rootName == L"MACHINE")
+		{
 			path.m_rootKey = HKEY_LOCAL_MACHINE;
+			if (istarts_with(keyPath, m_currentConfigSoftwarePrefix))
+			{
+				subKey = keyPath.substr(m_currentConfigSoftwarePrefix.length());
+				if (starts_with(subKey, L"\\"))
+					subKey = subKey.substr(1);
+			}
+			else if (istarts_with(keyPath, m_currentConfigSystemPrefix))
+			{
+				subKey = keyPath.substr(m_currentConfigSystemPrefix.length());
+				if (starts_with(subKey, L"\\"))
+					subKey = subKey.substr(1);
+			}
+			else
+				subKey = keyPath.substr(sepPos + 1);
+		}
 		else
 			return false;
-		// 取得SubKey
-		wstring subKey = keyPath.substr(sepPos + 1);
 		// 分割SubKey
 		path.m_segments.clear();
 		String::Split(subKey, L"\\", path.m_segments);
