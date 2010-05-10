@@ -2,6 +2,9 @@
 
 #include "vgGlobalInclude.hpp"
 
+#include <lmcons.h>
+#include <sddl.h>
+
 #include <boost/any.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/composite_key.hpp>

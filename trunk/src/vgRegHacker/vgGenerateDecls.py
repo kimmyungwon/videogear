@@ -7,19 +7,31 @@ import sys
 apis = [
 	'RegCloseKey',
 	'RegCreateKeyExW',
-	'RegDeleteKeyExW',
+	'RegDeleteKeyW',
 	'RegDeleteValueW',
 	'RegEnumKeyExW',
 	'RegEnumValueW',
+	'RegFlushKey',
+	'RegGetKeySecurity',
+	'RegLoadKeyW',
+	'RegNotifyChangeKeyValue',
 	'RegOpenKeyExW',
+	'RegOverridePredefKey',
 	'RegQueryInfoKeyW',
+	'RegQueryMultipleValuesW',
 	'RegQueryValueExW',
-	'RegSetValueExW'
+	'RegReplaceKeyW',
+	'RegRestoreKeyW',
+	'RegSaveKeyW',
+	'RegSaveKeyExW',
+	'RegSetKeySecurity',
+	'RegSetValueExW',
+	'RegUnLoadKeyW'
 ]
 
 apiDecls = []
 
-patterhArgs = re.compile("\s*[_A-Za-z]+(\([^)]+\))?\s+([_A-Za-z]+(\([^)]+\))?\s+)?(CONST\s+)?(?P<ArgType>[_A-Za-z]+)\s+(?P<ArgName>[_A-Za-z]+),?")
+patterhArgs = re.compile(R"\s*[_A-Za-z]+(\([^)]+\))?\s+([_A-Za-z]+\([^)]+\)\s+)?(?P<ArgType>(CONST\s+)?[_A-Za-z]+\*?)\s+(?P<ArgName>[_A-Za-z]+),?")
 
 def generateDecl(header, api):
 	print("parsing %s..." % api)

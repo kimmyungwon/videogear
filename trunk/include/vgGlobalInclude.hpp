@@ -18,4 +18,6 @@
 #include <vector>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/ptr_container/ptr_map.hpp>
