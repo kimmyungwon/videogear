@@ -100,7 +100,7 @@ struct RegNode
 			return m_rootKey;
 	}
 
-	void GetSubKey(vector<wstring> segments)
+	void GetSubKey(vector<wstring> &segments)
 	{
 		if (m_parent != NULL)
 		{

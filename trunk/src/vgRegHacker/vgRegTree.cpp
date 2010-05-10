@@ -182,7 +182,7 @@ LSTATUS APIENTRY RegTree::RegNotifyChangeKeyValue(HKEY hKey, BOOL bWatchSubtree,
 }
 
 LSTATUS APIENTRY RegTree::RegOpenKeyExW(HKEY hKey, LPCWSTR lpSubKey, DWORD ulOptions, REGSAM samDesired, PHKEY phkResult)
-{
+{	
 	RegPath path;
 	if (ResolveKey(hKey, lpSubKey, path))
 	{
@@ -211,10 +211,13 @@ LSTATUS APIENTRY RegTree::RegOverridePredefKey(HKEY hKey, HKEY hNewHKey)
 LSTATUS APIENTRY RegTree::RegQueryInfoKeyW(HKEY hKey, LPWSTR lpClass, LPDWORD lpcchClass, LPDWORD lpReserved, LPDWORD lpcSubKeys, LPDWORD lpcbMaxSubKeyLen, LPDWORD lpcbMaxClassLen, LPDWORD lpcValues, LPDWORD lpcbMaxValueNameLen, LPDWORD lpcbMaxValueLen, LPDWORD lpcbSecurityDescriptor, PFILETIME lpftLastWriteTime)
 {
 	RegPath path;
-	ResolveKey(hKey, path);
-	Console::GetInstance().Print(L"QueryInfoKey: %s\n", path.ToString().c_str());
-	
-	return Real_RegQueryInfoKeyW(hKey, lpClass, lpcchClass, lpReserved, lpcSubKeys, lpcbMaxSubKeyLen, lpcbMaxClassLen, lpcValues, lpcbMaxValueNameLen, lpcbMaxValueLen, lpcbSecurityDescriptor, lpftLastWriteTime);
+	if (IsVirtualKey(hKey) && ResolveKey(hKey, path))
+	{
+		RegNode *node = (RegNode*)((int)hKey & ~0x40000000);
+		return ERROR_ACCESS_DENIED;
+	}
+	else
+		return Real_RegQueryInfoKeyW(hKey, lpClass, lpcchClass, lpReserved, lpcSubKeys, lpcbMaxSubKeyLen, lpcbMaxClassLen, lpcValues, lpcbMaxValueNameLen, lpcbMaxValueLen, lpcbSecurityDescriptor, lpftLastWriteTime);
 }
 
 LSTATUS APIENTRY RegTree::RegQueryMultipleValuesW(HKEY hKey, PVALENTW val_list, DWORD num_vals, LPWSTR lpValueBuf, LPDWORD ldwTotsize)
