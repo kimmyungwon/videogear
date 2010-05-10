@@ -1,59 +1,103 @@
 #pragma once
 
 #include "vgInclude.hpp"
+#include "vgRegValue.hpp"
 
 VG_NAMESPACE_BEGIN
 
 using namespace algorithm;
 using namespace multi_index;
 
-struct RegValue
+enum RegNodeType
 {
-	wstring m_name;
-	any m_value;
-
-	wstring GetKey(void) const
-	{
-		return to_lower_copy(m_name);
-	}
+	RegNodeType_Normal,
+	RegNodeType_Real,
+	RegNodeType_Override,
 };
-
-typedef multi_index_container<
-	RegValue*,
-	indexed_by<
-		random_access<>,
-		ordered_unique<const_mem_fun<RegValue, wstring, &RegValue::GetKey> >
-	>
-> RegValueList;
 
 struct RegNode;
 
-struct RegNodeKeyGetter
+namespace RegNodeIndex
+{
+	struct Type {};
+	struct Name {};
+}
+
+struct RegNodeTypeGetter
+{
+	typedef RegNodeType result_type;
+
+	RegNodeType operator ()(RegNode *node) const;
+};
+
+struct RegNodeNameGetter
 {
 	typedef wstring result_type;
 	
-	wstring operator ()(const RegNode &node) const;
+	wstring operator ()(RegNode *node) const;
 };
 
 typedef multi_index_container<
 	RegNode*,
 	indexed_by<
 		random_access<>,
-		ordered_unique<RegNodeKeyGetter>
+		ordered_non_unique<tag<RegNodeIndex::Type>, RegNodeTypeGetter>,
+		ordered_unique<tag<RegNodeIndex::Name>, RegNodeNameGetter>
 	>
 > RegNodeList;
 
 struct RegNode
 {
+	RegNodeType m_type;
 	HKEY m_rootKey;
 	RegNode *m_parent;
 	wstring m_name;
 	RegNodeList m_children;
-
-	RegNode(void)
+	HKEY m_realKey;
+	
+	static auto_ptr<RegNode> CreateRoot(HKEY rootKey)
 	{
-		m_rootKey = NULL;
-		m_parent = NULL;
+		auto_ptr<RegNode> node(new RegNode(RegNodeType_Real, rootKey));
+		return node;
+	}
+
+	static auto_ptr<RegNode> CreateNormal(HKEY rootKey, const wstring &name, HKEY realKey)
+	{
+		auto_ptr<RegNode> node(new RegNode(RegNodeType_Normal, rootKey));
+		node->m_name = name;
+		node->m_realKey = realKey;
+		return node;
+	}
+
+	static auto_ptr<RegNode> CreateReal(HKEY rootKey, const wstring &name, HKEY realKey)
+	{
+		auto_ptr<RegNode> node(new RegNode(RegNodeType_Real, rootKey));
+		node->m_name = name;
+		node->m_realKey = realKey;
+		return node;
+	}
+
+	~RegNode(void)
+	{
+		if (m_parent != NULL)
+		{
+			m_parent->m_children.remove(this);
+			m_parent = NULL;
+		}
+		while (!m_children.empty())
+		{
+			RegNode *node = *m_children.begin();
+			m_children.erase(m_children.begin());
+			delete node;
+		}
+	}
+
+	HKEY AsKey(void)
+	{
+		if (m_parent != NULL)
+			return (HKEY)((int)this | 0x40000000);
+		else
+			return m_rootKey;
 	}
 
 	void GetSubKey(vector<wstring> segments)
@@ -64,6 +108,14 @@ struct RegNode
 				segments.insert(segments.begin(), node->m_name);
 			segments.push_back(m_name);
 		}	
+	}
+private:
+	RegNode(RegNodeType type, HKEY rootKey)
+	{
+		m_type = type;
+		m_rootKey = rootKey;
+		m_parent = NULL;
+		m_realKey = NULL;
 	}
 };
 
@@ -110,10 +162,21 @@ public:
 private:
 	RegTree(void);
 
-	bool ResolveKEY(HKEY key, RegPath &path);
-	bool ResolveKEY(HKEY key, const wstring &subKey, RegPath &path);
+	void ClearRealChildren(RegNode *node);
+	RegNode* CreateKey(const RegPath &path, LPDWORD disposition);
+	RegNode* GetRoot(HKEY rootKey);
+	void LoadRealChildren(RegNode *node);
+	void InitUserSid(void);
+	bool IsVirtualKey(HKEY key);
+	RegNode* OpenKey(const RegPath &path, bool openAlways = false, LPDWORD disposition = NULL);
+	bool ResolveKey(HKEY key, RegPath &path);
+	bool ResolveKey(HKEY key, const wstring &subKey, RegPath &path);
 private:
+	typedef ptr_map<HKEY, RegNode> RootNodeList;
+private:
+	wstring m_userSid;
 	CodeHook *m_hook;
+	RootNodeList m_rootNodes;
 };
 
 VG_NAMESPACE_END

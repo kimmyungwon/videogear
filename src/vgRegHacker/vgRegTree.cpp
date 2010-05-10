@@ -9,6 +9,18 @@
 
 VG_NAMESPACE_BEGIN
 
+RegNodeType RegNodeTypeGetter::operator()( RegNode *node ) const
+{
+	return node->m_type;
+}
+
+wstring RegNodeNameGetter::operator()( RegNode *node ) const
+{
+	return to_lower_copy(node->m_name);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 #include "vgRegTree_Impl.inl"
 
 RegTree& RegTree::GetInstance( void )
@@ -25,49 +37,105 @@ RegTree::~RegTree( void )
 
 void RegTree::Hook( void )
 {	
-	HOOK(RegCloseKey);	
+	HOOK(RegCloseKey);
 	HOOK(RegCreateKeyExW);
+	HOOK(RegDeleteKeyW);
+	HOOK(RegDeleteValueW);
 	HOOK(RegEnumKeyExW);
 	HOOK(RegEnumValueW);
+	HOOK(RegFlushKey);
+	HOOK(RegGetKeySecurity);
+	HOOK(RegLoadKeyW);
+	HOOK(RegNotifyChangeKeyValue);
 	HOOK(RegOpenKeyExW);
+	HOOK(RegOverridePredefKey);
 	HOOK(RegQueryInfoKeyW);
+	HOOK(RegQueryMultipleValuesW);
 	HOOK(RegQueryValueExW);
+	HOOK(RegReplaceKeyW);
+	HOOK(RegRestoreKeyW);
+	HOOK(RegSaveKeyW);
+	HOOK(RegSaveKeyExW);
+	HOOK(RegSetKeySecurity);
+	HOOK(RegSetValueExW);
+	HOOK(RegUnLoadKeyW);
 }
 
 void RegTree::Unhook( void )
 {
-	UNHOOK(RegCloseKey);	
+	UNHOOK(RegCloseKey);
 	UNHOOK(RegCreateKeyExW);
+	UNHOOK(RegDeleteKeyW);
+	UNHOOK(RegDeleteValueW);
 	UNHOOK(RegEnumKeyExW);
 	UNHOOK(RegEnumValueW);
+	UNHOOK(RegFlushKey);
+	UNHOOK(RegGetKeySecurity);
+	UNHOOK(RegLoadKeyW);
+	UNHOOK(RegNotifyChangeKeyValue);
 	UNHOOK(RegOpenKeyExW);
+	UNHOOK(RegOverridePredefKey);
 	UNHOOK(RegQueryInfoKeyW);
+	UNHOOK(RegQueryMultipleValuesW);
 	UNHOOK(RegQueryValueExW);
+	UNHOOK(RegReplaceKeyW);
+	UNHOOK(RegRestoreKeyW);
+	UNHOOK(RegSaveKeyW);
+	UNHOOK(RegSaveKeyExW);
+	UNHOOK(RegSetKeySecurity);
+	UNHOOK(RegSetValueExW);
+	UNHOOK(RegUnLoadKeyW);
 }
 
 LSTATUS APIENTRY RegTree::RegCloseKey(HKEY hKey)
 {
-	RegPath path;
-	ResolveKEY(hKey, path);
-	Console::GetInstance().Print(L"CloseKey: %s\n", path.ToString().c_str());
-	
-	return Real_RegCloseKey(hKey);
+	if (IsVirtualKey(hKey))
+		return ERROR_SUCCESS;	
+	else
+		return Real_RegCloseKey(hKey);
 }
 
 LSTATUS APIENTRY RegTree::RegCreateKeyExW(HKEY hKey, LPCWSTR lpSubKey, DWORD Reserved, LPWSTR lpClass, DWORD dwOptions, REGSAM samDesired, LPSECURITY_ATTRIBUTES lpSecurityAttributes, PHKEY phkResult, LPDWORD lpdwDisposition)
 {
 	RegPath path;
-	ResolveKEY(hKey, lpSubKey, path);
-	Console::GetInstance().Print(L"CreateKey: %s\n", path.ToString().c_str());
+	if (ResolveKey(hKey, lpSubKey, path))
+	{
+		RegNode *node = CreateKey(path, lpdwDisposition);
+		if (node != NULL)
+		{
+			*phkResult = node->AsKey();
+			return ERROR_SUCCESS;
+		}
+		else
+			return ERROR_ACCESS_DENIED;
+	}
+	else
+		return Real_RegCreateKeyExW(hKey, lpSubKey, Reserved, lpClass, dwOptions, samDesired, lpSecurityAttributes, phkResult, lpdwDisposition);
+}
+
+LSTATUS APIENTRY RegTree::RegDeleteKeyW(HKEY hKey, LPCWSTR lpSubKey)
+{
+	RegPath path;
+	ResolveKey(hKey, lpSubKey, path);
+	Console::GetInstance().Print(L"DeleteKey: %s\n", path.ToString().c_str());
 	
-	return Real_RegCreateKeyExW(hKey, lpSubKey, Reserved, lpClass, dwOptions, samDesired, lpSecurityAttributes, phkResult, lpdwDisposition);
+	return Real_RegDeleteKeyW(hKey, lpSubKey);
+}
+
+LSTATUS APIENTRY RegTree::RegDeleteValueW(HKEY hKey, LPCWSTR lpValueName)
+{
+	RegPath path;
+	ResolveKey(hKey, path);
+	Console::GetInstance().Print(L"DeleteValue: %s\n", path.ToString().c_str());
+	
+	return Real_RegDeleteValueW(hKey, lpValueName);
 }
 
 LSTATUS APIENTRY RegTree::RegEnumKeyExW(HKEY hKey, DWORD dwIndex, LPWSTR lpName, LPDWORD lpcchName, LPDWORD lpReserved, LPWSTR lpClass, LPDWORD lpcchClass, PFILETIME lpftLastWriteTime)
 {
 	RegPath path;
-	ResolveKEY(hKey, path);
-	Console::GetInstance().Print(L"EnumKey: %s\n", path.ToString().c_str());
+	ResolveKey(hKey, path);
+	Console::GetInstance().Print(L"EnumKeyEx: %s\n", path.ToString().c_str());
 	
 	return Real_RegEnumKeyExW(hKey, dwIndex, lpName, lpcchName, lpReserved, lpClass, lpcchClass, lpftLastWriteTime);
 }
@@ -75,70 +143,328 @@ LSTATUS APIENTRY RegTree::RegEnumKeyExW(HKEY hKey, DWORD dwIndex, LPWSTR lpName,
 LSTATUS APIENTRY RegTree::RegEnumValueW(HKEY hKey, DWORD dwIndex, LPWSTR lpValueName, LPDWORD lpcchValueName, LPDWORD lpReserved, LPDWORD lpType, LPBYTE lpData, LPDWORD lpcbData)
 {
 	RegPath path;
-	ResolveKEY(hKey, path);
+	ResolveKey(hKey, path);
 	Console::GetInstance().Print(L"EnumValue: %s\n", path.ToString().c_str());
 	
 	return Real_RegEnumValueW(hKey, dwIndex, lpValueName, lpcchValueName, lpReserved, lpType, lpData, lpcbData);
 }
 
+LSTATUS APIENTRY RegTree::RegFlushKey(HKEY hKey)
+{
+	RegPath path;
+	ResolveKey(hKey, path);
+	Console::GetInstance().Print(L"FlushKey: %s\n", path.ToString().c_str());
+
+	return Real_RegFlushKey(hKey);
+}
+
+LSTATUS APIENTRY RegTree::RegGetKeySecurity(HKEY hKey, SECURITY_INFORMATION SecurityInformation, PSECURITY_DESCRIPTOR pSecurityDescriptor, LPDWORD lpcbSecurityDescriptor)
+{
+	RegPath path;
+	ResolveKey(hKey, path);
+	Console::GetInstance().Print(L"GetKeySecurity: %s\n", path.ToString().c_str());
+
+	return Real_RegGetKeySecurity(hKey, SecurityInformation, pSecurityDescriptor, lpcbSecurityDescriptor);
+}
+
+LSTATUS APIENTRY RegTree::RegLoadKeyW(HKEY hKey, LPCWSTR lpSubKey, LPCWSTR lpFile)
+{
+	return Real_RegLoadKeyW(hKey, lpSubKey, lpFile);
+}
+
+LSTATUS APIENTRY RegTree::RegNotifyChangeKeyValue(HKEY hKey, BOOL bWatchSubtree, DWORD dwNotifyFilter, HANDLE hEvent, BOOL fAsynchronous)
+{
+	RegPath path;
+	ResolveKey(hKey, path);
+	Console::GetInstance().Print(L"NotifyChangeKeyValue: %s\n", path.ToString().c_str());
+	
+	return Real_RegNotifyChangeKeyValue(hKey, bWatchSubtree, dwNotifyFilter, hEvent, fAsynchronous);
+}
+
 LSTATUS APIENTRY RegTree::RegOpenKeyExW(HKEY hKey, LPCWSTR lpSubKey, DWORD ulOptions, REGSAM samDesired, PHKEY phkResult)
 {
 	RegPath path;
-	ResolveKEY(hKey, lpSubKey, path);
-	Console::GetInstance().Print(L"OpenKey: %s\n", path.ToString().c_str());
+	if (ResolveKey(hKey, lpSubKey, path))
+	{
+		RegNode *node = OpenKey(path);
+		if (node != NULL)
+		{
+			*phkResult = node->AsKey();
+			return ERROR_SUCCESS;
+		}
+		else
+			return ERROR_NOT_FOUND;
+	}
+	else
+		return Real_RegOpenKeyExW(hKey, lpSubKey, ulOptions, samDesired, phkResult);
+}
+
+LSTATUS APIENTRY RegTree::RegOverridePredefKey(HKEY hKey, HKEY hNewHKey)
+{
+	RegPath path;
+	ResolveKey(hKey, path);
+	Console::GetInstance().Print(L"OverridePredefKey: %s\n", path.ToString().c_str());
 	
-	return Real_RegOpenKeyExW(hKey, lpSubKey, ulOptions, samDesired, phkResult);
+	return Real_RegOverridePredefKey(hKey, hNewHKey);
 }
 
 LSTATUS APIENTRY RegTree::RegQueryInfoKeyW(HKEY hKey, LPWSTR lpClass, LPDWORD lpcchClass, LPDWORD lpReserved, LPDWORD lpcSubKeys, LPDWORD lpcbMaxSubKeyLen, LPDWORD lpcbMaxClassLen, LPDWORD lpcValues, LPDWORD lpcbMaxValueNameLen, LPDWORD lpcbMaxValueLen, LPDWORD lpcbSecurityDescriptor, PFILETIME lpftLastWriteTime)
 {
 	RegPath path;
-	ResolveKEY(hKey, path);
+	ResolveKey(hKey, path);
 	Console::GetInstance().Print(L"QueryInfoKey: %s\n", path.ToString().c_str());
 	
 	return Real_RegQueryInfoKeyW(hKey, lpClass, lpcchClass, lpReserved, lpcSubKeys, lpcbMaxSubKeyLen, lpcbMaxClassLen, lpcValues, lpcbMaxValueNameLen, lpcbMaxValueLen, lpcbSecurityDescriptor, lpftLastWriteTime);
 }
 
+LSTATUS APIENTRY RegTree::RegQueryMultipleValuesW(HKEY hKey, PVALENTW val_list, DWORD num_vals, LPWSTR lpValueBuf, LPDWORD ldwTotsize)
+{
+	RegPath path;
+	ResolveKey(hKey, path);
+	Console::GetInstance().Print(L"QueryMultipleValues: %s\n", path.ToString().c_str());
+	
+	return Real_RegQueryMultipleValuesW(hKey, val_list, num_vals, lpValueBuf, ldwTotsize);
+}
+
 LSTATUS APIENTRY RegTree::RegQueryValueExW(HKEY hKey, LPCWSTR lpValueName, LPDWORD lpReserved, LPDWORD lpType, LPBYTE lpData, LPDWORD lpcbData)
 {
 	RegPath path;
-	ResolveKEY(hKey, path);
-	Console::GetInstance().Print(L"QueryValue: %s\n", path.ToString().c_str());
+	ResolveKey(hKey, path);
+	Console::GetInstance().Print(L"QueryValueEx: %s, %s\n", path.ToString().c_str(), lpValueName);
 	
 	return Real_RegQueryValueExW(hKey, lpValueName, lpReserved, lpType, lpData, lpcbData);
 }
 
-RegTree::RegTree( void )
+LSTATUS APIENTRY RegTree::RegReplaceKeyW(HKEY hKey, LPCWSTR lpSubKey, LPCWSTR lpNewFile, LPCWSTR lpOldFile)
 {
-	m_hook = new CodeHook;
-	
-	HKEY key;
-	Real_RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts", 0, KEY_READ, &key);
 	RegPath path;
-	ResolveKEY(key, path);
-	Real_RegCloseKey(key);
-
-	RegNode node1; node1.m_rootKey = HKEY_LOCAL_MACHINE;
-	RegNode node2; node2.m_rootKey = HKEY_LOCAL_MACHINE; node2.m_parent = &node1; node2.m_name = L"SOFTWARE";
-	RegNode node3; node3.m_rootKey = HKEY_LOCAL_MACHINE; node3.m_parent = &node2; node3.m_name = L"Microsoft";
-	ResolveKEY((HKEY)((int)&node3 | 0x40000000), path);
+	ResolveKey(hKey, lpSubKey, path);
+	Console::GetInstance().Print(L"ReplaceKey: %s\n", path.ToString().c_str());
+	
+	return Real_RegReplaceKeyW(hKey, lpSubKey, lpNewFile, lpOldFile);
 }
 
-bool RegTree::ResolveKEY( HKEY key, RegPath &path )
+LSTATUS APIENTRY RegTree::RegRestoreKeyW(HKEY hKey, LPCWSTR lpFile, DWORD dwFlags)
 {
-	if ((int)key >= 0x80000000)
+	RegPath path;
+	ResolveKey(hKey,  path);
+	Console::GetInstance().Print(L"RestoreKey: %s\n", path.ToString().c_str());
+	
+	return Real_RegRestoreKeyW(hKey, lpFile, dwFlags);
+}
+
+LSTATUS APIENTRY RegTree::RegSaveKeyW(HKEY hKey, LPCWSTR lpFile, CONST LPSECURITY_ATTRIBUTES lpSecurityAttributes)
+{
+	RegPath path;
+	ResolveKey(hKey, path);
+	Console::GetInstance().Print(L"SaveKey: %s\n", path.ToString().c_str());
+	
+	return Real_RegSaveKeyW(hKey, lpFile, lpSecurityAttributes);
+}
+
+LSTATUS APIENTRY RegTree::RegSaveKeyExW(HKEY hKey, LPCWSTR lpFile, CONST LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD Flags)
+{
+	RegPath path;
+	ResolveKey(hKey, path);
+	Console::GetInstance().Print(L"SaveKeyEx: %s\n", path.ToString().c_str());
+	
+	return Real_RegSaveKeyExW(hKey, lpFile, lpSecurityAttributes, Flags);
+}
+
+LSTATUS APIENTRY RegTree::RegSetKeySecurity(HKEY hKey, SECURITY_INFORMATION SecurityInformation, PSECURITY_DESCRIPTOR pSecurityDescriptor)
+{
+	RegPath path;
+	ResolveKey(hKey, path);
+	Console::GetInstance().Print(L"SetKeySecurity: %s\n", path.ToString().c_str());
+	
+	return Real_RegSetKeySecurity(hKey, SecurityInformation, pSecurityDescriptor);
+}
+
+LSTATUS APIENTRY RegTree::RegSetValueExW(HKEY hKey, LPCWSTR lpValueName, DWORD Reserved, DWORD dwType, CONST BYTE* lpData, DWORD cbData)
+{
+	RegPath path;
+	ResolveKey(hKey,  path);
+	Console::GetInstance().Print(L"SetValueEx: %s, %s\n", path.ToString().c_str(), lpValueName);
+	
+	return Real_RegSetValueExW(hKey, lpValueName, Reserved, dwType, lpData, cbData);
+}
+
+LSTATUS APIENTRY RegTree::RegUnLoadKeyW(HKEY hKey, LPCWSTR lpSubKey)
+{
+	RegPath path;
+	ResolveKey(hKey, lpSubKey, path);
+	Console::GetInstance().Print(L"UnLoadKey: %s\n", path.ToString().c_str());
+	
+	return Real_RegUnLoadKeyW(hKey, lpSubKey);
+}
+
+RegTree::RegTree( void )
+{
+	InitUserSid();
+	m_hook = new CodeHook;
+
+	m_rootNodes.insert(HKEY_LOCAL_MACHINE, RegNode::CreateRoot(HKEY_LOCAL_MACHINE));
+	m_rootNodes.insert(HKEY_USERS, RegNode::CreateRoot(HKEY_USERS));
+}
+
+void RegTree::ClearRealChildren( RegNode *node )
+{
+	typedef RegNodeList::index<RegNodeIndex::Type>::type Index;
+	Index &index = node->m_children.get<RegNodeIndex::Type>();
+	pair<Index::iterator, Index::iterator> range = index.equal_range(RegNodeType_Real);
+	for (Index::iterator iter = range.first; iter != range.second; )
 	{
-		path.m_rootKey = key;
-		path.m_segments.clear();
+		RegNode *child = *iter;
+		index.erase(iter++);
+		delete child;
 	}
-	else if ((int)key >= 0x40000000)
+}
+
+RegNode* RegTree::CreateKey( const RegPath &path, LPDWORD disposition )
+{
+	return OpenKey(path, true, disposition);	
+}
+
+RegNode* RegTree::GetRoot( HKEY rootKey )
+{
+	RootNodeList::iterator iter = m_rootNodes.find(rootKey);
+	if (iter != m_rootNodes.end())
+		return iter->second;
+	else
+		throw "Invalid root";
+}
+
+void RegTree::LoadRealChildren( RegNode *node )
+{
+	ClearRealChildren(node);
+
+
+}
+
+void RegTree::InitUserSid( void )
+{
+	WCHAR userName[UNLEN + 1];
+	DWORD userNameLen = _countof(userName);
+	GetUserNameW(userName, &userNameLen);
+
+	DWORD sidSize = 0;
+	DWORD domainNameLen = 0;
+	SID_NAME_USE sidNameUse;
+	LookupAccountNameW(NULL, userName, NULL, &sidSize, NULL, &domainNameLen, &sidNameUse);
+
+	PSID sid = (PSID)malloc(sidSize);
+	LPWSTR domainName = (LPWSTR)calloc(domainNameLen, sizeof(WCHAR));
+	LookupAccountNameW(NULL, userName, sid, &sidSize, domainName, &domainNameLen, &sidNameUse);
+	free(domainName);
+
+	LPWSTR sidStr;
+	ConvertSidToStringSidW(sid, &sidStr);
+	free(sid);
+
+	m_userSid = sidStr;
+	LocalFree(sidStr);
+}
+
+bool RegTree::IsVirtualKey( HKEY key )
+{
+	return ((int)key & 0x40000000) != 0 && ((int)key & 0x80000000) == 0;
+}
+
+RegNode* RegTree::OpenKey( const RegPath &path, bool openAlways, LPDWORD disposition )
+{
+	RegNode *root = GetRoot(path.m_rootKey);
+	if (path.m_segments.empty())
+		return root;
+ 
+	RegNode *parent = root;
+	wstring subKey;
+	BOOST_FOREACH(const wstring &segment, path.m_segments)
+	{
+		if (!subKey.empty())
+			subKey += L"\\";
+		subKey += segment;
+
+		typedef RegNodeList::index<RegNodeIndex::Name>::type Index;
+		Index &index = parent->m_children.get<RegNodeIndex::Name>();
+		Index::iterator iter = index.find(to_lower_copy(segment));
+		if (iter != index.end())
+		{
+			parent = *iter;
+			if (openAlways && parent->m_type == RegNodeType_Real)
+			{
+				ClearRealChildren(parent);
+				parent->m_type = RegNodeType_Normal;
+			}
+		}
+		else
+		{
+			HKEY newKey;
+			if (Real_RegOpenKeyExW(path.m_rootKey, subKey.c_str(), 0, KEY_ALL_ACCESS, &newKey) == ERROR_SUCCESS)
+			{
+				RegNode *newNode = RegNode::CreateReal(path.m_rootKey, segment, newKey).release();
+				newNode->m_parent = parent;
+				newNode->m_name = segment;
+				parent->m_children.push_back(newNode);
+				parent = newNode;
+				if (openAlways && disposition != NULL)
+					*disposition = REG_OPENED_EXISTING_KEY;
+			}
+			else if (openAlways)
+			{
+				RegNode *newNode = RegNode::CreateNormal(path.m_rootKey, segment, NULL).release();
+				newNode->m_parent = parent;
+				newNode->m_name = segment;
+				parent->m_children.push_back(newNode);
+				parent = newNode;
+				if (disposition != NULL)
+					*disposition = REG_CREATED_NEW_KEY;
+			}
+			else
+			{
+				parent = NULL;
+				break;
+			}
+		}
+	}
+
+	return parent;
+}
+
+bool RegTree::ResolveKey( HKEY key, RegPath &path )
+{
+	if ((int)key & 0x80000000)
+	{
+		switch ((int)key)
+		{
+		case HKEY_CLASSES_ROOT:
+			path.m_rootKey = HKEY_USERS;
+			path.m_segments.clear();
+			path.m_segments.push_back(m_userSid);
+			path.m_segments.push_back(L"Software");
+			path.m_segments.push_back(L"Classes");
+			break;
+		case HKEY_CURRENT_USER:
+			path.m_rootKey = HKEY_USERS;
+			path.m_segments.clear();
+			path.m_segments.push_back(m_userSid);
+			break;
+		case HKEY_LOCAL_MACHINE:
+		case HKEY_USERS:
+			path.m_rootKey = key;
+			path.m_segments.clear();
+			break;
+		default:
+			return false;
+		}
+	}
+	else if ((int)key & 0x40000000)
 	{
 		RegNode *node = (RegNode*)((int)key & ~0x40000000);
 		path.m_rootKey = node->m_rootKey;
 		path.m_segments.clear();
 		node->GetSubKey(path.m_segments);
 	}
-	else
+	else 
 	{
 		BYTE result[1024];
 		DWORD resultSize;
@@ -171,10 +497,10 @@ bool RegTree::ResolveKEY( HKEY key, RegPath &path )
 	return true;
 }
 
-bool RegTree::ResolveKEY( HKEY key, const wstring &subKey, RegPath &path )
+bool RegTree::ResolveKey( HKEY key, const wstring &subKey, RegPath &path )
 {
 	RegPath result;
-	if (!ResolveKEY(key, result))
+	if (!ResolveKey(key, result))
 		return false;
 	path = result;
 	String::Split(subKey, L"\\", path.m_segments);
