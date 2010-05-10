@@ -94,7 +94,7 @@ struct RegNode
 
 	HKEY AsKey(void)
 	{
-		if (m_parent != NULL)
+		if (m_type != RegNodeType_Real && m_parent != NULL)
 			return (HKEY)((int)this | 0x40000000);
 		else
 			return m_rootKey;
