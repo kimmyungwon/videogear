@@ -342,9 +342,15 @@ RegNode* RegTree::GetRoot( HKEY rootKey )
 
 void RegTree::LoadRealChildren( RegNode *node )
 {
-	ClearRealChildren(node);
+	if (node->m_realKey != NULL)
+	{
+		ClearRealChildren(node);
 
-
+		for (DWORD index = 0; ; index++)
+		{
+			Real_RegEnumKeyExW(node->m_realKey, index, )
+		}
+	}
 }
 
 void RegTree::InitPrefixs( void )
