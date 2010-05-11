@@ -53,10 +53,10 @@ RegNode::~RegNode( void )
 
 HKEY RegNode::AsKey( void )
 {
-	if (m_type != RegNodeType_Real && m_parent != NULL)
-		return (HKEY)((int)this | 0x40000000);
-	else
+	if (m_parent == NULL)
 		return m_rootKey;
+	else
+		return (HKEY)((int)this | 0x40000000);
 }
 
 void RegNode::GetSubKey( vector<wstring> &segments )
