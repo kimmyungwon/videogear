@@ -9,6 +9,7 @@ apis = [
 	'RegCreateKeyExW',
 	'RegDeleteKeyW',
 	'RegDeleteValueW',
+	'RegEnumKeyW',
 	'RegEnumKeyExW',
 	'RegEnumValueW',
 	'RegFlushKey',

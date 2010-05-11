@@ -4,6 +4,7 @@
 #include "vgUtil/vgString.hpp"
 #include "vgUtil/vgWinDDK.hpp"
 
+#define MAX_KEY_LENGTH 255
 #define HOOK(api)	m_hook->Hook(Real_##api, Mine_##api);
 #define UNHOOK(api)	m_hook->Unhook(Real_##api, Mine_##api);	
 
@@ -41,6 +42,7 @@ void RegTree::Hook( void )
 	HOOK(RegCreateKeyExW);
 	HOOK(RegDeleteKeyW);
 	HOOK(RegDeleteValueW);
+	HOOK(RegEnumKeyW);
 	HOOK(RegEnumKeyExW);
 	HOOK(RegEnumValueW);
 	HOOK(RegFlushKey);
@@ -67,6 +69,7 @@ void RegTree::Unhook( void )
 	UNHOOK(RegCreateKeyExW);
 	UNHOOK(RegDeleteKeyW);
 	UNHOOK(RegDeleteValueW);
+	UNHOOK(RegEnumKeyW);
 	UNHOOK(RegEnumKeyExW);
 	UNHOOK(RegEnumValueW);
 	UNHOOK(RegFlushKey);
@@ -131,13 +134,47 @@ LSTATUS APIENTRY RegTree::RegDeleteValueW(HKEY hKey, LPCWSTR lpValueName)
 	return Real_RegDeleteValueW(hKey, lpValueName);
 }
 
+LSTATUS APIENTRY RegTree::RegEnumKeyW( HKEY hKey, DWORD dwIndex, LPWSTR lpName, DWORD cchName )
+{
+	if (IsVirtualKey(hKey))
+	{
+		RegNode *node = (RegNode*)((int)hKey & ~0x40000000);
+		if (dwIndex == 0)
+			LoadRealChildren(node);
+
+		if (dwIndex < node->m_children.size())
+		{
+			RegNode *childNode = node->m_children[dwIndex];
+			wcscpy_s(lpName, cchName, childNode->m_name.c_str());
+		
+			return ERROR_SUCCESS;
+		}
+		else
+			return ERROR_NO_MORE_ITEMS;
+	}
+	else
+		return Real_RegEnumKeyW(hKey, dwIndex, lpName, cchName);
+}
+
 LSTATUS APIENTRY RegTree::RegEnumKeyExW(HKEY hKey, DWORD dwIndex, LPWSTR lpName, LPDWORD lpcchName, LPDWORD lpReserved, LPWSTR lpClass, LPDWORD lpcchClass, PFILETIME lpftLastWriteTime)
 {
-	RegPath path;
-	ResolveKey(hKey, path);
-	Console::GetInstance().Print(L"EnumKeyEx: %s\n", path.ToString().c_str());
-	
-	return Real_RegEnumKeyExW(hKey, dwIndex, lpName, lpcchName, lpReserved, lpClass, lpcchClass, lpftLastWriteTime);
+	if (IsVirtualKey(hKey))
+	{
+		RegNode *node = (RegNode*)((int)hKey & ~0x40000000);
+		LoadRealChildren(node);
+
+		if (dwIndex < node->m_children.size())
+		{
+			wcscpy_s(lpName, *lpcchName, node->m_name.c_str());
+			*lpcchName = node->m_name.length();
+
+			return ERROR_SUCCESS;
+		}
+		else
+			return ERROR_NO_MORE_ITEMS;
+	}
+	else
+		return Real_RegEnumKeyExW(hKey, dwIndex, lpName, lpcchName, lpReserved, lpClass, lpcchClass, lpftLastWriteTime);
 }
 
 LSTATUS APIENTRY RegTree::RegEnumValueW(HKEY hKey, DWORD dwIndex, LPWSTR lpValueName, LPDWORD lpcchValueName, LPDWORD lpReserved, LPDWORD lpType, LPBYTE lpData, LPDWORD lpcbData)
@@ -146,7 +183,8 @@ LSTATUS APIENTRY RegTree::RegEnumValueW(HKEY hKey, DWORD dwIndex, LPWSTR lpValue
 	ResolveKey(hKey, path);
 	Console::GetInstance().Print(L"EnumValue: %s\n", path.ToString().c_str());
 	
-	return Real_RegEnumValueW(hKey, dwIndex, lpValueName, lpcchValueName, lpReserved, lpType, lpData, lpcbData);
+	//return Real_RegEnumValueW(hKey, dwIndex, lpValueName, lpcchValueName, lpReserved, lpType, lpData, lpcbData);
+	return ERROR_NO_MORE_ITEMS;
 }
 
 LSTATUS APIENTRY RegTree::RegFlushKey(HKEY hKey)
@@ -211,10 +249,29 @@ LSTATUS APIENTRY RegTree::RegOverridePredefKey(HKEY hKey, HKEY hNewHKey)
 LSTATUS APIENTRY RegTree::RegQueryInfoKeyW(HKEY hKey, LPWSTR lpClass, LPDWORD lpcchClass, LPDWORD lpReserved, LPDWORD lpcSubKeys, LPDWORD lpcbMaxSubKeyLen, LPDWORD lpcbMaxClassLen, LPDWORD lpcValues, LPDWORD lpcbMaxValueNameLen, LPDWORD lpcbMaxValueLen, LPDWORD lpcbSecurityDescriptor, PFILETIME lpftLastWriteTime)
 {
 	RegPath path;
-	if (IsVirtualKey(hKey) && ResolveKey(hKey, path))
+	if (IsVirtualKey(hKey))
 	{
 		RegNode *node = (RegNode*)((int)hKey & ~0x40000000);
-		return ERROR_ACCESS_DENIED;
+		LoadRealChildren(node);
+		
+		if (lpClass != NULL)
+			lpClass[0] = 0;
+		if (lpcchClass != NULL)
+			*lpcchClass = 0;
+		if (lpcSubKeys != NULL)
+			*lpcSubKeys = node->m_children.size();
+		if (lpcbMaxSubKeyLen != NULL)
+			*lpcbMaxSubKeyLen = 255;
+		if (lpcbMaxClassLen)
+			*lpcbMaxClassLen = MAX_PATH;
+		if (lpcValues != NULL)
+			*lpcValues = 0;
+		if (lpcbMaxValueNameLen != NULL)
+			*lpcbMaxValueNameLen = 16383;
+		if (lpcbMaxValueLen != NULL)
+			*lpcbMaxValueLen = 0xFFFFFFFF;
+
+		return ERROR_SUCCESS;
 	}
 	else
 		return Real_RegQueryInfoKeyW(hKey, lpClass, lpcchClass, lpReserved, lpcSubKeys, lpcbMaxSubKeyLen, lpcbMaxClassLen, lpcValues, lpcbMaxValueNameLen, lpcbMaxValueLen, lpcbSecurityDescriptor, lpftLastWriteTime);
@@ -311,6 +368,10 @@ RegTree::RegTree( void )
 	m_rootNodes.insert(HKEY_LOCAL_MACHINE, RegNode::CreateRoot(HKEY_LOCAL_MACHINE));
 	m_rootNodes.insert(HKEY_USERS, RegNode::CreateRoot(HKEY_USERS));
 	m_rootNodes.insert(HKEY_CURRENT_CONFIG, RegNode::CreateRoot(HKEY_CURRENT_CONFIG));
+
+	HKEY key;
+	RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\iLuE\\VideoGear", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL);
+	RegCloseKey(key);
 }
 
 void RegTree::ClearRealChildren( RegNode *node )
@@ -348,7 +409,26 @@ void RegTree::LoadRealChildren( RegNode *node )
 
 		for (DWORD index = 0; ; index++)
 		{
-			Real_RegEnumKeyExW(node->m_realKey, index, )
+			WCHAR keyName[MAX_KEY_LENGTH + 1];
+			DWORD keyNameLen = _countof(keyName);
+			WCHAR className[MAX_PATH + 1];
+			DWORD classNameLen = _countof(className);
+			if (Real_RegEnumKeyExW(node->m_realKey, index, keyName, &keyNameLen, NULL, className, &classNameLen, NULL) != ERROR_SUCCESS)
+				break;
+
+			HKEY newKey;
+			if (Real_RegOpenKeyExW(node->m_realKey, keyName, 0, KEY_ALL_ACCESS, &newKey) != ERROR_SUCCESS)
+				continue;
+
+			typedef RegNodeList::index<RegNodeIndex::Name>::type Index;
+			Index &childIndex = node->m_children.get<RegNodeIndex::Name>();
+			Index::iterator iter = childIndex.find(to_lower_copy(wstring(keyName)));
+			if (iter != childIndex.end())
+				continue;
+
+			auto_ptr<RegNode> newNode = RegNode::CreateReal(node->m_rootKey, keyName, newKey);
+			newNode->m_parent = node;
+			node->m_children.push_back(newNode.release());
 		}
 	}
 }
@@ -413,7 +493,6 @@ RegNode* RegTree::OpenKey( const RegPath &path, bool openAlways, LPDWORD disposi
 			{
 				RegNode *newNode = RegNode::CreateReal(path.m_rootKey, segment, newKey).release();
 				newNode->m_parent = parent;
-				newNode->m_name = segment;
 				parent->m_children.push_back(newNode);
 				parent = newNode;
 				if (openAlways && disposition != NULL)
@@ -423,7 +502,6 @@ RegNode* RegTree::OpenKey( const RegPath &path, bool openAlways, LPDWORD disposi
 			{
 				RegNode *newNode = RegNode::CreateNormal(path.m_rootKey, segment, NULL).release();
 				newNode->m_parent = parent;
-				newNode->m_name = segment;
 				parent->m_children.push_back(newNode);
 				parent = newNode;
 				if (disposition != NULL)
