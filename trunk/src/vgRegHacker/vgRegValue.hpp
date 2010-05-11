@@ -44,6 +44,7 @@ typedef multi_index_container<
 	RegValue*,
 	indexed_by<
 		random_access<>,
+		ordered_non_unique<member<RegValue, RegValueType, &RegValue::m_type> >,
 		ordered_unique<const_mem_fun<RegValue, wstring, &RegValue::GetName> >
 	>
 > RegValueList;
