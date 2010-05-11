@@ -185,15 +185,14 @@ LSTATUS APIENTRY RegTree::RegEnumValueW(HKEY hKey, DWORD dwIndex, LPWSTR lpValue
 
 			if (lpValueName != NULL)
 				wcscpy_s(lpValueName, *lpcchValueName, value->m_name.c_str());
-			*lpcchValueName = value->m_name.length();
-
+			if (lpcchValueName != NULL)
+				*lpcchValueName = value->m_name.length();
 			if (lpType != NULL)
 				*lpType = value->m_dataType;
 			if (lpData != NULL)
-			{
 				memcpy_s(lpData, *lpcbData, value->m_data.c_str(), value->m_data.size());
+			if (lpcbData != NULL)
 				*lpcbData = value->m_data.size();
-			}
 
 			return ERROR_SUCCESS;
 		}
@@ -246,8 +245,14 @@ LSTATUS APIENTRY RegTree::RegOpenKeyExW(HKEY hKey, LPCWSTR lpSubKey, DWORD ulOpt
 		RegNode *node = OpenKey(path);
 		if (node != NULL)
 		{
-			*phkResult = node->AsKey();
-			return ERROR_SUCCESS;
+			HKEY resultKey = node->AsKey();
+			if (IsVirtualKey(resultKey))
+			{
+				*phkResult = resultKey;
+				return ERROR_SUCCESS;
+			}
+			else
+				return Real_RegOpenKeyExW(resultKey, NULL, ulOptions, samDesired, phkResult);
 		}
 		else
 			return ERROR_NOT_FOUND;
@@ -404,6 +409,8 @@ void RegTree::ClearRealChildren( RegNode *node )
 		index.erase(iter++);
 		delete child;
 	}
+
+
 }
 
 RegNode* RegTree::CreateKey( const RegPath &path, LPDWORD disposition )
@@ -450,26 +457,20 @@ void RegTree::LoadRealChildren( RegNode *node )
 			node->m_children.push_back(newNode.release());
 		}
 
+		BYTE *data = (BYTE*)malloc(1000000);
 		for (DWORD index = 0; ; index++)
 		{
 			WCHAR valueName[MAX_VALUE_NAME_LENGTH + 1];
 			DWORD valueNameLen = _countof(valueName);
-			DWORD dataType;
-			DWORD dataSize = 0;
-			if (Real_RegEnumValueW(node->m_realKey, index, valueName, &valueNameLen, NULL, &dataType, NULL, &dataSize) != ERROR_SUCCESS)
-				break;
-
-			BYTE *data = (BYTE*)malloc(dataSize);
+			DWORD dataType = 0;
+			DWORD dataSize =1000000;
 			if (Real_RegEnumValueW(node->m_realKey, index, valueName, &valueNameLen, NULL, &dataType, data, &dataSize) != ERROR_SUCCESS)
-			{
-				free(data);
 				break;
-			}
 
 			auto_ptr<RegValue> newValue = RegValue::Create(RegValueType_Real, valueName, dataType, data, dataSize);
 			node->m_values.push_back(newValue.release());
-			free(data);
 		}
+		free(data);
 	}
 }
 
@@ -531,7 +532,11 @@ RegNode* RegTree::OpenKey( const RegPath &path, bool openAlways, LPDWORD disposi
 			HKEY newKey;
 			if (Real_RegOpenKeyExW(path.m_rootKey, subKey.c_str(), 0, KEY_ALL_ACCESS, &newKey) == ERROR_SUCCESS)
 			{
-				RegNode *newNode = RegNode::CreateReal(path.m_rootKey, segment, newKey).release();
+				RegNode *newNode;
+				if (openAlways)
+					newNode = RegNode::CreateNormal(path.m_rootKey, segment, newKey).release();
+				else
+					newNode = RegNode::CreateReal(path.m_rootKey, segment, newKey).release();
 				newNode->m_parent = parent;
 				parent->m_children.push_back(newNode);
 				parent = newNode;
