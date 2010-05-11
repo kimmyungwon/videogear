@@ -5,6 +5,7 @@
 #include "vgUtil/vgWinDDK.hpp"
 
 #define MAX_KEY_LENGTH 255
+#define MAX_VALUE_NAME_LENGTH 16383
 #define HOOK(api)	m_hook->Hook(Real_##api, Mine_##api);
 #define UNHOOK(api)	m_hook->Unhook(Real_##api, Mine_##api);	
 
@@ -149,12 +150,16 @@ LSTATUS APIENTRY RegTree::RegEnumKeyExW(HKEY hKey, DWORD dwIndex, LPWSTR lpName,
 	if (IsVirtualKey(hKey))
 	{
 		RegNode *node = (RegNode*)((int)hKey & ~0x40000000);
-		LoadRealChildren(node);
+		if (dwIndex == 0)
+			LoadRealChildren(node);
 
 		if (dwIndex < node->m_children.size())
 		{
-			wcscpy_s(lpName, *lpcchName, node->m_name.c_str());
-			*lpcchName = node->m_name.length();
+			RegNode *childNode = node->m_children[dwIndex];
+
+			if (lpName != NULL)
+				wcscpy_s(lpName, *lpcchName, childNode->m_name.c_str());
+			*lpcchName = childNode->m_name.length();
 
 			return ERROR_SUCCESS;
 		}
@@ -168,11 +173,35 @@ LSTATUS APIENTRY RegTree::RegEnumKeyExW(HKEY hKey, DWORD dwIndex, LPWSTR lpName,
 LSTATUS APIENTRY RegTree::RegEnumValueW(HKEY hKey, DWORD dwIndex, LPWSTR lpValueName, LPDWORD lpcchValueName, LPDWORD lpReserved, LPDWORD lpType, LPBYTE lpData, LPDWORD lpcbData)
 {
 	RegPath path;
-	ResolveKey(hKey, path);
-	Console::GetInstance().Print(L"EnumValue: %s\n", path.ToString().c_str());
-	
-	//return Real_RegEnumValueW(hKey, dwIndex, lpValueName, lpcchValueName, lpReserved, lpType, lpData, lpcbData);
-	return ERROR_NO_MORE_ITEMS;
+	if (IsVirtualKey(hKey))
+	{
+		RegNode *node = (RegNode*)((int)hKey & ~0x40000000);
+		if (dwIndex == 0)
+			LoadRealChildren(node);
+
+		if (dwIndex < node->m_values.size())
+		{
+			RegValue *value = node->m_values[dwIndex];
+
+			if (lpValueName != NULL)
+				wcscpy_s(lpValueName, *lpcchValueName, value->m_name.c_str());
+			*lpcchValueName = value->m_name.length();
+
+			if (lpType != NULL)
+				*lpType = value->m_dataType;
+			if (lpData != NULL)
+			{
+				memcpy_s(lpData, *lpcbData, value->m_data.c_str(), value->m_data.size());
+				*lpcbData = value->m_data.size();
+			}
+
+			return ERROR_SUCCESS;
+		}
+		else
+			return ERROR_NO_MORE_ITEMS;
+	}
+	else
+		return Real_RegEnumValueW(hKey, dwIndex, lpValueName, lpcchValueName, lpReserved, lpType, lpData, lpcbData);
 }
 
 LSTATUS APIENTRY RegTree::RegFlushKey(HKEY hKey)
@@ -209,6 +238,8 @@ LSTATUS APIENTRY RegTree::RegNotifyChangeKeyValue(HKEY hKey, BOOL bWatchSubtree,
 
 LSTATUS APIENTRY RegTree::RegOpenKeyExW(HKEY hKey, LPCWSTR lpSubKey, DWORD ulOptions, REGSAM samDesired, PHKEY phkResult)
 {	
+	Console::GetInstance().Print(L"RegOpenKeyExW: %.8X, %s\n", hKey, lpSubKey);
+	
 	RegPath path;
 	if (ResolveKey(hKey, lpSubKey, path))
 	{
@@ -358,7 +389,7 @@ RegTree::RegTree( void )
 	m_rootNodes.insert(HKEY_CURRENT_CONFIG, RegNode::CreateRoot(HKEY_CURRENT_CONFIG));
 
 	HKEY key;
-	RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\iLuE\\VideoGear", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL);
+	RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\iLuE\\VideoGear", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL);
 	RegCloseKey(key);
 }
 
@@ -417,6 +448,27 @@ void RegTree::LoadRealChildren( RegNode *node )
 			auto_ptr<RegNode> newNode = RegNode::CreateReal(node->m_rootKey, keyName, newKey);
 			newNode->m_parent = node;
 			node->m_children.push_back(newNode.release());
+		}
+
+		for (DWORD index = 0; ; index++)
+		{
+			WCHAR valueName[MAX_VALUE_NAME_LENGTH + 1];
+			DWORD valueNameLen = _countof(valueName);
+			DWORD dataType;
+			DWORD dataSize = 0;
+			if (Real_RegEnumValueW(node->m_realKey, index, valueName, &valueNameLen, NULL, &dataType, NULL, &dataSize) != ERROR_SUCCESS)
+				break;
+
+			BYTE *data = (BYTE*)malloc(dataSize);
+			if (Real_RegEnumValueW(node->m_realKey, index, valueName, &valueNameLen, NULL, &dataType, data, &dataSize) != ERROR_SUCCESS)
+			{
+				free(data);
+				break;
+			}
+
+			auto_ptr<RegValue> newValue = RegValue::Create(RegValueType_Real, valueName, dataType, data, dataSize);
+			node->m_values.push_back(newValue.release());
+			free(data);
 		}
 	}
 }

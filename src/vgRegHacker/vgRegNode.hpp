@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vgInclude.hpp"
+#include "vgRegValue.hpp"
 
 VG_NAMESPACE_BEGIN
 
@@ -51,6 +52,7 @@ struct RegNode
 	RegNode *m_parent;
 	wstring m_name;
 	RegNodeList m_children;
+	RegValueList m_values;
 	HKEY m_realKey;
 	
 	static auto_ptr<RegNode> CreateRoot(HKEY rootKey);
