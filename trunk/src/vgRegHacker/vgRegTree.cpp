@@ -10,18 +10,6 @@
 
 VG_NAMESPACE_BEGIN
 
-RegNodeType RegNodeTypeGetter::operator()( RegNode *node ) const
-{
-	return node->m_type;
-}
-
-wstring RegNodeNameGetter::operator()( RegNode *node ) const
-{
-	return to_lower_copy(node->m_name);
-}
-
-//////////////////////////////////////////////////////////////////////////
-
 #include "vgRegTree_Impl.inl"
 
 RegTree& RegTree::GetInstance( void )
